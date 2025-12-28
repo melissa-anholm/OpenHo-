@@ -140,6 +140,29 @@ namespace GameFormulas
 	int64_t calculate_tech_radical_advancement_cost(int32_t current_level);
 	
 	// ========================================================================
+	// Terraforming and Mining Calculations
+	// ========================================================================
+	
+	/// Calculate the temperature change from terraforming spending.
+	/// The amount of temperature change depends on the money spent and how far
+	/// the current temperature is from the target temperature.
+	/// 
+	/// @param money_spent The amount of money allocated to terraforming this turn
+	/// @param current_temperature The planet's current temperature
+	/// @param target_temperature The player's ideal temperature
+	/// @return The amount of temperature change (can be positive or negative)
+	double calculate_temperature_change(int64_t money_spent, double current_temperature, double target_temperature);
+	
+	/// Calculate the amount of metal that can be mined from a planet.
+	/// The amount of metal extracted depends on the money spent and how much
+	/// metal remains on the planet.
+	/// 
+	/// @param money_spent The amount of money allocated to mining this turn
+	/// @param metal_remaining The amount of metal remaining on the planet
+	/// @return The amount of metal that can be extracted this turn
+	int64_t calculate_metal_mined(int64_t money_spent, int64_t metal_remaining);
+	
+	// ========================================================================
 	// Planet Mechanics Calculations
 	// ========================================================================
 	

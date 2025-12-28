@@ -712,3 +712,89 @@ void GameState::process_research()
 		}
 	}
 }
+
+
+void GameState::process_terraforming()
+{
+	// Process terraforming for each player's planets
+	for (Player& player : galaxy.players)
+	{
+		// Calculate total planets budget to get planets_fraction
+		double total_planets_fraction = 0.0;
+		for (const PlanetDevelopmentAllocation& planet_alloc : player.allocation.planet_allocations)
+		{
+			total_planets_fraction += planet_alloc.development_fraction;
+		}
+		
+		// Calculate total planets budget for this player
+		int64_t planets_budget = MoneyAllocationCalculator::calculate_planets_amount(
+			total_planets_fraction, player.moneyIncome);
+		
+		// Process terraforming for each planet
+		for (const PlanetDevelopmentAllocation& planet_alloc : player.allocation.planet_allocations)
+		{
+			// Calculate budget for this planet's development
+			int64_t planet_budget = MoneyAllocationCalculator::calculate_planet_development_amount(
+				planet_alloc, planets_budget);
+			
+			// Calculate terraforming budget for this planet
+			int64_t terraforming_budget = MoneyAllocationCalculator::calculate_terraforming_amount(
+				planet_alloc, planet_budget);
+			
+			// Get the planet
+			Planet* planet = get_planet(planet_alloc.planet_id);
+			if (!planet || planet->owner != player.id)
+				continue;  // Skip if planet doesn't exist or isn't owned by this player
+			
+			// Calculate temperature change
+			double temperature_change = GameFormulas::calculate_temperature_change(
+				terraforming_budget, planet->temperature, player.ideal_temperature);
+			
+			// Apply the temperature change
+			planet->temperature += temperature_change;
+		}
+	}
+}
+
+void GameState::process_mining()
+{
+	// Process mining for each player's planets
+	for (Player& player : galaxy.players)
+	{
+		// Calculate total planets budget to get planets_fraction
+		double total_planets_fraction = 0.0;
+		for (const PlanetDevelopmentAllocation& planet_alloc : player.allocation.planet_allocations)
+		{
+			total_planets_fraction += planet_alloc.development_fraction;
+		}
+		
+		// Calculate total planets budget for this player
+		int64_t planets_budget = MoneyAllocationCalculator::calculate_planets_amount(
+			total_planets_fraction, player.moneyIncome);
+		
+		// Process mining for each planet
+		for (const PlanetDevelopmentAllocation& planet_alloc : player.allocation.planet_allocations)
+		{
+			// Calculate budget for this planet's development
+			int64_t planet_budget = MoneyAllocationCalculator::calculate_planet_development_amount(
+				planet_alloc, planets_budget);
+			
+			// Calculate mining budget for this planet
+			int64_t mining_budget = MoneyAllocationCalculator::calculate_mining_amount(
+				planet_alloc, planet_budget);
+			
+			// Get the planet
+			Planet* planet = get_planet(planet_alloc.planet_id);
+			if (!planet || planet->owner != player.id)
+				continue;  // Skip if planet doesn't exist or isn't owned by this player
+			
+			// Calculate metal that can be mined
+			int64_t metal_extracted = GameFormulas::calculate_metal_mined(
+				mining_budget, planet->metal);
+			
+			// Extract metal from planet and add to player's reserve
+			planet->metal -= metal_extracted;
+			player.metalReserve += metal_extracted;
+		}
+	}
+}

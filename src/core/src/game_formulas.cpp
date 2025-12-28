@@ -134,6 +134,50 @@ namespace GameFormulas
 	}
 	
 	// ============================================================================
+	// Terraforming and Mining Calculations
+	// ============================================================================
+	
+	double calculate_temperature_change(int64_t money_spent, double current_temperature, double target_temperature)
+	{
+		// Placeholder: simple linear conversion
+		// Real formula will be implemented later
+		// For now: 1 money = 0.01 temperature change
+		double change = money_spent * 0.01;
+		
+		// Ensure we don't overshoot the target
+		if (current_temperature < target_temperature)
+		{
+			// Moving towards higher temperature
+			change = std::min(change, target_temperature - current_temperature);
+		}
+		else if (current_temperature > target_temperature)
+		{
+			// Moving towards lower temperature
+			change = -std::min(change, current_temperature - target_temperature);
+		}
+		else
+		{
+			// Already at target
+			change = 0.0;
+		}
+		
+		return change;
+	}
+	
+	int64_t calculate_metal_mined(int64_t money_spent, int64_t metal_remaining)
+	{
+		// Placeholder: simple linear conversion
+		// Real formula will be implemented later
+		// For now: 1 money = 1 metal
+		int64_t metal_extracted = money_spent;
+		
+		// Cannot extract more metal than remains on the planet
+		metal_extracted = std::min(metal_extracted, metal_remaining);
+		
+		return metal_extracted;
+	}
+	
+	// ============================================================================
 	// Planet Mechanics Calculations
 	// ============================================================================
 	
