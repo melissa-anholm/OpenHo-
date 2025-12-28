@@ -1,0 +1,147 @@
+#include "game_formulas.h"
+#include "game_constants.h"
+#include "game.h"
+#include <cmath>
+
+namespace GameFormulas
+{
+	// ============================================================================
+	// Ship Design Cost Calculations
+	// ============================================================================
+	
+	int64_t calculate_ship_design_build_cost(int32_t tech_range, int32_t tech_speed, 
+	                                          int32_t tech_weapons, int32_t tech_shields, 
+	                                          int32_t tech_miniaturization)
+	{
+		// Placeholder: return 1
+		// Real formula will be implemented later
+		return 1;
+	}
+	
+	int64_t calculate_ship_design_prototype_cost(int32_t tech_range, int32_t tech_speed, 
+	                                              int32_t tech_weapons, int32_t tech_shields, 
+	                                              int32_t tech_miniaturization)
+	{
+		// Placeholder: return 1
+		// Real formula will be implemented later
+		return 1;
+	}
+	
+	int64_t calculate_ship_design_metal_cost(int32_t tech_range, int32_t tech_speed, 
+	                                          int32_t tech_weapons, int32_t tech_shields, 
+	                                          int32_t tech_miniaturization)
+	{
+		// Placeholder: return 1
+		// Real formula will be implemented later
+		return 1;
+	}
+	
+	// ============================================================================
+	// Player Metrics Calculations
+	// ============================================================================
+	
+	int64_t calculate_player_fleet_power(uint32_t player_id, GameState* game_state)
+	{
+		// Placeholder: return 1
+		// Real formula will be implemented later
+		return 1;
+	}
+	
+	int32_t calculate_player_victory_points(uint32_t player_id, GameState* game_state)
+	{
+		// Placeholder: return 1
+		// Real formula will be implemented later
+		return 1;
+	}
+	
+	// ============================================================================
+	// Money and Resources Calculations
+	// ============================================================================
+	
+	int64_t calculate_money_interest(int64_t savings)
+	{
+		if (savings >= 0)
+		{
+			// Positive savings: apply positive interest rate
+			double interest = savings * (GameConstants::Money_Interest_Rate_Positive / 100.0);
+			return static_cast<int64_t>(interest);
+		}
+		else
+		{
+			// Negative savings (debt): apply debt interest rate
+			double interest = savings * (GameConstants::Money_Interest_Rate_Debt / 100.0);
+			return static_cast<int64_t>(interest);
+		}
+	}
+	
+	int64_t convert_money_to_research_points(int64_t money_allocated)
+	{
+		// Placeholder: one-to-one conversion
+		// Real formula will be implemented later
+		return money_allocated;
+	}
+	
+	// ============================================================================
+	// Technology Advancement Calculations
+	// ============================================================================
+	
+	int64_t calculate_tech_range_advancement_cost(int32_t current_level)
+	{
+		// Quadratic cost formula: cost = (level + 1)^2 * base_multiplier
+		int64_t base_multiplier = 100;
+		int64_t next_level = current_level + 1;
+		return next_level * next_level * base_multiplier;
+	}
+	
+	int64_t calculate_tech_speed_advancement_cost(int32_t current_level)
+	{
+		// Quadratic cost formula: cost = (level + 1)^2 * base_multiplier
+		int64_t base_multiplier = 100;
+		int64_t next_level = current_level + 1;
+		return next_level * next_level * base_multiplier;
+	}
+	
+	int64_t calculate_tech_weapons_advancement_cost(int32_t current_level)
+	{
+		// Quadratic cost formula: cost = (level + 1)^2 * base_multiplier
+		int64_t base_multiplier = 100;
+		int64_t next_level = current_level + 1;
+		return next_level * next_level * base_multiplier;
+	}
+	
+	int64_t calculate_tech_shields_advancement_cost(int32_t current_level)
+	{
+		// Quadratic cost formula: cost = (level + 1)^2 * base_multiplier
+		int64_t base_multiplier = 100;
+		int64_t next_level = current_level + 1;
+		return next_level * next_level * base_multiplier;
+	}
+	
+	int64_t calculate_tech_miniaturization_advancement_cost(int32_t current_level)
+	{
+		// Quadratic cost formula: cost = (level + 1)^2 * base_multiplier
+		int64_t base_multiplier = 100;
+		int64_t next_level = current_level + 1;
+		return next_level * next_level * base_multiplier;
+	}
+	
+	int64_t calculate_tech_radical_advancement_cost(int32_t current_level)
+	{
+		// Quadratic cost formula: cost = (level + 1)^2 * base_multiplier
+		int64_t base_multiplier = 100;
+		int64_t next_level = current_level + 1;
+		return next_level * next_level * base_multiplier;
+	}
+	
+	// ============================================================================
+	// Planet Mechanics Calculations
+	// ============================================================================
+	
+	int32_t calculate_planet_nova_warning_duration(DeterministicRNG& rng)
+	{
+		// Placeholder: return 1
+		// Real formula using Poisson distribution will be implemented later
+		return 1;
+	}
+	
+}  // namespace GameFormulas
