@@ -5,13 +5,13 @@
 // Top-Level Income Allocation
 // ============================================================================
 
-int64_t MoneyAllocationCalculator::calculate_savings_amount(const MoneyAllocation& money_alloc, int64_t player_income)
+int64_t MoneyAllocationCalculator::calculate_savings_amount(const Player::MoneyAllocation& money_alloc, int64_t player_income)
 {
 	double savings_amount = player_income * money_alloc.savings_fraction;
 	return static_cast<int64_t>(std::round(savings_amount));
 }
 
-int64_t MoneyAllocationCalculator::calculate_research_amount(const MoneyAllocation& money_alloc, int64_t player_income)
+int64_t MoneyAllocationCalculator::calculate_research_amount(const Player::MoneyAllocation& money_alloc, int64_t player_income)
 {
 	double research_amount = player_income * money_alloc.research_fraction;
 	return static_cast<int64_t>(std::round(research_amount));
@@ -61,27 +61,4 @@ int64_t MoneyAllocationCalculator::calculate_research_stream_amount(const Resear
 	return static_cast<int64_t>(std::round(stream_amount));
 }
 
-// ============================================================================
-// Planetary Development Allocation
-// ============================================================================
 
-int64_t MoneyAllocationCalculator::calculate_planet_development_amount(const PlanetDevelopmentAllocation& planet_alloc,
-                                                                        int64_t planets_budget)
-{
-	double planet_amount = planets_budget * planet_alloc.development_fraction;
-	return static_cast<int64_t>(std::round(planet_amount));
-}
-
-int64_t MoneyAllocationCalculator::calculate_mining_amount(const PlanetDevelopmentAllocation& planet_alloc,
-                                                            int64_t planet_budget)
-{
-	double mining_amount = planet_budget * planet_alloc.mining_fraction;
-	return static_cast<int64_t>(std::round(mining_amount));
-}
-
-int64_t MoneyAllocationCalculator::calculate_terraforming_amount(const PlanetDevelopmentAllocation& planet_alloc,
-                                                                  int64_t planet_budget)
-{
-	double terraforming_amount = planet_budget * planet_alloc.terraforming_fraction;
-	return static_cast<int64_t>(std::round(terraforming_amount));
-}

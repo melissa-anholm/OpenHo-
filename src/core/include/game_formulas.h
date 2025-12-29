@@ -4,6 +4,9 @@
 #include <cstdint>
 #include "rng.h"
 
+// Forward declaration of GameState (defined in game.h)
+class GameState;
+
 // ============================================================================
 // Game Balance Formulas
 // ============================================================================
@@ -68,7 +71,7 @@ namespace GameFormulas
 	/// @param playerID The player to calculate fleet power for
 	/// @param gameState Reference to the game state (for accessing ships)
 	/// @return The fleet power value
-	int64_t calculate_player_fleet_power(uint32_t player_id, class GameState* game_state);
+	int64_t calculate_player_fleet_power(uint32_t player_id, GameState* game_state);
 	
 	/// Calculate the victory points for a player based on various factors.
 	/// Victory points represent a player's overall progress and strength.
@@ -77,7 +80,7 @@ namespace GameFormulas
 	/// @param playerID The player to calculate victory points for
 	/// @param gameState Reference to the game state (for accessing planets, ships, etc.)
 	/// @return The victory points value
-	int32_t calculate_player_victory_points(uint32_t player_id, class GameState* game_state);
+	int32_t calculate_player_victory_points(uint32_t player_id, GameState* game_state);
 	
 	// ========================================================================
 	// Money and Resources Calculations
@@ -97,6 +100,56 @@ namespace GameFormulas
 	/// @param money_allocated The amount of money allocated to research
 	/// @return The number of research points generated from this money
 	int64_t convert_money_to_research_points(int64_t money_allocated);
+	
+	// ========================================================================
+	// Player Income Calculations
+	// ========================================================================
+	
+	/// Calculate a player's income from their owned planets.
+	/// This is the sum of metal and money production from all planets.
+	/// 
+	/// @param player_id The ID of the player
+	/// @param game_state Pointer to the game state for accessing planet data
+	/// @return The total planetary income for this player
+	int64_t calculate_planetary_income(uint32_t player_id, GameState* game_state);
+	
+	/// Calculate interest earned or owed on a player's savings.
+	/// Positive interest is earned on savings, negative interest is owed on debt.
+	/// 
+	/// @param player_id The ID of the player
+	/// @param game_state Pointer to the game state for accessing player data
+	/// @return The interest amount (positive or negative)
+	int64_t calculate_interest_income(uint32_t player_id, GameState* game_state);
+	
+	/// Calculate windfall income from rare special events.
+	/// This is typically zero but can be non-zero during special events.
+	/// 
+	/// @param player_id The ID of the player
+	/// @param game_state Pointer to the game state
+	/// @return The windfall income for this player
+	int64_t calculate_windfall_income(uint32_t player_id, GameState* game_state);
+	
+	// ========================================================================
+	// Population Growth Calculations
+	// ========================================================================
+	
+	/// Calculate population growth for a planet.
+	/// Growth depends on the planet's properties, the player's ideal conditions,
+	/// and the current population.
+	/// 
+	/// @param current_population The planet's current population
+	/// @param planet_temperature The planet's current temperature
+	/// @param planet_gravity The planet's gravity
+	/// @param ideal_temperature The player's ideal temperature
+	/// @param ideal_gravity The player's ideal gravity
+	/// @return The population growth (can be positive, zero, or negative)
+	int64_t calculate_population_growth(
+		int64_t current_population,
+		double planet_temperature,
+		double planet_gravity,
+		double ideal_temperature,
+		double ideal_gravity
+	);
 	
 	// ========================================================================
 	// Technology Advancement Calculations

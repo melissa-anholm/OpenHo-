@@ -47,6 +47,17 @@ enum PlayerType
 	PLAYER_COMPUTER = 1
 };
 
+// Technology streams for research
+enum TechStream
+{
+	TECH_RANGE = 0,
+	TECH_SPEED = 1,
+	TECH_WEAPONS = 2,
+	TECH_SHIELDS = 3,
+	TECH_MINIATURIZATION = 4,
+	TECH_RADICAL = 5
+};
+
 // ============================================================================
 // Data Structures
 // ============================================================================
@@ -84,23 +95,17 @@ struct ResearchAllocation
 	double research_radical_fraction;
 };
 
-// Development allocation for a specific planet
-struct PlanetDevelopmentAllocation
+// Income breakdown for a player (calculated each turn)
+struct IncomeBreakdown
 {
-	uint32_t planet_id;
-	double development_fraction;
-	double mining_fraction;
-	double terraforming_fraction;
+	int64_t planetary_income;      // Income from owned planets
+	int64_t interest_income;       // Interest from savings (positive or negative)
+	int64_t windfall_income;       // Windfall from rare events
+	int64_t total_income;          // Sum of above three
 };
 
-// Money allocation for a player (fractions-based)
-struct MoneyAllocation
-{
-	double savings_fraction;
-	double research_fraction;
-	ResearchAllocation research;
-	std::vector<PlanetDevelopmentAllocation> planet_allocations;
-};
+// Forward declaration of ColonizedPlanet for use in Player
+struct ColonizedPlanet;
 
 // Planet information snapshot (what a player knows about a planet)
 struct PlanetInfo
@@ -112,7 +117,7 @@ struct PlanetInfo
 	PlayerID owner;
 	int32_t population;
 	int32_t income;
-	uint32_t observationTurn;  // When this information was collected
+	uint32_t observation_turn;  // When this information was collected
 };
 
 // Planet structure (actual state on the host)
@@ -130,15 +135,76 @@ struct Planet
 	double temperature;
 	int32_t metal;
 	PlayerID owner;  // 0 if unowned
-	int32_t population;
 	
 	// Nova state
 	PlanetState state;
-	int32_t turnsUntilNova;  // If state == PLANET_WARNING
+	int32_t turns_until_nova;  // If state == PLANET_WARNING
+	};
 	
-	// Calculated property
-	int32_t income;  // Calculated based on population, temperature, gravity, and owner's ideals
-};
+	// Colonized planet - extends Planet with player-specific allocation information
+	struct ColonizedPlanet : public Planet
+	{
+		// Budget split for this planet (how to divide its budget between mining and terraforming)
+		struct BudgetSplit
+		{
+		private:
+			double mining_fraction;
+			double terraforming_fraction;
+			
+		public:
+			// Constructor
+			BudgetSplit() : mining_fraction(0.5), terraforming_fraction(0.5) {}
+			
+			// Getters
+			double get_mining_fraction() const
+			{
+				return mining_fraction;
+			}
+			
+			double get_terraforming_fraction() const
+			{
+				return terraforming_fraction;
+			}
+			
+			// Setters
+			void set_mining_fraction(double fraction)
+			{
+				mining_fraction = fraction;
+				normalize();
+			}
+			
+			void set_terraforming_fraction(double fraction)
+			{
+				terraforming_fraction = fraction;
+				normalize();
+			}
+			
+			// Normalize the fractions so they sum to 1.0
+			void normalize()
+			{
+				double total = mining_fraction + terraforming_fraction;
+				if (total > 0.0)
+				{
+					mining_fraction /= total;
+					terraforming_fraction /= total;
+				}
+				else
+				{
+					// If both are zero, split evenly
+					mining_fraction = 0.5;
+					terraforming_fraction = 0.5;
+				}
+			}
+		};
+		
+	// Member variables
+	double planet_funding_fraction;      // What fraction of total planet budget this planet gets
+	BudgetSplit budget_split;            // How to split this planet's budget between mining/terraforming
+	
+	// Player-specific properties (only for colonized planets)
+	int32_t population;                  // Population on this planet
+	int32_t income;                      // Calculated based on population, temperature, gravity, and owner's ideals
+	};
 
 // Ship structure
 struct Ship
@@ -149,12 +215,12 @@ struct Ship
 	ShipTechParameters techParams;
 	
 	// Position: either at a planet or in transit
-	uint32_t currentPlanetID;  // If not in transit
-	uint32_t destinationPlanetID;  // If in transit
-	int32_t etaTurns;  // Turns until arrival (if in transit)
+	uint32_t current_planet_id;  // If not in transit
+	uint32_t destination_planet_id;  // If in transit
+	int32_t eta_turns;  // Turns until arrival (if in transit)
 	
 	// Fleet information
-	uint32_t fleetID;  // Every ship is always in a fleet; a lone ship is a fleet of one
+	uint32_t fleet_id;  // Every ship is always in a fleet; a lone ship is a fleet of one
 };
 
 // Ship design pattern (immutable once created)
@@ -165,16 +231,16 @@ struct ShipDesign
 	ShipType type;
 	
 	// Technology levels associated with this design
-	int32_t techRange;
-	int32_t techSpeed;
-	int32_t techWeapons;
-	int32_t techShields;
-	int32_t techMiniaturization;
+	int32_t tech_range;
+	int32_t tech_speed;
+	int32_t tech_weapons;
+	int32_t tech_shields;
+	int32_t tech_miniaturization;
 	
 	// Costs (calculated at design creation time, immutable)
-	int64_t buildCost;              // Cost to build each ship of this design
-	int64_t prototypeCost;          // Cost for the first ship of this design
-	int64_t metalCost;              // Metal cost per ship
+	int64_t build_cost;              // Cost to build each ship of this design
+	int64_t prototype_cost;          // Cost for the first ship of this design
+	int64_t metal_cost;              // Metal cost per ship
 };
 
 // Player structure
@@ -187,28 +253,43 @@ struct Player
 	
 	// Resources
 	int64_t money;  // Savings account
-	int64_t metalReserve;
+	int64_t metal_reserve;
 	
 	// Technology levels
 	TechnologyLevels tech;
 	
 	// Ideal planetary conditions (hidden from player)
-	double idealTemperature;
-	double idealGravity;
+	double ideal_temperature;
+	double ideal_gravity;
 	
 	// Calculated properties
-	int64_t moneyIncome;  // Per turn
-	int64_t metalIncome;  // Per turn
+	int64_t money_income;  // Per turn
+	int64_t metal_income;  // Per turn
+	
+	// Income breakdown for current turn
+	IncomeBreakdown current_turn_income;
+	
+	// Money allocation for this player (fractions-based)
+	struct MoneyAllocation
+	{
+		double savings_fraction;
+		double research_fraction;
+		double planets_fraction;  // Fraction of income allocated to planet development
+		ResearchAllocation research;
+	};
 	
 	// Current money allocation
 	MoneyAllocation allocation;
+	
+	// Colonized planets (owned by this player with allocation information)
+	std::vector<ColonizedPlanet> colonized_planets;
 	
 	// Fog of war: player's knowledge of planets
 	std::vector<PlanetInfo> planetKnowledge;
 	
 	// Ship designs
-	std::vector<ShipDesign> shipDesigns;      // All designs, ordered by creation (max 100)
-	uint32_t nextShipDesignID;                // Counter for unique design IDs (never resets)
+	std::vector<ShipDesign> ship_designs;      // All designs, ordered by creation (max 100)
+	uint32_t next_ship_design_id;                // Counter for unique design IDs (never resets)
 	
 	// Research progress (accumulated points per research stream)
 	int64_t research_points_range;
@@ -231,34 +312,35 @@ struct GalaxyGenerationParams
 // Public information about a player (visible to all other players)
 struct PlayerPublicInfo
 {
-	uint32_t playerID;
+	uint32_t player_id;
 	uint32_t turn;
 	
 	// Technology levels (subset - no Radical)
-	int32_t techRange;
-	int32_t techSpeed;
-	int32_t techWeapons;
-	int32_t techShields;
-	int32_t techMiniaturization;
+	int32_t tech_range;
+	int32_t tech_speed;
+	int32_t tech_weapons;
+	int32_t tech_shields;
+	int32_t tech_miniaturization;
 	
 	// Resources
-	int64_t moneyIncome;
-	int64_t moneySavings;
-	int64_t metalSavings;
+	int64_t money_income;
+	int64_t money_savings;
+	int64_t metal_savings;
+	int64_t income;  // Total income this turn (for historical tracking)
 	
 	// Calculated metrics
-	int64_t fleetPower;
-	int32_t victoryPoints;
+	int64_t fleet_power;
+	int32_t victory_points;
 };
 
 // Galaxy structure
 struct Galaxy
 {
 	// Boundaries
-	GalaxyCoord minX;
-	GalaxyCoord maxX;
-	GalaxyCoord minY;
-	GalaxyCoord maxY;
+	GalaxyCoord min_x;
+	GalaxyCoord max_x;
+	GalaxyCoord min_y;
+	GalaxyCoord max_y;
 	
 	// Immutable planet list
 	std::vector<Planet> planets;
@@ -270,7 +352,7 @@ struct Galaxy
 	std::vector<Player> players;
 	
 	// Current turn number
-	uint32_t currentTurn;
+	uint32_t current_turn;
 	
 	// Two separate RNG engines
 	// (Implementation details in rng.h)
@@ -287,10 +369,6 @@ extern "C"
 
 // Game initialization and management
 void* game_create(const GalaxyGenerationParams* params);
-void game_destroy(void* game);
-
-// Game state// Game initialization & management
-void* game_create();
 void game_destroy(void* game);
 
 // Game state queries
@@ -330,8 +408,8 @@ void game_delete_ship_design(void* game, uint32_t player_id, uint32_t design_id)
 void game_build_ship_from_design(void* game, uint32_t player_id, uint32_t design_id);
 
 // Money allocation
-void game_set_money_allocation(void* game, uint32_t player_id, const MoneyAllocation* alloc);
-void game_get_money_allocation(void* game, uint32_t player_id, MoneyAllocation* out);
+void game_set_money_allocation(void* game, uint32_t player_id, const Player::MoneyAllocation* alloc);
+void game_get_money_allocation(void* game, uint32_t player_id, Player::MoneyAllocation* out);
 
 // AI RNG seed management
 uint64_t game_get_ai_rng_seed(void* game);

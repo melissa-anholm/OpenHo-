@@ -69,8 +69,8 @@ public:
 	void process_turn();
 	
 	// Money allocation
-	void set_money_allocation(uint32_t player_id, const MoneyAllocation& alloc);
-	const MoneyAllocation& get_money_allocation(uint32_t player_id) const;
+	void set_money_allocation(uint32_t player_id, const Player::MoneyAllocation& alloc);
+	const Player::MoneyAllocation& get_money_allocation(uint32_t player_id) const;
 	
 	// AI RNG seed management
 	uint64_t get_ai_rng_seed() const;
@@ -106,14 +106,15 @@ private:
 	void initialize_planets();
 	void initialize_players();
 	void build_entity_maps();
+	void process_population_growth();
+	void check_population_decreasing_events(uint32_t planet_id);
 	void calculate_player_incomes();
+	void process_player_incomes();
 	void update_planet_incomes();
 	void process_money_allocation();
-	void apply_money_interest();
 	void process_research();
 	void process_research_stream(Player& player, TechStream stream, int64_t research_budget);
-	void process_terraforming();
-	void process_mining();
+	void process_planets();
 	void process_ships();
 	void process_novae();
 	void capture_player_public_info();

@@ -47,34 +47,34 @@ uint32_t game_get_current_turn(void* game)
 		return 0;
 	
 	GameState* gameState = static_cast<GameState*>(game);
-	return gameState->getGalaxy().currentTurn;
+	return gameState->get_galaxy().current_turn;
 }
 
-uint32_t game_get_num_players(void* game)
-{
-	if (!game)
-		return 0;
-	
-	GameState* gameState = static_cast<GameState*>(game);
-	return static_cast<uint32_t>(gameState->getGalaxy().players.size());
+	uint32_t game_get_num_players(void* game)
+	{
+		if (!game)
+			return 0;
+		
+		GameState* gameState = static_cast<GameState*>(game);
+		return static_cast<uint32_t>(gameState->get_galaxy().players.size());
 }
 
-uint32_t game_get_num_planets(void* game)
-{
-	if (!game)
-		return 0;
-	
-	GameState* gameState = static_cast<GameState*>(game);
-	return static_cast<uint32_t>(gameState->getGalaxy().planets.size());
+	uint32_t game_get_num_planets(void* game)
+	{
+		if (!game)
+			return 0;
+		
+		GameState* gameState = static_cast<GameState*>(game);
+		return static_cast<uint32_t>(gameState->get_galaxy().planets.size());
 }
 
-uint32_t game_get_num_ships(void* game)
-{
-	if (!game)
-		return 0;
-	
-	GameState* gameState = static_cast<GameState*>(game);
-	return static_cast<uint32_t>(gameState->getGalaxy().ships.size());
+	uint32_t game_get_num_ships(void* game)
+	{
+		if (!game)
+			return 0;
+		
+		GameState* gameState = static_cast<GameState*>(game);
+		return static_cast<uint32_t>(gameState->get_galaxy().ships.size());
 }
 
 uint32_t game_get_num_fleets(void* game)
@@ -84,13 +84,13 @@ uint32_t game_get_num_fleets(void* game)
 	
 	GameState* gameState = static_cast<GameState*>(game);
 	
-	std::unordered_set<uint32_t> fleetIDs;
-	for (const auto& ship : gameState->getGalaxy().ships)
+	std::unordered_set<uint32_t> fleet_ids;
+	for (const auto& ship : gameState->get_galaxy().ships)
 	{
-		fleetIDs.insert(ship.fleetID);
+		fleet_ids.insert(ship.fleet_id);
 	}
 	
-	return static_cast<uint32_t>(fleetIDs.size());
+	return static_cast<uint32_t>(fleet_ids.size());
 }
 
 // ============================================================================
@@ -126,7 +126,7 @@ void game_get_player_money_income(void* game, uint32_t player_id, int64_t* out)
 	
 	if (player)
 	{
-		*out = player->moneyIncome;
+		*out = player->money_income;
 	}
 	else
 	{
@@ -144,7 +144,7 @@ void game_get_player_metal_income(void* game, uint32_t player_id, int64_t* out)
 	
 	if (player)
 	{
-		*out = player->metalIncome;
+		*out = player->metal_income;
 	}
 	else
 	{
@@ -180,7 +180,7 @@ void game_get_player_metal_reserve(void* game, uint32_t player_id, int64_t* out)
 	
 	if (player)
 	{
-		*out = player->metalReserve;
+		*out = player->metal_reserve;
 	}
 	else
 	{
@@ -233,11 +233,11 @@ void game_get_planet_perceived_values(void* game, uint32_t planetID, uint32_t pl
 	// Values range from 0 (worst) to 1 (best match for player's ideals)
 	
 	// Temperature perception: how close to ideal temperature
-	double tempDiff = std::abs(planet->temperature - player->idealTemperature);
+	double tempDiff = std::abs(planet->temperature - player->ideal_temperature);
 	*outTemp = std::max(0.0, 1.0 - tempDiff / 100.0);
 	
 	// Gravity perception: how close to ideal gravity
-	double gravDiff = std::abs(planet->gravity - player->idealGravity);
+	double gravDiff = std::abs(planet->gravity - player->ideal_gravity);
 	*outGravity = std::max(0.0, 1.0 - gravDiff / 2.0);
 }
 
@@ -268,38 +268,38 @@ void game_get_ship(void* game, uint32_t shipID, Ship* out)
 // Player Public Information Queries
 // ============================================================================
 
-void game_get_player_public_info(void* game, uint32_t player_id, uint32_t turn, PlayerPublicInfo* out)
-{
-	if (!game || !out)
-		return;
-	
-	GameState* gameState = static_cast<GameState*>(game);
-	*out = gameState->get_playerPublicInfo(player_id, turn);
+	void game_get_player_public_info(void* game, uint32_t player_id, uint32_t turn, PlayerPublicInfo* out)
+	{
+		if (!game || !out)
+			return;
+		
+		GameState* gameState = static_cast<GameState*>(game);
+		*out = gameState->get_player_public_info(player_id, turn);
 }
 
-void game_get_player_public_info_current(void* game, uint32_t player_id, PlayerPublicInfo* out)
-{
-	if (!game || !out)
-		return;
-	
-	GameState* gameState = static_cast<GameState*>(game);
-	*out = gameState->get_playerPublicInfoCurrent(player_id);
+	void game_get_player_public_info_current(void* game, uint32_t player_id, PlayerPublicInfo* out)
+	{
+		if (!game || !out)
+			return;
+		
+		GameState* gameState = static_cast<GameState*>(game);
+		*out = gameState->get_player_public_info_current(player_id);
 }
 
-uint32_t game_get_player_info_history_size(void* game, uint32_t player_id)
-{
-	if (!game)
-		return 0;
-	
-	GameState* gameState = static_cast<GameState*>(game);
-	return gameState->get_playerInfoHistorySize(player_id);
+	uint32_t game_get_player_info_history_size(void* game, uint32_t player_id)
+	{
+		if (!game)
+			return 0;
+		
+		GameState* gameState = static_cast<GameState*>(game);
+		return gameState->get_player_info_history_size(player_id);
 }
 
 // ============================================================================
 // Money Allocation
 // ============================================================================
 
-void game_set_money_allocation(void* game, uint32_t player_id, const MoneyAllocation* alloc)
+void game_set_money_allocation(void* game, uint32_t player_id, const Player::MoneyAllocation* alloc)
 {
 	if (!game || !alloc)
 		return;
@@ -316,7 +316,7 @@ void game_set_money_allocation(void* game, uint32_t player_id, const MoneyAlloca
 	}
 }
 
-void game_get_money_allocation(void* game, uint32_t player_id, MoneyAllocation* out)
+void game_get_money_allocation(void* game, uint32_t player_id, Player::MoneyAllocation* out)
 {
 	if (!game || !out)
 		return;
@@ -325,14 +325,14 @@ void game_get_money_allocation(void* game, uint32_t player_id, MoneyAllocation* 
 	
 	try
 	{
-		const MoneyAllocation& alloc = gameState->get_money_allocation(player_id);
+		const Player::MoneyAllocation& alloc = gameState->get_money_allocation(player_id);
 		*out = alloc;
 	}
 	catch (const std::exception& e)
 	{
 		// In production, log the error
 		// Return a zeroed-out allocation
-		std::memset(out, 0, sizeof(MoneyAllocation));
+		std::memset(out, 0, sizeof(Player::MoneyAllocation));
 	}
 }
 

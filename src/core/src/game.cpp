@@ -19,12 +19,12 @@ GameState::GameState(const GalaxyGenerationParams& params)
 	
 	// Set up galaxy boundaries based on size
 	double galaxyRadius = std::sqrt(params.size) * 10.0;  // Rough scaling
-	galaxy.minX = -galaxyRadius;
-	galaxy.maxX = galaxyRadius;
-	galaxy.minY = -galaxyRadius;
-	galaxy.maxY = galaxyRadius;
+	galaxy.min_x = -galaxyRadius;
+	galaxy.max_x = galaxyRadius;
+	galaxy.min_y = -galaxyRadius;
+	galaxy.max_y = galaxyRadius;
 	
-	galaxy.currentTurn = 0;
+	galaxy.current_turn = 0;
 	
 	// Initialize planets
 	initialize_planets();
@@ -138,7 +138,7 @@ const std::vector<size_t>& GameState::get_player_planets(uint32_t player_id) con
 // Money Allocation
 // ============================================================================
 
-void GameState::set_money_allocation(uint32_t player_id, const MoneyAllocation& alloc)
+void GameState::set_money_allocation(uint32_t player_id, const Player::MoneyAllocation& alloc)
 {
 	Player* player = get_player(player_id);
 	if (!player)
@@ -147,7 +147,7 @@ void GameState::set_money_allocation(uint32_t player_id, const MoneyAllocation& 
 	player->allocation = alloc;
 }
 
-const MoneyAllocation& GameState::get_money_allocation(uint32_t player_id) const
+const Player::MoneyAllocation& GameState::get_money_allocation(uint32_t player_id) const
 {
 	const Player* player = get_player(player_id);
 	if (!player)
@@ -192,15 +192,13 @@ void GameState::set_ai_rng_seed(uint64_t seed)
 	calculate_player_incomes();
 	update_planet_incomes();
 	process_money_allocation();
-	apply_money_interest();
 	process_research();
-	process_terraforming();
-	process_mining();
+	process_planets();
 	process_ships();
 	process_novae();
 	capture_player_public_info();
 	
-	galaxy.currentTurn++;
+	galaxy.current_turn++;
 }
 
 // ============================================================================
@@ -239,8 +237,8 @@ void GameState::initialize_planets()
 		planet.name = "Planet_" + std::to_string(i + 1);
 		
 		// Random position within galaxy bounds
-		planet.x = galaxy.minX + rng->nextDouble() * (galaxy.maxX - galaxy.minX);
-		planet.y = galaxy.minY + rng->nextDouble() * (galaxy.maxY - galaxy.minY);
+		planet.x = galaxy.min_x + rng->nextDouble() * (galaxy.max_x - galaxy.min_x);
+		planet.y = galaxy.min_y + rng->nextDouble() * (galaxy.max_y - galaxy.min_y);
 		
 		// Random properties
 		planet.gravity = 0.5 + rng->nextDouble() * 1.5;  // 0.5 to 2.0
@@ -248,10 +246,8 @@ void GameState::initialize_planets()
 		planet.metal = 100 + rng->nextInt32Range(0, 500);
 		
 		planet.owner = 0;  // Unowned
-		planet.population = 0;
 		planet.state = PLANET_NORMAL;
-		planet.turnsUntilNova = 0;
-		planet.income = 0;
+		planet.turns_until_nova = 0;
 		
 		galaxy.planets.push_back(planet);
 	}
@@ -294,52 +290,46 @@ void GameState::calculate_player_incomes()
 	// For each player, calculate total income from all owned planets
 	for (auto& player : galaxy.players)
 	{
-		player.moneyIncome = 0;
-		player.metalIncome = 0;
+		player.money_income = 0;
+		player.metal_income = 0;
 		
-		for (const auto& planet : galaxy.planets)
+		for (const auto& colonized : player.colonized_planets)
 		{
-			if (planet.owner == player.id)
-			{
-				player.moneyIncome += planet.income;
-				// Metal income calculation would go here
-			}
+			player.money_income += colonized.income;
+			// Metal income calculation would go here
 		}
 	}
 }
 
 void GameState::update_planet_incomes()
 {
-	// For each planet, calculate income based on population, temperature, gravity, and owner's ideals
-	for (auto& planet : galaxy.planets)
+	// For each player's colonized planet, calculate income based on population, temperature, gravity, and owner's ideals
+	for (auto& player : galaxy.players)
 	{
-		if (planet.owner == 0)
+		for (auto& colonized : player.colonized_planets)
 		{
-			planet.income = 0;
-			continue;
+			// Get the actual planet object from the galaxy
+			Planet* planet = get_planet(colonized.id);
+			if (!planet)
+			{
+				colonized.income = 0;
+				continue;
+			}
+			
+			// Income formula (placeholder):
+			// Base income from population * happiness factor
+			// Happiness factor depends on how close the planet is to the owner's ideals
+			
+			double tempDiff = std::abs(planet->temperature - player.ideal_temperature);
+			double gravDiff = std::abs(planet->gravity - player.ideal_gravity);
+			
+			// Simple happiness calculation (0.0 to 1.0)
+			double tempHappiness = std::max(0.0, 1.0 - tempDiff / 100.0);
+			double gravHappiness = std::max(0.0, 1.0 - gravDiff / 2.0);
+			double happiness = (tempHappiness + gravHappiness) / 2.0;
+			
+			colonized.income = static_cast<int32_t>(colonized.population * happiness * 10);
 		}
-		
-		// Get the owner's ideal conditions
-		const Player* owner = get_player(planet.owner);
-		if (!owner)
-		{
-			planet.income = 0;
-			continue;
-		}
-		
-		// Income formula (placeholder):
-		// Base income from population * happiness factor
-		// Happiness factor depends on how close the planet is to the owner's ideals
-		
-		double tempDiff = std::abs(planet.temperature - owner->idealTemperature);
-		double gravDiff = std::abs(planet.gravity - owner->idealGravity);
-		
-		// Simple happiness calculation (0.0 to 1.0)
-		double tempHappiness = std::max(0.0, 1.0 - tempDiff / 100.0);
-		double gravHappiness = std::max(0.0, 1.0 - gravDiff / 2.0);
-		double happiness = (tempHappiness + gravHappiness) / 2.0;
-		
-		planet.income = static_cast<int32_t>(planet.population * happiness * 10);
 	}
 }
 
@@ -350,29 +340,11 @@ void GameState::process_money_allocation()
 	for (auto& player : galaxy.players)
 	{
 		// Add income to money
-		player.money += player.moneyIncome;
+		player.money += player.money_income;
 		
 		// Allocate money according to allocation settings
 		// (This will be implemented in money_allocation.cpp)
 	}
-}
-
-void GameState::process_research()
-{
-	// Process research progress for each player
-	// (This will be implemented in a separate file)
-}
-
-void GameState::process_terraforming()
-{
-	// Process terraforming on planets
-	// (This will be implemented in planet_mechanics.cpp)
-}
-
-void GameState::process_mining()
-{
-	// Process mining on planets
-	// (This will be implemented in planet_mechanics.cpp)
 }
 
 void GameState::process_ships()
@@ -398,7 +370,7 @@ void GameState::capture_player_public_info()
 	{
 		PlayerPublicInfo info;
 		info.player_id = player.id;
-		info.turn = galaxy.currentTurn;
+		info.turn = galaxy.current_turn;
 		
 		// Technology levels (subset - no Radical)
 		info.tech_range = player.tech.range;
@@ -408,20 +380,20 @@ void GameState::capture_player_public_info()
 		info.tech_miniaturization = player.tech.miniaturization;
 		
 		// Resources
-		info.moneyIncome = player.moneyIncome;
-		info.moneySavings = player.money;
-		info.metalSavings = player.metalReserve;
+		info.money_income = player.money_income;
+		info.money_savings = player.money;
+		info.metal_savings = player.metal_reserve;
 		
 		// Calculated metrics
-		info.fleetPower = GameFormulas::calculatePlayerFleetPower(player.id, this);
-		info.victoryPoints = GameFormulas::calculatePlayerVictoryPoints(player.id, this);
+		info.fleet_power = GameFormulas::calculate_player_fleet_power(player.id, this);
+		info.victory_points = GameFormulas::calculate_player_victory_points(player.id, this);
 		
 		// Store in history
 		player_info_history[player.id].push_back(info);
 	}
 }
 
-PlayerPublicInfo GameState::get_playerPublicInfo(uint32_t player_id, uint32_t turn) const
+PlayerPublicInfo GameState::get_player_public_info(uint32_t player_id, uint32_t turn) const
 {
 	PlayerPublicInfo info;
 	std::memset(&info, 0, sizeof(PlayerPublicInfo));
@@ -447,7 +419,7 @@ PlayerPublicInfo GameState::get_playerPublicInfo(uint32_t player_id, uint32_t tu
 	return info;
 }
 
-PlayerPublicInfo GameState::get_playerPublicInfoCurrent(uint32_t player_id) const
+PlayerPublicInfo GameState::get_player_public_info_current(uint32_t player_id) const
 {
 	PlayerPublicInfo info;
 	std::memset(&info, 0, sizeof(PlayerPublicInfo));
@@ -464,7 +436,7 @@ PlayerPublicInfo GameState::get_playerPublicInfoCurrent(uint32_t player_id) cons
 	return history.back();
 }
 
-uint32_t GameState::get_player_info_historySize(uint32_t player_id) const
+uint32_t GameState::get_player_info_history_size(uint32_t player_id) const
 {
 	auto it = player_info_history.find(player_id);
 	if (it == player_info_history.end())
@@ -486,12 +458,12 @@ uint32_t GameState::create_ship_design(uint32_t player_id, const std::string& na
 		return 0;
 	
 	// Check if player has reached the design limit
-	if (player->shipDesigns.size() >= GameConstants::MAX_SHIP_DESIGNS_PER_PLAYER)
+	if (player->ship_designs.size() >= GameConstants::Max_Ship_Designs_Per_Player)
 		return 0;
 	
 	// Create the new design
 	ShipDesign design;
-	design.id = player->nextShipDesignID++;  // Use monotonic counter for unique IDs
+	design.id = player->next_ship_design_id++;  // Use monotonic counter for unique IDs
 	design.name = name;
 	design.type = type;
 	design.tech_range = tech_range;
@@ -501,24 +473,24 @@ uint32_t GameState::create_ship_design(uint32_t player_id, const std::string& na
 	design.tech_miniaturization = tech_miniaturization;
 	
 	// Calculate costs using formulas
-	design.buildCost = GameFormulas::calculateShipDesignBuildCost(tech_range, tech_speed, tech_weapons, tech_shields, tech_miniaturization);
-	design.prototypeCost = GameFormulas::calculateShipDesignPrototypeCost(tech_range, tech_speed, tech_weapons, tech_shields, tech_miniaturization);
-	design.metalCost = GameFormulas::calculateShipDesignMetalCost(tech_range, tech_speed, tech_weapons, tech_shields, tech_miniaturization);
+	design.build_cost = GameFormulas::calculate_ship_design_build_cost(tech_range, tech_speed, tech_weapons, tech_shields, tech_miniaturization);
+	design.prototype_cost = GameFormulas::calculate_ship_design_prototype_cost(tech_range, tech_speed, tech_weapons, tech_shields, tech_miniaturization);
+	design.metal_cost = GameFormulas::calculate_ship_design_metal_cost(tech_range, tech_speed, tech_weapons, tech_shields, tech_miniaturization);
 	
 	// Add to permanent designs
-	player->shipDesigns.push_back(design);
+	player->ship_designs.push_back(design);
 	
 	return design.id;
 }
 
-const ShipDesign* GameState::get_shipDesign(uint32_t player_id, uint32_t design_id) const
+const ShipDesign* GameState::get_ship_design(uint32_t player_id, uint32_t design_id) const
 {
 	const Player* player = get_player(player_id);
 	if (!player)
 		return nullptr;
 	
 	// Search in permanent designs
-	for (const auto& design : player->shipDesigns)
+	for (const auto& design : player->ship_designs)
 	{
 		if (design.id == design_id)
 			return &design;
@@ -527,7 +499,7 @@ const ShipDesign* GameState::get_shipDesign(uint32_t player_id, uint32_t design_
 	return nullptr;
 }
 
-const std::vector<ShipDesign>& GameState::get_playerShipDesigns(uint32_t player_id) const
+const std::vector<ShipDesign>& GameState::get_player_ship_designs(uint32_t player_id) const
 {
 	static const std::vector<ShipDesign> emptyVector;
 	
@@ -535,7 +507,7 @@ const std::vector<ShipDesign>& GameState::get_playerShipDesigns(uint32_t player_
 	if (!player)
 		return emptyVector;
 	
-	return player->shipDesigns;
+	return player->ship_designs;
 }
 
 bool GameState::delete_ship_design(uint32_t player_id, uint32_t design_id)
@@ -556,12 +528,12 @@ bool GameState::delete_ship_design(uint32_t player_id, uint32_t design_id)
 	}
 	
 	// Remove from vector
-	auto it = std::find_if(player->shipDesigns.begin(), player->shipDesigns.end(),
+	auto it = std::find_if(player->ship_designs.begin(), player->ship_designs.end(),
 	                      [design_id](const ShipDesign& d) { return d.id == design_id; });
 	
-	if (it != player->shipDesigns.end())
+	if (it != player->ship_designs.end())
 	{
-		player->shipDesigns.erase(it);
+		player->ship_designs.erase(it);
 		return true;
 	}
 	
@@ -575,7 +547,7 @@ void GameState::build_ship_from_design(uint32_t player_id, uint32_t design_id)
 		return;
 	
 	// Find the design
-	const ShipDesign* design = getShipDesign(player_id, design_id);
+	const ShipDesign* design = get_ship_design(player_id, design_id);
 	if (!design)
 		return;
 	
@@ -586,33 +558,15 @@ void GameState::build_ship_from_design(uint32_t player_id, uint32_t design_id)
 
 
 
-void GameState::apply_money_interest()
-{
-	// Apply interest to each player's money savings
-	// Positive savings earn interest, negative savings (debt) incur interest
-	for (auto& player : galaxy.players)
-	{
-		int64_t interest = GameFormulas::calculate_money_interest(player.money);
-		player.money += interest;
-	}
-}
-
 
 void GameState::process_research()
 {
 	// Process research for each player
 	for (Player& player : galaxy.players)
 	{
-		// Calculate total planets budget to get planets_fraction
-		double total_planets_fraction = 0.0;
-		for (const PlanetDevelopmentAllocation& planet_alloc : player.allocation.planet_allocations)
-		{
-			total_planets_fraction += planet_alloc.development_fraction;
-		}
-		
 		// Calculate research budget for this player
 		int64_t research_budget = MoneyAllocationCalculator::calculate_research_amount(
-			player.allocation, player.moneyIncome);
+			player.allocation, player.money_income);
 		
 		// Process each research stream
 		process_research_stream(player, TECH_RANGE, research_budget);
@@ -714,87 +668,52 @@ void GameState::process_research()
 }
 
 
-void GameState::process_terraforming()
+void GameState::process_planets()
 {
-	// Process terraforming for each player's planets
+	// Process planets for each player
 	for (Player& player : galaxy.players)
 	{
-		// Calculate total planets budget to get planets_fraction
-		double total_planets_fraction = 0.0;
-		for (const PlanetDevelopmentAllocation& planet_alloc : player.allocation.planet_allocations)
-		{
-			total_planets_fraction += planet_alloc.development_fraction;
-		}
+		// Calculate total money available for planet development this turn
+		int64_t total_planet_development_budget = static_cast<int64_t>(
+			player.money_income * player.allocation.planets_fraction
+		);
 		
-		// Calculate total planets budget for this player
-		int64_t planets_budget = MoneyAllocationCalculator::calculate_planets_amount(
-			total_planets_fraction, player.moneyIncome);
-		
-		// Process terraforming for each planet
-		for (const PlanetDevelopmentAllocation& planet_alloc : player.allocation.planet_allocations)
+		// Iterate through each colonized planet
+		for (ColonizedPlanet& colonized : player.colonized_planets)
 		{
-			// Calculate budget for this planet's development
-			int64_t planet_budget = MoneyAllocationCalculator::calculate_planet_development_amount(
-				planet_alloc, planets_budget);
-			
-			// Calculate terraforming budget for this planet
-			int64_t terraforming_budget = MoneyAllocationCalculator::calculate_terraforming_amount(
-				planet_alloc, planet_budget);
-			
-			// Get the planet
-			Planet* planet = get_planet(planet_alloc.planet_id);
+			// Get the planet object
+			Planet* planet = get_planet(colonized.id);
 			if (!planet || planet->owner != player.id)
 				continue;  // Skip if planet doesn't exist or isn't owned by this player
 			
-			// Calculate temperature change
+			// Calculate money allocated to this specific planet
+			int64_t planet_budget = static_cast<int64_t>(
+				total_planet_development_budget * colonized.planet_funding_fraction
+			);
+			
+			// Split the planet budget between mining and terraforming
+			int64_t terraforming_budget = static_cast<int64_t>(
+				planet_budget * colonized.budget_split.get_terraforming_fraction()
+			);
+			int64_t mining_budget = static_cast<int64_t>(
+				planet_budget * colonized.budget_split.get_mining_fraction()
+			);
+			
+			// TERRAFORMING: Calculate and apply temperature change
 			double temperature_change = GameFormulas::calculate_temperature_change(
-				terraforming_budget, planet->temperature, player.ideal_temperature);
-			
-			// Apply the temperature change
+				terraforming_budget,
+				planet->temperature,
+				player.ideal_temperature
+			);
 			planet->temperature += temperature_change;
-		}
-	}
-}
-
-void GameState::process_mining()
-{
-	// Process mining for each player's planets
-	for (Player& player : galaxy.players)
-	{
-		// Calculate total planets budget to get planets_fraction
-		double total_planets_fraction = 0.0;
-		for (const PlanetDevelopmentAllocation& planet_alloc : player.allocation.planet_allocations)
-		{
-			total_planets_fraction += planet_alloc.development_fraction;
-		}
-		
-		// Calculate total planets budget for this player
-		int64_t planets_budget = MoneyAllocationCalculator::calculate_planets_amount(
-			total_planets_fraction, player.moneyIncome);
-		
-		// Process mining for each planet
-		for (const PlanetDevelopmentAllocation& planet_alloc : player.allocation.planet_allocations)
-		{
-			// Calculate budget for this planet's development
-			int64_t planet_budget = MoneyAllocationCalculator::calculate_planet_development_amount(
-				planet_alloc, planets_budget);
 			
-			// Calculate mining budget for this planet
-			int64_t mining_budget = MoneyAllocationCalculator::calculate_mining_amount(
-				planet_alloc, planet_budget);
-			
-			// Get the planet
-			Planet* planet = get_planet(planet_alloc.planet_id);
-			if (!planet || planet->owner != player.id)
-				continue;  // Skip if planet doesn't exist or isn't owned by this player
-			
-			// Calculate metal that can be mined
+			// MINING: Calculate metal extraction and update reserves
 			int64_t metal_extracted = GameFormulas::calculate_metal_mined(
-				mining_budget, planet->metal);
-			
-			// Extract metal from planet and add to player's reserve
+				mining_budget,
+				planet->metal
+			);
 			planet->metal -= metal_extracted;
-			player.metalReserve += metal_extracted;
+			player.metal_reserve += metal_extracted;
 		}
 	}
 }

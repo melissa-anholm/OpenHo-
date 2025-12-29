@@ -134,6 +134,56 @@ namespace GameFormulas
 	}
 	
 	// ============================================================================
+	// Player Income Calculations
+	// ============================================================================
+	
+	int64_t calculate_planetary_income(uint32_t player_id, GameState* game_state)
+	{
+		// Placeholder: return 0
+		// Real implementation will sum income from all planets owned by the player
+		return 0;
+	}
+	
+	int64_t calculate_interest_income(uint32_t player_id, GameState* game_state)
+	{
+		if (!game_state)
+			return 0;
+		
+		Player* player = game_state->get_player(player_id);
+		if (!player)
+			return 0;
+		
+		// Calculate interest on current savings
+		return calculate_money_interest(player->money);
+	}
+	
+	int64_t calculate_windfall_income(uint32_t player_id, GameState* game_state)
+	{
+		// Placeholder: return 0
+		// Real implementation will handle rare special events
+		return 0;
+	}
+	
+	// ============================================================================
+	// Population Growth Calculations
+	// ============================================================================
+	
+	int64_t calculate_population_growth(
+		int64_t current_population,
+		double planet_temperature,
+		double planet_gravity,
+		double ideal_temperature,
+		double ideal_gravity
+	)
+	{
+		// Placeholder: simple linear growth
+		// Real formula will depend on how well the planet matches the player's ideals
+		// For now: 1% population growth per turn
+		int64_t growth = static_cast<int64_t>(current_population * 0.01);
+		return std::max(growth, static_cast<int64_t>(1));  // At least 1 population growth
+	}
+	
+	// ============================================================================
 	// Terraforming and Mining Calculations
 	// ============================================================================
 	

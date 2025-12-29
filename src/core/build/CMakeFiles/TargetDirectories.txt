@@ -1,0 +1,3 @@
+/home/ubuntu/OpenHo/src/core/build/CMakeFiles/OpenHoCore.dir
+/home/ubuntu/OpenHo/src/core/build/CMakeFiles/edit_cache.dir
+/home/ubuntu/OpenHo/src/core/build/CMakeFiles/rebuild_cache.dir
