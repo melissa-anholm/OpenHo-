@@ -23,7 +23,7 @@ set(CORE_SOURCES
 	src/money_allocation.cpp
 	src/planet_mechanics.cpp
 	src/serialization.cpp
-	src/ai_interface.cpp
+	src/c_api.cpp
 )
 
 # Create the static library

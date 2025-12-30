@@ -27,7 +27,7 @@ int64_t MoneyAllocationCalculator::calculate_planets_amount(double total_planets
 // Research Stream Allocation
 // ============================================================================
 
-int64_t MoneyAllocationCalculator::calculate_research_stream_amount(const ResearchAllocation& research,
+int64_t MoneyAllocationCalculator::calculate_research_stream_amount(const Player::ResearchAllocation& research,
                                                                      TechStream stream,
                                                                      int64_t research_budget)
 {

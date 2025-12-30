@@ -116,10 +116,9 @@ namespace GameFormulas
 	/// Calculate interest earned or owed on a player's savings.
 	/// Positive interest is earned on savings, negative interest is owed on debt.
 	/// 
-	/// @param player_id The ID of the player
-	/// @param game_state Pointer to the game state for accessing player data
+	/// @param savings The player's current money savings (can be negative for debt)
 	/// @return The interest amount (positive or negative)
-	int64_t calculate_interest_income(uint32_t player_id, GameState* game_state);
+	int64_t calculate_interest_income(int64_t savings);
 	
 	/// Calculate windfall income from rare special events.
 	/// This is typically zero but can be non-zero during special events.

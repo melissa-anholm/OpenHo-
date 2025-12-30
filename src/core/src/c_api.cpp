@@ -122,16 +122,7 @@ void game_get_player_money_income(void* game, uint32_t player_id, int64_t* out)
 		return;
 	
 	GameState* gameState = static_cast<GameState*>(game);
-	const Player* player = gameState->get_player(player_id);
-	
-	if (player)
-	{
-		*out = player->money_income;
-	}
-	else
-	{
-		*out = 0;
-	}
+	*out = gameState->get_player_money_income(player_id);
 }
 
 void game_get_player_metal_income(void* game, uint32_t player_id, int64_t* out)
@@ -140,16 +131,7 @@ void game_get_player_metal_income(void* game, uint32_t player_id, int64_t* out)
 		return;
 	
 	GameState* gameState = static_cast<GameState*>(game);
-	const Player* player = gameState->get_player(player_id);
-	
-	if (player)
-	{
-		*out = player->metal_income;
-	}
-	else
-	{
-		*out = 0;
-	}
+	*out = gameState->get_player_metal_income(player_id);
 }
 
 void game_get_player_money_reserve(void* game, uint32_t player_id, int64_t* out)
@@ -158,16 +140,7 @@ void game_get_player_money_reserve(void* game, uint32_t player_id, int64_t* out)
 		return;
 	
 	GameState* gameState = static_cast<GameState*>(game);
-	const Player* player = gameState->get_player(player_id);
-	
-	if (player)
-	{
-		*out = player->money;
-	}
-	else
-	{
-		*out = 0;
-	}
+	*out = gameState->get_player_money(player_id);
 }
 
 void game_get_player_metal_reserve(void* game, uint32_t player_id, int64_t* out)
@@ -176,16 +149,7 @@ void game_get_player_metal_reserve(void* game, uint32_t player_id, int64_t* out)
 		return;
 	
 	GameState* gameState = static_cast<GameState*>(game);
-	const Player* player = gameState->get_player(player_id);
-	
-	if (player)
-	{
-		*out = player->metal_reserve;
-	}
-	else
-	{
-		*out = 0;
-	}
+	*out = gameState->get_player_metal_reserve(player_id);
 }
 
 // ============================================================================
@@ -233,11 +197,13 @@ void game_get_planet_perceived_values(void* game, uint32_t planetID, uint32_t pl
 	// Values range from 0 (worst) to 1 (best match for player's ideals)
 	
 	// Temperature perception: how close to ideal temperature
-	double tempDiff = std::abs(planet->temperature - player->ideal_temperature);
+	double idealTemp = gameState->get_player_ideal_temperature(player_id);
+	double tempDiff = std::abs(planet->temperature - idealTemp);
 	*outTemp = std::max(0.0, 1.0 - tempDiff / 100.0);
 	
 	// Gravity perception: how close to ideal gravity
-	double gravDiff = std::abs(planet->gravity - player->ideal_gravity);
+	double idealGrav = gameState->get_player_ideal_gravity(player_id);
+	double gravDiff = std::abs(planet->gravity - idealGrav);
 	*outGravity = std::max(0.0, 1.0 - gravDiff / 2.0);
 }
 

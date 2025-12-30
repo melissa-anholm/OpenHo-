@@ -144,17 +144,10 @@ namespace GameFormulas
 		return 0;
 	}
 	
-	int64_t calculate_interest_income(uint32_t player_id, GameState* game_state)
+	int64_t calculate_interest_income(int64_t savings)
 	{
-		if (!game_state)
-			return 0;
-		
-		Player* player = game_state->get_player(player_id);
-		if (!player)
-			return 0;
-		
 		// Calculate interest on current savings
-		return calculate_money_interest(player->money);
+		return calculate_money_interest(savings);
 	}
 	
 	int64_t calculate_windfall_income(uint32_t player_id, GameState* game_state)

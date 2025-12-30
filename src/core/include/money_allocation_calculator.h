@@ -58,7 +58,7 @@ public:
 	/// @param stream The technology stream to calculate for
 	/// @param research_budget The total research budget for this turn
 	/// @return The amount to allocate to this research stream
-	static int64_t calculate_research_stream_amount(const ResearchAllocation& research,
+	static int64_t calculate_research_stream_amount(const Player::ResearchAllocation& research,
 	                                                  TechStream stream,
 	                                                  int64_t research_budget);
 	

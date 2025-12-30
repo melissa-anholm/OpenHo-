@@ -55,6 +55,14 @@ public:
 	// Get all ships owned by a player (O(1) lookup)
 	const std::vector<size_t>& get_player_ships(uint32_t player_id) const;
 	
+	// Player property accessors (for C API and internal use)
+	int64_t get_player_money_income(uint32_t player_id) const;
+	int64_t get_player_metal_income(uint32_t player_id) const;
+	int64_t get_player_money(uint32_t player_id) const;
+	int64_t get_player_metal_reserve(uint32_t player_id) const;
+	double get_player_ideal_temperature(uint32_t player_id) const;
+	double get_player_ideal_gravity(uint32_t player_id) const;
+	
 	// Player public information queries
 	PlayerPublicInfo get_player_public_info(uint32_t player_id, uint32_t turn) const;
 	PlayerPublicInfo get_player_public_info_current(uint32_t player_id) const;

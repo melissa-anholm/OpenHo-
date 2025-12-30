@@ -104,6 +104,42 @@ const Player* GameState::get_player_by_name(const std::string& name) const
 	return nullptr;
 }
 
+int64_t GameState::get_player_money_income(uint32_t player_id) const
+{
+	const Player* player = get_player(player_id);
+	return player ? player->money_income : 0;
+}
+
+int64_t GameState::get_player_metal_income(uint32_t player_id) const
+{
+	const Player* player = get_player(player_id);
+	return player ? player->metal_income : 0;
+}
+
+int64_t GameState::get_player_money(uint32_t player_id) const
+{
+	const Player* player = get_player(player_id);
+	return player ? player->money : 0;
+}
+
+int64_t GameState::get_player_metal_reserve(uint32_t player_id) const
+{
+	const Player* player = get_player(player_id);
+	return player ? player->metal_reserve : 0;
+}
+
+double GameState::get_player_ideal_temperature(uint32_t player_id) const
+{
+	const Player* player = get_player(player_id);
+	return player ? player->ideal_temperature : 0.0;
+}
+
+double GameState::get_player_ideal_gravity(uint32_t player_id) const
+{
+	const Player* player = get_player(player_id);
+	return player ? player->ideal_gravity : 0.0;
+}
+
 Planet* GameState::get_planet(uint32_t planetID)
 {
 	auto it = planet_id_to_index.find(planetID);
@@ -405,7 +441,7 @@ void GameState::capture_player_public_info()
 		info.metal_savings = player.metal_reserve;
 		
 		// Calculated metrics
-		info.fleet_power = GameFormulas::calculate_player_fleet_power(player.id, this);
+		info.ship_power = GameFormulas::calculate_player_fleet_power(player.id, this);
 		info.victory_points = GameFormulas::calculate_player_victory_points(player.id, this);
 		
 		// Store in history
@@ -614,27 +650,27 @@ void GameState::process_research()
 	switch (stream)
 	{
 		case TECH_RANGE:
-			research_points = &player.research_points_range;
+			research_points = &player.partial_research.research_points_range;
 			tech_level = &player.tech.range;
 			break;
 		case TECH_SPEED:
-			research_points = &player.research_points_speed;
+			research_points = &player.partial_research.research_points_speed;
 			tech_level = &player.tech.speed;
 			break;
 		case TECH_WEAPONS:
-			research_points = &player.research_points_weapons;
+			research_points = &player.partial_research.research_points_weapons;
 			tech_level = &player.tech.weapons;
 			break;
 		case TECH_SHIELDS:
-			research_points = &player.research_points_shields;
+			research_points = &player.partial_research.research_points_shields;
 			tech_level = &player.tech.shields;
 			break;
 		case TECH_MINIATURIZATION:
-			research_points = &player.research_points_miniaturization;
+			research_points = &player.partial_research.research_points_miniaturization;
 			tech_level = &player.tech.miniaturization;
 			break;
 		case TECH_RADICAL:
-			research_points = &player.research_points_radical;
+			research_points = &player.partial_research.research_points_radical;
 			tech_level = &player.tech.radical;
 			break;
 		default:
@@ -736,4 +772,34 @@ void GameState::process_planets()
 			player.metal_reserve += metal_extracted;
 		}
 	}
+}
+
+// ============================================================================
+// Player Public Information
+// ============================================================================
+
+PlayerPublicInfo Player::get_player_public_info_current() const
+{
+	PlayerPublicInfo info;
+	info.player_id = id;
+	info.turn = 0;  // Will be set by GameState when storing
+	
+	// Technology levels (subset - no Radical)
+	info.tech_range = tech.range;
+	info.tech_speed = tech.speed;
+	info.tech_weapons = tech.weapons;
+	info.tech_shields = tech.shields;
+	info.tech_miniaturization = tech.miniaturization;
+	
+	// Resources
+	info.money_income = money_income;
+	info.money_savings = money;
+	info.metal_savings = metal_reserve;
+	info.income = current_turn_income.total_income;
+	
+	// Calculated metrics (will be set by GameState)
+	info.ship_power = 0;
+	info.victory_points = 0;
+	
+	return info;
 }
