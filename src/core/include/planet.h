@@ -48,7 +48,6 @@ public:
 	
 	// Nova state
 	PlanetState state;
-	int32_t turns_until_nova;  // If state == PLANET_WARNING
 };
 
 // Colonized planet - extends Planet with player-specific allocation information

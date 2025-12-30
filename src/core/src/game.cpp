@@ -300,9 +300,8 @@ void GameState::initialize_planets()
 		planet.temperature = -50.0 + rng->nextDouble() * 200.0;  // -50 to 150
 		planet.metal = 100 + rng->nextInt32Range(0, 500);
 		
-		planet.owner = 0;  // Unowned
-		planet.state = PLANET_NORMAL;
-		planet.turns_until_nova = 0;
+			planet.owner = 0;  // Unowned
+			planet.state = PLANET_NORMAL;
 		
 		galaxy.planets.push_back(planet);
 	}
