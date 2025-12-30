@@ -17,12 +17,7 @@ set(CORE_SOURCES
 	src/types.cpp
 	src/game.cpp
 	src/game_formulas.cpp
-	src/money_allocation_calculator.cpp
-	src/simulation.cpp
-	src/commands.cpp
-	src/money_allocation.cpp
-	src/planet_mechanics.cpp
-	src/serialization.cpp
+	src/player.cpp
 	src/c_api.cpp
 )
 

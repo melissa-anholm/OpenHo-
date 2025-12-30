@@ -136,6 +136,24 @@ private:
 	
 	// Public accessor for current turn's public information
 	[[nodiscard]] PlayerPublicInfo get_player_public_info_current() const;
+
+	// ========================================================================
+	// Money Allocation Calculation Helpers
+	// ========================================================================
+	
+	/// Calculate the amount of money to allocate to savings.
+	static int64_t calculate_savings_amount(const MoneyAllocation& money_alloc, int64_t player_income);
+	
+	/// Calculate the amount of money to allocate to research.
+	static int64_t calculate_research_amount(const MoneyAllocation& money_alloc, int64_t player_income);
+	
+	/// Calculate the amount of money to allocate to planetary development.
+	static int64_t calculate_planets_amount(double total_planets_fraction, int64_t player_income);
+	
+	/// Calculate the amount of money to allocate to a specific research stream.
+	static int64_t calculate_research_stream_amount(const ResearchAllocation& research,
+	                                                 TechStream stream,
+	                                                 int64_t research_budget);
 };
 
 #endif // OPENHO_PLAYER_H

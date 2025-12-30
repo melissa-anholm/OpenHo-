@@ -20,48 +20,7 @@ typedef double GalaxyCoord;
 // Enums
 // ============================================================================
 
-// Ship types
-enum ShipType
-{
-	SHIP_SCOUT = 0,
-	SHIP_FIGHTER = 1,
-	SHIP_COLONY = 2,
-	SHIP_SATELLITE = 3,
-	SHIP_TANKER = 4,
-	SHIP_DREADNOUGHT = 5,
-	SHIP_BIOLOGICAL = 6
-};
-
-// Planet nova state
-enum PlanetState
-{
-	PLANET_NORMAL = 0,
-	PLANET_WARNING = 1,
-	PLANET_DESTROYED = 2
-};
-
-// Player type (human or computer)
-enum PlayerType
-{
-	PLAYER_HUMAN = 0,
-	PLAYER_COMPUTER = 1
-};
-
-// Technology streams for research
-enum TechStream
-{
-	TECH_RANGE = 0,
-	TECH_SPEED = 1,
-	TECH_WEAPONS = 2,
-	TECH_SHIELDS = 3,
-	TECH_MINIATURIZATION = 4,
-	TECH_RADICAL = 5
-};
-
-// ============================================================================
-// Include Domain-Specific Headers
-// ============================================================================
-
+#include "enums.h"
 #include "planet.h"
 #include "ship.h"
 #include "player.h"

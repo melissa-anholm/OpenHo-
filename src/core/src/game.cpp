@@ -1,7 +1,6 @@
 #include "game.h"
 #include "game_constants.h"
 #include "game_formulas.h"
-#include "money_allocation_calculator.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -621,7 +620,7 @@ void GameState::process_research()
 	for (Player& player : galaxy.players)
 	{
 		// Calculate research budget for this player
-		int64_t research_budget = MoneyAllocationCalculator::calculate_research_amount(
+		int64_t research_budget = Player::calculate_research_amount(
 			player.allocation, player.money_income);
 		
 		// Process each research stream
@@ -637,7 +636,7 @@ void GameState::process_research()
 	void GameState::process_research_stream(Player& player, TechStream stream, int64_t research_budget)
 	{
 		// Calculate the budget for this specific research stream
-		int64_t stream_budget = MoneyAllocationCalculator::calculate_research_stream_amount(
+		int64_t stream_budget = Player::calculate_research_stream_amount(
 			player.allocation.research, stream, research_budget);
 		
 		// Convert money to research points using the conversion formula

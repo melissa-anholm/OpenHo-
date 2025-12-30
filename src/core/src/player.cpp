@@ -1,35 +1,33 @@
-#include "money_allocation_calculator.h"
+
+#include "openho_core.h"
+#include "player.h"
 #include <cmath>
 
 // ============================================================================
-// Top-Level Income Allocation
+// Money Allocation Calculation Helpers
 // ============================================================================
 
-int64_t MoneyAllocationCalculator::calculate_savings_amount(const Player::MoneyAllocation& money_alloc, int64_t player_income)
+int64_t Player::calculate_savings_amount(const MoneyAllocation& money_alloc, int64_t player_income)
 {
 	double savings_amount = player_income * money_alloc.savings_fraction;
 	return static_cast<int64_t>(std::round(savings_amount));
 }
 
-int64_t MoneyAllocationCalculator::calculate_research_amount(const Player::MoneyAllocation& money_alloc, int64_t player_income)
+int64_t Player::calculate_research_amount(const MoneyAllocation& money_alloc, int64_t player_income)
 {
 	double research_amount = player_income * money_alloc.research_fraction;
 	return static_cast<int64_t>(std::round(research_amount));
 }
 
-int64_t MoneyAllocationCalculator::calculate_planets_amount(double total_planets_fraction, int64_t player_income)
+int64_t Player::calculate_planets_amount(double total_planets_fraction, int64_t player_income)
 {
 	double planets_amount = player_income * total_planets_fraction;
 	return static_cast<int64_t>(std::round(planets_amount));
 }
 
-// ============================================================================
-// Research Stream Allocation
-// ============================================================================
-
-int64_t MoneyAllocationCalculator::calculate_research_stream_amount(const Player::ResearchAllocation& research,
-                                                                     TechStream stream,
-                                                                     int64_t research_budget)
+int64_t Player::calculate_research_stream_amount(const ResearchAllocation& research,
+                                                  TechStream stream,
+                                                  int64_t research_budget)
 {
 	double stream_fraction = 0.0;
 	
@@ -60,5 +58,3 @@ int64_t MoneyAllocationCalculator::calculate_research_stream_amount(const Player
 	double stream_amount = research_budget * stream_fraction;
 	return static_cast<int64_t>(std::round(stream_amount));
 }
-
-
