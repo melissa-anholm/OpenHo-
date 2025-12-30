@@ -64,48 +64,18 @@ public:
 		
 	public:
 		// Constructor
-		BudgetSplit() : mining_fraction(0.5), terraforming_fraction(0.5) {}
+		BudgetSplit();
 		
 		// Getters
-		double get_mining_fraction() const
-		{
-			return mining_fraction;
-		}
-		
-		double get_terraforming_fraction() const
-		{
-			return terraforming_fraction;
-		}
+		double get_mining_fraction() const;
+		double get_terraforming_fraction() const;
 		
 		// Setters
-		void set_mining_fraction(double fraction)
-		{
-			mining_fraction = fraction;
-			normalize();
-		}
-		
-		void set_terraforming_fraction(double fraction)
-		{
-			terraforming_fraction = fraction;
-			normalize();
-		}
+		void set_mining_fraction(double fraction);
+		void set_terraforming_fraction(double fraction);
 		
 		// Normalize the fractions so they sum to 1.0
-		void normalize()
-		{
-			double total = mining_fraction + terraforming_fraction;
-			if (total > 0.0)
-			{
-				mining_fraction /= total;
-				terraforming_fraction /= total;
-			}
-			else
-			{
-				// If both are zero, split evenly
-				mining_fraction = 0.5;
-				terraforming_fraction = 0.5;
-			}
-		}
+		void normalize();
 	};
 	
 	// Member variables

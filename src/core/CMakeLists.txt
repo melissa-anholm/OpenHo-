@@ -18,6 +18,7 @@ set(CORE_SOURCES
 	src/game.cpp
 	src/game_formulas.cpp
 	src/player.cpp
+	src/planet.cpp
 	src/c_api.cpp
 )
 
