@@ -25,14 +25,14 @@ namespace GameConstants
 	// Money and Resources
 	// ========================================================================
 	
-	/// Interest rate applied to positive money savings each turn (as a percentage).
-	/// Example: 15 means 15% interest per turn on positive savings.
-	constexpr int32_t Money_Interest_Rate_Positive = 15;  // 15%
+	/// Interest rate applied to positive money savings each turn.
+	/// Example: 0.15 means 15% interest per turn on positive savings.
+	constexpr double Money_Interest_Rate_Positive = 0.15;
 	
-	/// Interest rate applied to negative money savings (debt) each turn (as a percentage).
-	/// Example: 30 means 30% interest per turn on debt.
+	/// Interest rate applied to negative money savings (debt) each turn.
+	/// Example: 0.30 means 30% interest per turn on debt.
 	/// This represents the cost of borrowing money.
-	constexpr int32_t Money_Interest_Rate_Debt = 30;  // 30%
+	constexpr double Money_Interest_Rate_Debt = 0.30;
 	
 
 	

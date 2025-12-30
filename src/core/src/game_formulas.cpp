@@ -60,18 +60,18 @@ namespace GameFormulas
 	
 	int64_t calculate_money_interest(int64_t savings)
 	{
-		if (savings >= 0)
-		{
-			// Positive savings: apply positive interest rate
-			double interest = savings * (GameConstants::Money_Interest_Rate_Positive / 100.0);
-			return static_cast<int64_t>(interest);
-		}
-		else
-		{
-			// Negative savings (debt): apply debt interest rate
-			double interest = savings * (GameConstants::Money_Interest_Rate_Debt / 100.0);
-			return static_cast<int64_t>(interest);
-		}
+	if (savings >= 0)
+	{
+		// Positive savings: apply positive interest rate
+		double interest = savings * GameConstants::Money_Interest_Rate_Positive;
+		return static_cast<int64_t>(interest);
+	}
+	else
+	{
+		// Negative savings (debt): apply debt interest rate
+		double interest = savings * GameConstants::Money_Interest_Rate_Debt;
+		return static_cast<int64_t>(interest);
+	}
 	}
 	
 	int64_t convert_money_to_research_points(int64_t money_allocated)
