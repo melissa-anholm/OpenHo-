@@ -38,6 +38,8 @@ public:
 	// Player access
 	Player* get_player(uint32_t player_id);
 	const Player* get_player(uint32_t player_id) const;
+	Player* get_player_by_name(const std::string& name);
+	const Player* get_player_by_name(const std::string& name) const;
 	
 	// Planet access
 	Planet* get_planet(uint32_t planet_id);

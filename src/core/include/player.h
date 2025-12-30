@@ -50,8 +50,9 @@ struct IncomeBreakdown
 };
 
 // Player structure
-struct Player
+class Player
 {
+public:
 	uint32_t id;
 	std::string name;
 	PlayerType type;

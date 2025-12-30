@@ -30,8 +30,9 @@ struct PlanetInfo
 };
 
 // Planet structure (actual state on the host)
-struct Planet
+class Planet
 {
+public:
 	uint32_t id;
 	std::string name;
 	GalaxyCoord x;
@@ -51,8 +52,9 @@ struct Planet
 };
 
 // Colonized planet - extends Planet with player-specific allocation information
-struct ColonizedPlanet : public Planet
+class ColonizedPlanet : public Planet
 {
+public:
 	// Budget split for this planet (how to divide its budget between mining and terraforming)
 	struct BudgetSplit
 	{

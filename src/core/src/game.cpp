@@ -84,6 +84,26 @@ const Player* GameState::get_player(uint32_t player_id) const
 	return &galaxy.players[it->second];
 }
 
+Player* GameState::get_player_by_name(const std::string& name)
+{
+	for (Player& player : galaxy.players)
+	{
+		if (player.name == name)
+			return &player;
+	}
+	return nullptr;
+}
+
+const Player* GameState::get_player_by_name(const std::string& name) const
+{
+	for (const Player& player : galaxy.players)
+	{
+		if (player.name == name)
+			return &player;
+	}
+	return nullptr;
+}
+
 Planet* GameState::get_planet(uint32_t planetID)
 {
 	auto it = planet_id_to_index.find(planetID);
