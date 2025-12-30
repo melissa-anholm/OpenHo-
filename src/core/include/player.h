@@ -135,7 +135,7 @@ private:
 	uint32_t next_ship_design_id;                // Counter for unique design IDs (never resets)
 	
 	// Public accessor for current turn's public information
-	PlayerPublicInfo get_player_public_info_current() const;
+	[[nodiscard]] PlayerPublicInfo get_player_public_info_current() const;
 };
 
 #endif // OPENHO_PLAYER_H

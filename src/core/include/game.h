@@ -36,21 +36,21 @@ public:
 	const DeterministicRNG& get_rng() const;
 	
 	// Player access
-	Player* get_player(uint32_t player_id);
-	const Player* get_player(uint32_t player_id) const;
-	Player* get_player_by_name(const std::string& name);
-	const Player* get_player_by_name(const std::string& name) const;
+	[[nodiscard]] Player* get_player(uint32_t player_id);
+	[[nodiscard]] const Player* get_player(uint32_t player_id) const;
+	[[nodiscard]] Player* get_player_by_name(const std::string& name);
+	[[nodiscard]] const Player* get_player_by_name(const std::string& name) const;
 	
 	// Planet access
-	Planet* get_planet(uint32_t planet_id);
-	const Planet* get_planet(uint32_t planet_id) const;
+	[[nodiscard]] Planet* get_planet(uint32_t planet_id);
+	[[nodiscard]] const Planet* get_planet(uint32_t planet_id) const;
 	
 	// Get all planets owned by a player (O(1) lookup)
 	const std::vector<size_t>& get_player_planets(uint32_t player_id) const;
 	
 	// Ship access
-	Ship* get_ship(uint32_t ship_id);
-	const Ship* get_ship(uint32_t ship_id) const;
+	[[nodiscard]] Ship* get_ship(uint32_t ship_id);
+	[[nodiscard]] const Ship* get_ship(uint32_t ship_id) const;
 	
 	// Get all ships owned by a player (O(1) lookup)
 	const std::vector<size_t>& get_player_ships(uint32_t player_id) const;
@@ -64,15 +64,15 @@ public:
 	double get_player_ideal_gravity(uint32_t player_id) const;
 	
 	// Player public information queries
-	PlayerPublicInfo get_player_public_info(uint32_t player_id, uint32_t turn) const;
-	PlayerPublicInfo get_player_public_info_current(uint32_t player_id) const;
+	[[nodiscard]] PlayerPublicInfo get_player_public_info(uint32_t player_id, uint32_t turn) const;
+	[[nodiscard]] PlayerPublicInfo get_player_public_info_current(uint32_t player_id) const;
 	uint32_t get_player_info_history_size(uint32_t player_id) const;
 	
 	// Ship design management
-	uint32_t create_ship_design(uint32_t player_id, const std::string& name, ShipType type, int32_t tech_range, int32_t tech_speed, int32_t tech_weapons, int32_t tech_shields, int32_t tech_miniaturization);
-	const ShipDesign* get_ship_design(uint32_t player_id, uint32_t design_id) const;
-	const std::vector<ShipDesign>& get_player_ship_designs(uint32_t player_id) const;
-	bool delete_ship_design(uint32_t player_id, uint32_t design_id);
+	[[nodiscard]] uint32_t create_ship_design(uint32_t player_id, const std::string& name, ShipType type, int32_t tech_range, int32_t tech_speed, int32_t tech_weapons, int32_t tech_shields, int32_t tech_miniaturization);
+	[[nodiscard]] const ShipDesign* get_ship_design(uint32_t player_id, uint32_t design_id) const;
+	[[nodiscard]] const std::vector<ShipDesign>& get_player_ship_designs(uint32_t player_id) const;
+	[[nodiscard]] bool delete_ship_design(uint32_t player_id, uint32_t design_id);
 	void build_ship_from_design(uint32_t player_id, uint32_t design_id);
 	
 	// Turn processing
@@ -87,8 +87,8 @@ public:
 	void set_ai_rng_seed(uint64_t seed);
 	
 	// Serialization
-	std::vector<uint8_t> serialize_state() const;
-	bool deserialize_state(const std::vector<uint8_t>& data);
+	[[nodiscard]] std::vector<uint8_t> serialize_state() const;
+	[[nodiscard]] bool deserialize_state(const std::vector<uint8_t>& data);
 	
 private:
 	// Game state
