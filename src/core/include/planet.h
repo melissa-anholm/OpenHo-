@@ -54,8 +54,8 @@ public:
 // Colonized planet - extends Planet with player-specific allocation information
 class ColonizedPlanet : public Planet
 {
-public:
-	// Budget split for this planet (how to divide its budget between mining and terraforming)
+private:
+	// Budget split for allocating planet resources between mining and terraforming
 	struct BudgetSplit
 	{
 	private:
@@ -78,9 +78,15 @@ public:
 		void normalize();
 	};
 	
+	BudgetSplit budget_split;            // How to split this planet's budget between mining/terraforming
+
+public:
+	// Accessors for budget split
+	BudgetSplit& get_budget_split();
+	const BudgetSplit& get_budget_split() const;
+	
 	// Member variables
 	double planet_funding_fraction;      // What fraction of total planet budget this planet gets
-	BudgetSplit budget_split;            // How to split this planet's budget between mining/terraforming
 	
 	// Player-specific properties (only for colonized planets)
 	int32_t population;                  // Population on this planet

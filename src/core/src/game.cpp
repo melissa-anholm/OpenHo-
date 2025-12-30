@@ -747,10 +747,10 @@ void GameState::process_planets()
 			
 			// Split the planet budget between mining and terraforming
 			int64_t terraforming_budget = static_cast<int64_t>(
-				planet_budget * colonized.budget_split.get_terraforming_fraction()
+				planet_budget * colonized.get_budget_split().get_terraforming_fraction()
 			);
 			int64_t mining_budget = static_cast<int64_t>(
-				planet_budget * colonized.budget_split.get_mining_fraction()
+				planet_budget * colonized.get_budget_split().get_mining_fraction()
 			);
 			
 			// TERRAFORMING: Calculate and apply temperature change

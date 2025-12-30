@@ -46,3 +46,17 @@ void ColonizedPlanet::BudgetSplit::normalize()
 		terraforming_fraction = 0.5;
 	}
 }
+
+// ============================================================================
+// ColonizedPlanet Accessors
+// ============================================================================
+
+ColonizedPlanet::BudgetSplit& ColonizedPlanet::get_budget_split()
+{
+	return budget_split;
+}
+
+const ColonizedPlanet::BudgetSplit& ColonizedPlanet::get_budget_split() const
+{
+	return budget_split;
+}
