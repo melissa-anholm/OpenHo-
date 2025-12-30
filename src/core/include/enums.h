@@ -46,7 +46,11 @@ enum TechStream
 // ============================================================================
 // Error Codes
 // ============================================================================
-
+// TODO: Implement error code system in Phase 2b
+// Currently, methods return nullptr/0/false on error. In the future, refactor
+// to return ErrorCode values and use output parameters for results.
+// See MASTER_PLAN.md for details.
+/*
 enum ErrorCode
 {
 	ERROR_SUCCESS = 0,                    // Operation completed successfully
@@ -56,5 +60,6 @@ enum ErrorCode
 	ERROR_DESIGN_IN_USE = 4,              // Cannot delete design - ships are using it
 	ERROR_INITIALIZATION_FAILED = 5       // Game initialization failed
 };
+*/
 
 #endif  // OPENHO_ENUMS_H
