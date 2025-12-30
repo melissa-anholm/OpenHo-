@@ -34,14 +34,7 @@ namespace GameConstants
 	/// This represents the cost of borrowing money.
 	constexpr int32_t Money_Interest_Rate_Debt = 30;  // 30%
 	
-	// ========================================================================
-	// Planet Mechanics
-	// ========================================================================
-	
-	/// Maximum number of turns a planet can remain in nova warning state
-	/// before being destroyed. The actual warning duration is determined
-	/// by a Poisson distribution formula.
-	constexpr int32_t Max_Nova_Warning_Turns = 15;
+
 	
 	// ========================================================================
 	// Future Balance Parameters
