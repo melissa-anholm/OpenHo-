@@ -25,36 +25,36 @@ int64_t Player::calculate_planets_amount(double total_planets_fraction, int64_t 
 	return static_cast<int64_t>(std::round(planets_amount));
 }
 
-int64_t Player::calculate_research_stream_amount(const ResearchAllocation& research,
-                                                  TechStream stream,
+int64_t Player::calculate_research_stream_amount( const ResearchAllocation& player_research,
+                                                  TechStream tech_type,
                                                   int64_t research_budget)
 {
 	double stream_fraction = 0.0;
 	
-	switch (stream)
+	switch (tech_type)
 	{
 		case TECH_RANGE:
-			stream_fraction = research.research_range_fraction;
+			stream_fraction = player_research.research_range_fraction;
 			break;
 		case TECH_SPEED:
-			stream_fraction = research.research_speed_fraction;
+			stream_fraction = player_research.research_speed_fraction;
 			break;
 		case TECH_WEAPONS:
-			stream_fraction = research.research_weapons_fraction;
+			stream_fraction = player_research.research_weapons_fraction;
 			break;
 		case TECH_SHIELDS:
-			stream_fraction = research.research_shields_fraction;
+			stream_fraction = player_research.research_shields_fraction;
 			break;
 		case TECH_MINIATURIZATION:
-			stream_fraction = research.research_miniaturization_fraction;
+			stream_fraction = player_research.research_miniaturization_fraction;
 			break;
 		case TECH_RADICAL:
-			stream_fraction = research.research_radical_fraction;
+			stream_fraction = player_research.research_radical_fraction;
 			break;
 		default:
 			return 0;
 	}
 	
-	double stream_amount = research_budget * stream_fraction;
-	return static_cast<int64_t>(std::round(stream_amount));
+	double tech_stream_amount = research_budget * stream_fraction;
+	return static_cast<int64_t>(std::round(tech_stream_amount));
 }
