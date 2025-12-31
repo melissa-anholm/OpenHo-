@@ -17,7 +17,7 @@ GameState::GameState(const GalaxyGenerationParams& params)
 	rng = std::make_unique<DeterministicRNG>(params.seed, params.seed);
 	
 	// Initialize planets
-	initialize_planets();
+	galaxy.initialize_planets(params, rng.get());
 	
 	// Initialize players (placeholder - will be set by game setup)
 	initialize_players();
@@ -275,23 +275,23 @@ bool GameState::deserialize_state(const std::vector<uint8_t>& data)
 }
 
 // ============================================================================
-// Private Helper Methods
+// Galaxy Initialization
 // ============================================================================
 
-void GameState::initialize_planets()
+void Galaxy::initialize_planets(const GalaxyGenerationParams& params, DeterministicRNG* rng)
 {
 	// Generate planets based on galaxy parameters
 	// This is a placeholder implementation
 	
-	// For now, create a small test galaxy
-	for (uint32_t i = 0; i < 10; ++i)
+	// For now, create planets according to n_planets parameter
+	for (uint32_t i = 0; i < params.n_planets; ++i)
 	{
 		uint32_t planet_id = i + 1;
 		std::string planet_name = "Planet_" + std::to_string(planet_id);
 		
 		// Random position within galaxy bounds
-		GalaxyCoord x = galaxy.min_x + rng->nextDouble() * (galaxy.max_x - galaxy.min_x);
-		GalaxyCoord y = galaxy.min_y + rng->nextDouble() * (galaxy.max_y - galaxy.min_y);
+		GalaxyCoord x = min_x + rng->nextDouble() * (max_x - min_x);
+		GalaxyCoord y = min_y + rng->nextDouble() * (max_y - min_y);
 		
 		// Random properties
 		double true_gravity = 0.5 + rng->nextDouble() * 1.5;  // 0.5 to 2.0
@@ -301,9 +301,13 @@ void GameState::initialize_planets()
 		// Create planet using constructor
 		Planet planet(planet_id, planet_name, x, y, true_gravity, true_temperature, metal);
 		
-		galaxy.planets.push_back(planet);
+		planets.push_back(planet);
 	}
 }
+
+// ============================================================================
+// Private Helper Methods
+// ============================================================================
 
 void GameState::initialize_players()
 {
@@ -440,33 +444,7 @@ void GameState::capture_player_public_info()
 	}
 }
 
-/*
-PlayerPublicInfo GameState::get_player_public_info(uint32_t player_id, uint32_t turn) const
-{
-	PlayerPublicInfo info;
-	std::memset(&info, 0, sizeof(PlayerPublicInfo));
-	
-	auto it = player_info_history.find(player_id);
-	if (it == player_info_history.end() ) 
-		{ return info; }
-	
-	const auto& history = it->second;
-	
-	// Find the entry for the requested turn
-	// Since we store one entry per turn, we can use turn as an index
-	// But we need to account for the fact that history might not start at turn 0
-	if (history.empty() )
-		{ return info; }
-	
-	// If turn is within range, retrieve it
-	if (turn < history.size())
-		{ info = history[turn]; }
-	
-	return info;
-}
-*/
-
-// formerly PlayerPublicInfo GameState::get_player_public_info_current(uint32_t player_id) const
+// PlayerPublicInfo GameState::get_player_public_info(uint32_t player_id) const
 PlayerPublicInfo GameState::get_player_public_info(uint32_t player_id) const
 {
 	PlayerPublicInfo info;

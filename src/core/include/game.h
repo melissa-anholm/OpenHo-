@@ -126,7 +126,6 @@ private:
 	uint64_t current_ai_rng_seed;
 	
 	// Private helper methods
-	void initialize_planets();
 	void initialize_players();
 	void build_entity_maps();
 	void process_population_growth();

@@ -32,7 +32,7 @@ enum PlayerType
 	PLAYER_COMPUTER = 1
 };
 
-// Technology streams for research
+	// Technology streams for research
 enum TechStream
 {
 	TECH_RANGE = 0,
@@ -41,6 +41,17 @@ enum TechStream
 	TECH_SHIELDS = 3,
 	TECH_MINIATURIZATION = 4,
 	TECH_RADICAL = 5
+};
+
+// Galaxy generation shape patterns
+enum GalaxyShape
+{
+	GALAXY_RANDOM = 0,
+	GALAXY_SPIRAL = 1,
+	GALAXY_CIRCLE = 2,
+	GALAXY_RING = 3,
+	GALAXY_CLUSTER = 4,
+	GALAXY_GRID = 5
 };
 
 // ============================================================================
