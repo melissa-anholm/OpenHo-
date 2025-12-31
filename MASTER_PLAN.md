@@ -432,19 +432,46 @@ OpenHo/
 
 ## Next Steps (Priority Order)
 
+### Critical Path Dependencies
+
+Before implementing higher-level features, these foundational systems must be in place:
+
+**Phase 2c: Galaxy Initialization (CRITICAL)**
+- [ ] Generate/populate galaxy with planets
+- [ ] Assign starting planets to players
+- [ ] Initialize player resources and technology
+- [ ] Distribute starting ships
+- Prerequisite for: all gameplay
+
+**Phase 2d: Ship Movement (CRITICAL)**
+- [ ] Define ship movement mechanics and orders
+- [ ] Implement pathfinding/navigation
+- [ ] Collision detection and avoidance
+- [ ] Execute movement orders each turn
+- Prerequisite for: combat, exploration, planet observation
+
+**Phase 2e: Battle Mechanics (DEFERRED)**
+- [ ] Combat resolution when fleets meet
+- [ ] Damage calculation and ship destruction
+- [ ] Victory conditions and surrender
+- [ ] Retreat mechanics
+- Status: Deferred until core mechanics stable
+- Note: Placeholder/stub implementation needed for turn processing
+
 ### Immediate (Next Session)
-1. Initialize planetKnowledge vector for all players at game start
-2. Implement planet observation system (update PlanetSnapshot when observed)
-3. Implement remaining C API wrapper functions in ai_interface.cpp
-4. Write unit tests for RNG determinism
-5. Test turn processing pipeline
+1. **Galaxy Initialization** - Set up initial game state with planets and players
+2. **Ship Movement** - Implement ship movement system
+3. Initialize planetKnowledge vector for all players at game start
+4. Implement planet observation system (update PlanetSnapshot when observed)
+5. Write unit tests for RNG determinism
 
 ### Short Term
 1. Complete turn processing logic (money allocation, research, terraforming, mining, ships, novae)
-2. Implement save/load game state (binary format preferred, JSON as fallback)
-3. Serialization system for multiplayer sync
-4. Comprehensive testing and validation
-5. **Phase 2b:** Implement RandomAI for game mechanic testing and debugging
+2. Implement remaining C API wrapper functions in ai_interface.cpp
+3. Implement save/load game state (binary format preferred, JSON as fallback)
+4. Serialization system for multiplayer sync
+5. Comprehensive testing and validation
+6. **Phase 2b:** Implement RandomAI for game mechanic testing and debugging
 
 ### Medium Term
 1. Begin Phase 3a: Objective-C++ bridge layer
@@ -479,10 +506,17 @@ OpenHo/
 ## Known Issues & Limitations
 
 ### Deferred Features
-- **Save/Load Game State:** Requirement documented, implementation deferred to Phase 2c
+- **Save/Load Game State:** Requirement documented, implementation deferred to Phase 2
   - Format: Binary preferred, JSON as alternative
   - No database unless absolutely necessary
   - Must support mid-game persistence for human players
+
+- **Battle Mechanics:** Phase 2e feature, deferred until core systems stable
+  - Combat resolution when fleets meet
+  - Damage calculation and ship destruction
+  - Victory conditions and surrender
+  - Placeholder implementation needed for turn processing
+  - Full implementation after Phase 2 core is complete
 
 - **Sophisticated AI:** Phase 4 feature, deferred until Phase 2 game mechanics are complete
   - Uses influence maps, behavioral cloning, and GAN training
@@ -496,6 +530,9 @@ OpenHo/
 - ColonizedPlanet uses pointer-based composition to avoid data duplication
 - Phase 2b RandomAI provides infrastructure for Phase 4 sophisticated AI
 - GAN training uses discriminator initialized with expert behavior model
+- Galaxy initialization must happen before any gameplay
+- Ship movement is prerequisite for combat and exploration
+- Battle mechanics can be stubbed initially, fully implemented later
 
 ---
 
@@ -567,6 +604,7 @@ git pull origin main    # Pull from GitHub
 
 | Date | Version | Changes |
 |------|---------|----------|
+| 2025-12-31 | 1.3 | Add critical path dependencies: Galaxy Initialization, Ship Movement, Battle Mechanics (deferred) |
 | 2025-12-31 | 1.2 | Add Phase 2b (Debugging AI) and Phase 4 (Sophisticated AI with GAN training) |
 | 2025-12-31 | 1.1 | Major Planet/ColonizedPlanet refactoring, PlanetSnapshot implementation, save/load requirement |
 | 2025-12-29 | 1.0 | Initial consolidation of all project plans |
