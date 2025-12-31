@@ -53,6 +53,16 @@ public:
 	PlayerType type;
 	int32_t iq;  // For computer players
 	
+	// ========================================================================
+	// Public Accessors
+	// ========================================================================
+	
+	/// Get this player's ideal temperature for planets
+	double get_ideal_temperature() const { return ideal_temperature; }
+	
+	/// Get this player's ideal gravity for planets
+	double get_ideal_gravity() const { return ideal_gravity; }
+	
 	// Technology levels for a player
 	struct TechnologyLevels
 	{

@@ -232,3 +232,23 @@ namespace GameFormulas
 	}
 	
 }  // namespace GameFormulas
+
+	// ============================================================================
+	// Planetary Perception Calculations
+	// ============================================================================
+	
+	double calculate_apparent_gravity(double ideal_gravity, double true_gravity)
+	{
+		// For now, apparent gravity equals true gravity
+		// In the future, this could be modified based on player perception,
+		// research levels, or other factors
+		return true_gravity;
+	}
+	
+	double calculate_apparent_temperature(double ideal_temperature, double true_temperature)
+	{
+		// For now, apparent temperature equals true temperature
+		// In the future, this could be modified based on player perception,
+		// research levels, or other factors
+		return true_temperature;
+	}

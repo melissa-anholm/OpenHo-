@@ -198,12 +198,12 @@ void game_get_planet_perceived_values(void* game, uint32_t planetID, uint32_t pl
 	
 	// Temperature perception: how close to ideal temperature
 	double idealTemp = gameState->get_player_ideal_temperature(player_id);
-	double tempDiff = std::abs(planet->temperature - idealTemp);
+	double tempDiff = std::abs(planet->true_temperature - idealTemp);
 	*outTemp = std::max(0.0, 1.0 - tempDiff / 100.0);
 	
 	// Gravity perception: how close to ideal gravity
 	double idealGrav = gameState->get_player_ideal_gravity(player_id);
-	double gravDiff = std::abs(planet->gravity - idealGrav);
+	double gravDiff = std::abs(planet->true_gravity - idealGrav);
 	*outGravity = std::max(0.0, 1.0 - gravDiff / 2.0);
 }
 

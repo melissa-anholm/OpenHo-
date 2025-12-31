@@ -227,10 +227,32 @@ namespace GameFormulas
 	int32_t calculate_planet_nova_warning_duration(DeterministicRNG& rng);
 	
 	// ========================================================================
+	// Planetary Perception Calculations
+	// ========================================================================
+
+	/// Calculate how a player perceives a planet's gravity based on their ideal.
+	/// The apparent gravity reflects how suitable the planet is for the player,
+	/// based on the difference between true gravity and ideal gravity.
+	/// 
+	/// @param ideal_gravity The player's ideal gravity
+	/// @param true_gravity The planet's actual gravity
+	/// @return The apparent gravity value as perceived by the player
+	double calculate_apparent_gravity(double ideal_gravity, double true_gravity);
+
+	/// Calculate how a player perceives a planet's temperature based on their ideal.
+	/// The apparent temperature reflects how suitable the planet is for the player,
+	/// based on the difference between true temperature and ideal temperature.
+	/// 
+	/// @param ideal_temperature The player's ideal temperature
+	/// @param true_temperature The planet's actual temperature
+	/// @return The apparent temperature value as perceived by the player
+	double calculate_apparent_temperature(double ideal_temperature, double true_temperature);
+
+	// ========================================================================
 	// Future Formula Functions
 	// ========================================================================
 	// Add new formula functions here as needed for game mechanics.
-	
-}  // namespace GameFormulas
+
+	}  // namespace GameFormulas
 
 #endif  // OPENHO_GAME_FORMULAS_H

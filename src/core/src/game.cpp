@@ -296,8 +296,8 @@ void GameState::initialize_planets()
 		planet.y = galaxy.min_y + rng->nextDouble() * (galaxy.max_y - galaxy.min_y);
 		
 		// Random properties
-		planet.gravity = 0.5 + rng->nextDouble() * 1.5;  // 0.5 to 2.0
-		planet.temperature = -50.0 + rng->nextDouble() * 200.0;  // -50 to 150
+		planet.true_gravity = 0.5 + rng->nextDouble() * 1.5;  // 0.5 to 2.0
+		planet.true_temperature = -50.0 + rng->nextDouble() * 200.0;  // -50 to 150
 		planet.metal = 100 + rng->nextInt32Range(0, 500);
 		
 			planet.owner = 0;  // Unowned
@@ -363,7 +363,7 @@ void GameState::update_planet_incomes()
 		for (auto& colonized : player.colonized_planets)
 		{
 			// Get the actual planet object from the galaxy
-			Planet* planet = get_planet(colonized.id);
+				Planet* planet = get_planet(colonized.get_id());
 			if (!planet)
 			{
 				colonized.set_income(0);
@@ -374,8 +374,8 @@ void GameState::update_planet_incomes()
 			// Base income from population * happiness factor
 			// Happiness factor depends on how close the planet is to the owner's ideals
 			
-			double tempDiff = std::abs(planet->temperature - player.ideal_temperature);
-			double gravDiff = std::abs(planet->gravity - player.ideal_gravity);
+			double tempDiff = std::abs(planet->true_temperature - player.ideal_temperature);
+			double gravDiff = std::abs(planet->true_gravity - player.ideal_gravity);
 			
 			// Simple happiness calculation (0.0 to 1.0)
 			double tempHappiness = std::max(0.0, 1.0 - tempDiff / 100.0);
@@ -736,7 +736,7 @@ void GameState::process_planets()
 		for (ColonizedPlanet& colonized : player.colonized_planets)
 		{
 			// Get the planet object
-			Planet* planet = get_planet(colonized.id);
+			Planet* planet = get_planet(colonized.get_id());
 			if (!planet || planet->owner != player.id)
 				continue;  // Skip if planet doesn't exist or isn't owned by this player
 			
@@ -756,10 +756,10 @@ void GameState::process_planets()
 			// TERRAFORMING: Calculate and apply temperature change
 			double temperature_change = GameFormulas::calculate_temperature_change(
 				terraforming_budget,
-				planet->temperature,
+				planet->true_temperature,
 				player.ideal_temperature
 			);
-			planet->temperature += temperature_change;
+			planet->true_temperature += temperature_change;
 			
 			// MINING: Calculate metal extraction and update reserves
 			int64_t metal_extracted = GameFormulas::calculate_metal_mined(

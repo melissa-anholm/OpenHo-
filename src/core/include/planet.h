@@ -13,6 +13,8 @@ typedef uint32_t EntityID;
 typedef uint32_t PlayerID;
 typedef double GalaxyCoord;
 
+class Player;  // Forward declaration
+
 // ============================================================================
 // Data Structures
 // ============================================================================
@@ -40,10 +42,10 @@ public:
 	GalaxyCoord y;
 	
 	// Immutable properties
-	double gravity;
+	double true_gravity;
 	
 	// Mutable properties
-	double temperature;
+	double true_temperature;
 	int32_t metal;
 	
 	PlayerID owner;  // 0 if unowned
@@ -54,8 +56,8 @@ public:
 	PlanetNovaState nova_state;
 };
 
-// Colonized planet - extends Planet with player-specific allocation information
-class ColonizedPlanet : public Planet
+// Colonized planet - player-specific view of a planet with allocation information
+class ColonizedPlanet
 {
 public:
 	// Budget split for allocating planet resources between mining and terraforming
@@ -95,38 +97,60 @@ public:
 	};
 
 private:
+	// Pointer to the base planet (not owned by this instance)
+	Planet* base_planet;
+	
+	// Pointer to the owner player (not owned by this instance)
+	Player* owner_player;
+	
 	// Player-specific data (Private)
 	double planet_funding_fraction;
 	int32_t population;
 	int32_t income;
 	PlanetaryBudgetSplit budget_split;
+	
+	// Apparent values based on owner's preferences
+	double apparent_gravity;
+	double apparent_temperature;
 
 public:
-	// Constructor: Promotes an existing Planet to a ColonizedPlanet
+	// Constructor: Creates a player-specific view of a planet
 	ColonizedPlanet(
-		const Planet& p_base,
+		Planet* p_base,
+		Player* p_owner,
 		int32_t p_pop = 10,
 		int32_t p_income = -7501,
 		double p_funding = 0.2,
-		PlanetaryBudgetSplit p_budget = PlanetaryBudgetSplit() )
-		: Planet(p_base), 
-		  planet_funding_fraction(p_funding), 
-		  population(p_pop), 
-		  income(p_income), 
-		  budget_split(p_budget)
-		{ }
+		PlanetaryBudgetSplit p_budget = PlanetaryBudgetSplit());
 
-	// --- Getters ---
+	// --- Accessors to base planet ---
+	uint32_t get_id() const { return base_planet->id; }
+	const std::string& get_name() const { return base_planet->name; }
+	GalaxyCoord get_x() const { return base_planet->x; }
+	GalaxyCoord get_y() const { return base_planet->y; }
+	double get_true_gravity() const { return base_planet->true_gravity; }
+	double get_true_temperature() const { return base_planet->true_temperature; }
+	int32_t get_metal() const { return base_planet->metal; }
+	void set_metal(int32_t p_val) { base_planet->metal = p_val; }
+	PlayerID get_owner() const { return base_planet->owner; }
+	PlanetNovaState get_nova_state() const { return base_planet->nova_state; }
+	void set_nova_state(PlanetNovaState p_val) { base_planet->nova_state = p_val; }
+	
+	// --- Getters for player-specific data ---
 	double get_funding_fraction() const { return planet_funding_fraction; }
 	int32_t get_population() const { return population; }
 	int32_t get_income() const { return income; }
 	double get_mining_fraction() const { return budget_split.mining_fraction; }
 	double get_terraforming_fraction() const { return budget_split.terraforming_fraction; }
+	double get_apparent_gravity() const { return apparent_gravity; }
+	double get_apparent_temperature() const { return apparent_temperature; }
 
-	// --- Setters ---
+	// --- Setters for player-specific data ---
 	void set_funding_fraction(double p_val) { planet_funding_fraction = p_val; }
 	void set_population(int32_t p_val) { population = p_val; }
 	void set_income(int32_t p_val) { income = p_val; }
+	void set_apparent_gravity(double p_val) { apparent_gravity = p_val; }
+	void set_apparent_temperature(double p_val) { apparent_temperature = p_val; }
 	
 	void set_budget_split(double p_mining, double p_terra)
 	{
