@@ -44,6 +44,8 @@ public:
 	// Planet access
 	[[nodiscard]] Planet* get_planet(uint32_t planet_id);
 	[[nodiscard]] const Planet* get_planet(uint32_t planet_id) const;
+	[[nodiscard]] Planet* get_planet(const std::string& planet_name);
+	[[nodiscard]] const Planet* get_planet(const std::string& planet_name) const;
 	
 	// Get all planets owned by a player (O(1) lookup)
 	const std::vector<size_t>& get_player_planets(uint32_t player_id) const;
@@ -97,6 +99,7 @@ private:
 	
 	// Entity ID mappings for quick lookup
 	std::unordered_map<uint32_t, size_t> planet_id_to_index;
+	std::unordered_map<std::string, size_t> planet_name_to_index;
 	std::unordered_map<uint32_t, size_t> ship_id_to_index;
 	std::unordered_map<uint32_t, size_t> player_id_to_index;
 	

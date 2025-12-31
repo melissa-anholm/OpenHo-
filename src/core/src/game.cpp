@@ -155,6 +155,22 @@ const Planet* GameState::get_planet(uint32_t planetID) const
 	return &galaxy.planets[it->second];
 }
 
+Planet* GameState::get_planet(const std::string& planet_name)
+{
+	auto it = planet_name_to_index.find(planet_name);
+	if (it == planet_name_to_index.end())
+		return nullptr;
+	return &galaxy.planets[it->second];
+}
+
+const Planet* GameState::get_planet(const std::string& planet_name) const
+{
+	auto it = planet_name_to_index.find(planet_name);
+	if (it == planet_name_to_index.end())
+		return nullptr;
+	return &galaxy.planets[it->second];
+}
+
 Ship* GameState::get_ship(uint32_t shipID)
 {
 	auto it = ship_id_to_index.find(shipID);
@@ -287,21 +303,20 @@ void GameState::initialize_planets()
 	// For now, create a small test galaxy
 	for (uint32_t i = 0; i < 10; ++i)
 	{
-		Planet planet;
-		planet.id = i + 1;
-		planet.name = "Planet_" + std::to_string(i + 1);
+		uint32_t planet_id = i + 1;
+		std::string planet_name = "Planet_" + std::to_string(planet_id);
 		
 		// Random position within galaxy bounds
-		planet.x = galaxy.min_x + rng->nextDouble() * (galaxy.max_x - galaxy.min_x);
-		planet.y = galaxy.min_y + rng->nextDouble() * (galaxy.max_y - galaxy.min_y);
+		GalaxyCoord x = galaxy.min_x + rng->nextDouble() * (galaxy.max_x - galaxy.min_x);
+		GalaxyCoord y = galaxy.min_y + rng->nextDouble() * (galaxy.max_y - galaxy.min_y);
 		
 		// Random properties
-		planet.true_gravity = 0.5 + rng->nextDouble() * 1.5;  // 0.5 to 2.0
-		planet.true_temperature = -50.0 + rng->nextDouble() * 200.0;  // -50 to 150
-		planet.metal = 100 + rng->nextInt32Range(0, 500);
+		double true_gravity = 0.5 + rng->nextDouble() * 1.5;  // 0.5 to 2.0
+		double true_temperature = -50.0 + rng->nextDouble() * 200.0;  // -50 to 150
+		int32_t metal = 100 + rng->nextInt32Range(0, 500);
 		
-			planet.owner = 0;  // Unowned
-			planet.nova_state = PLANET_NORMAL;
+		// Create planet using constructor
+		Planet planet(planet_id, planet_name, x, y, true_gravity, true_temperature, metal);
 		
 		galaxy.planets.push_back(planet);
 	}
@@ -313,17 +328,18 @@ void GameState::initialize_players()
 	// This will be called during game setup
 }
 
-void GameState::build_entity_maps()
-{
-	// Build planet ID to index map and player planet ownership map
-	for (size_t i = 0; i < galaxy.planets.size(); ++i)
+	void GameState::build_entity_maps()
 	{
-		planet_id_to_index[galaxy.planets[i].id] = i;
-		if (galaxy.planets[i].owner != 0)
+		// Build planet ID to index map, planet name to index map, and player planet ownership map
+		for (size_t i = 0; i < galaxy.planets.size(); ++i)
 		{
-			player_planets[galaxy.planets[i].owner].push_back(i);
+			planet_id_to_index[galaxy.planets[i].id] = i;
+			planet_name_to_index[galaxy.planets[i].name] = i;
+			if (galaxy.planets[i].owner != 0)
+			{
+				player_planets[galaxy.planets[i].owner].push_back(i);
+			}
 		}
-	}
 	
 	// Build ship ID to index map and player ship ownership map
 	for (size_t i = 0; i < galaxy.ships.size(); ++i)
