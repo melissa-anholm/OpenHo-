@@ -11,19 +11,10 @@
 // ============================================================================
 
 GameState::GameState(const GalaxyGenerationParams& params)
-	: current_ai_rng_seed(0)
+	: galaxy(params), current_ai_rng_seed(0)
 {
 	// Initialize RNG with deterministic seed
 	rng = std::make_unique<DeterministicRNG>(params.seed, params.seed);
-	
-	// Set up galaxy boundaries based on size
-	double galaxyRadius = std::sqrt(params.size) * 10.0;  // Rough scaling
-	galaxy.min_x = -galaxyRadius;
-	galaxy.max_x = galaxyRadius;
-	galaxy.min_y = -galaxyRadius;
-	galaxy.max_y = galaxyRadius;
-	
-	galaxy.current_turn = 0;
 	
 	// Initialize planets
 	initialize_planets();
@@ -72,7 +63,7 @@ Player* GameState::get_player(uint32_t player_id)
 	auto it = player_id_to_index.find(player_id);
 	if (it == player_id_to_index.end())
 		return nullptr;
-	return &galaxy.players[it->second];
+	return &players[it->second];
 }
 
 const Player* GameState::get_player(uint32_t player_id) const
@@ -80,12 +71,12 @@ const Player* GameState::get_player(uint32_t player_id) const
 	auto it = player_id_to_index.find(player_id);
 	if (it == player_id_to_index.end())
 		return nullptr;
-	return &galaxy.players[it->second];
+	return &players[it->second];
 }
 
 Player* GameState::get_player_by_name(const std::string& name)
 {
-	for (Player& player : galaxy.players)
+	for (Player& player : players)
 	{
 		if (player.name == name)
 			return &player;
@@ -95,7 +86,7 @@ Player* GameState::get_player_by_name(const std::string& name)
 
 const Player* GameState::get_player_by_name(const std::string& name) const
 {
-	for (const Player& player : galaxy.players)
+	for (const Player& player : players)
 	{
 		if (player.name == name)
 			return &player;
@@ -180,6 +171,21 @@ const std::vector<size_t>& GameState::get_player_planets(uint32_t player_id) con
 	if (it == player_planets.end())
 		return emptyVector;
 	return it->second;
+}
+
+uint32_t GameState::get_num_players() const
+{
+	return static_cast<uint32_t>(players.size());
+}
+
+const std::vector<Player>& GameState::get_players() const
+{
+	return players;
+}
+
+std::vector<Player>& GameState::get_players()
+{
+	return players;
 }
 
 // ============================================================================
@@ -320,16 +326,16 @@ void GameState::initialize_players()
 	
 
 	// Build player ID to index map
-	for (size_t i = 0; i < galaxy.players.size(); ++i)
+	for (size_t i = 0; i < players.size(); ++i)
 	{
-		player_id_to_index[galaxy.players[i].id] = i;
+		player_id_to_index[players[i].id] = i;
 	}
 }
 
 void GameState::calculate_player_incomes()
 {
 	// For each player, calculate total income from all owned planets
-	for (auto& player : galaxy.players)
+	for (auto& player : players)
 	{
 		player.money_income = 0;
 		player.metal_income = 0;
@@ -345,7 +351,7 @@ void GameState::calculate_player_incomes()
 void GameState::update_planet_incomes()
 {
 	// For each player's colonized planet, calculate income based on population, temperature, gravity, and owner's ideals
-	for (auto& player : galaxy.players)
+	for (auto& player : players)
 	{
 		for (auto& colonized : player.colonized_planets)
 		{
@@ -378,7 +384,7 @@ void GameState::process_money_allocation()
 {
 	// Apply money allocation from each player
 	// This distributes the player's money to various purposes
-	for (auto& player : galaxy.players)
+	for (auto& player : players)
 	{
 		// Add income to money
 		player.money += player.money_income;
@@ -407,7 +413,7 @@ void GameState::process_novae()
 void GameState::capture_player_public_info()
 {
 	// Capture public information for all players at the current turn
-	for (const auto& player : galaxy.players)
+	for (const auto& player : players)
 	{
 		PlayerPublicInfo info;
 		info.player_id = player.id;
@@ -598,7 +604,7 @@ void GameState::build_ship_from_design(uint32_t player_id, uint32_t design_id)
 void GameState::process_research()
 {
 	// Process research for each player
-	for (Player& player : galaxy.players)
+	for (Player& player : players)
 	{
 		// Calculate research budget for this player
 		int64_t research_budget = Player::calculate_research_amount(
@@ -707,7 +713,7 @@ void GameState::process_research()
 void GameState::process_planets()
 {
 	// Process planets for each player
-	for (Player& player : galaxy.players)
+	for (Player& player : players)
 	{
 		// Calculate total money available for planet development this turn
 		int64_t total_planet_development_budget = static_cast<int64_t>(

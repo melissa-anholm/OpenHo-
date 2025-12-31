@@ -4,6 +4,7 @@
 #include "planet.h"
 #include "player.h"
 #include <cstdint>
+#include <cmath>
 #include <vector>
 #include <string>
 
@@ -32,11 +33,22 @@ struct Galaxy
 	// Immutable planet list
 	std::vector<Planet> planets;
 	
-	// Players
-	std::vector<Player> players;
-	
 	// Current turn number
 	uint32_t current_turn;
+	
+	// Constructor to initialize galaxy boundaries based on generation parameters
+	Galaxy(const GalaxyGenerationParams& params)
+	{
+		// Calculate boundaries based on size
+		double radius = std::sqrt(params.size) * 10.0;
+		min_x = -radius;
+		max_x = radius;
+		min_y = -radius;
+		max_y = radius;
+		
+		current_turn = 0;
+		// planets and players vectors are default-constructed (empty)
+	}
 	
 	// Two separate RNG engines
 	// (Implementation details in rng.h)

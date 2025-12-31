@@ -50,6 +50,13 @@ public:
 	// Get all planets owned by a player (O(1) lookup)
 	const std::vector<size_t>& get_player_planets(uint32_t player_id) const;
 	
+	// Get number of players
+	uint32_t get_num_players() const;
+	
+	// Get all players (for iteration)
+	const std::vector<Player>& get_players() const;
+	std::vector<Player>& get_players();
+	
 
 	
 	// Player property accessors (for C API and internal use)
@@ -99,6 +106,7 @@ public:
 private:
 	// Game state
 	Galaxy galaxy;
+	std::vector<Player> players;  // All players in the game
 	std::unique_ptr<DeterministicRNG> rng;
 	
 	// Entity ID mappings for quick lookup

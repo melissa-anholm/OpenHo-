@@ -50,14 +50,14 @@ uint32_t game_get_current_turn(void* game)
 	return gameState->get_galaxy().current_turn;
 }
 
-	uint32_t game_get_num_players(void* game)
-	{
-		if (!game)
-			return 0;
-		
-		GameState* gameState = static_cast<GameState*>(game);
-		return static_cast<uint32_t>(gameState->get_galaxy().players.size());
-}
+		uint32_t game_get_num_players(void* game)
+		{
+			if (!game)
+				return 0;
+			
+			GameState* gameState = static_cast<GameState*>(game);
+			return gameState->get_num_players();
+	}
 
 	uint32_t game_get_num_planets(void* game)
 	{
@@ -78,7 +78,7 @@ uint32_t game_get_num_fleets(void* game)
 	GameState* gameState = static_cast<GameState*>(game);
 	
 	uint32_t total_fleets = 0;
-	for (const auto& player : gameState->get_galaxy().players)
+	for (const auto& player : gameState->get_players())
 	{
 		total_fleets += static_cast<uint32_t>(player.get_fleets().size());
 	}

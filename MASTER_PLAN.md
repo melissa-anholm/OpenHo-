@@ -220,7 +220,7 @@ OpenHo/
 
 #### Phase 2c: Galaxy Initialization (CRITICAL)
 
-**Status:** ⏳ NOT STARTED
+**Status:** 🔄 IN PROGRESS
 
 **Objective:** Generate and populate galaxy with planets; assign starting planets and resources to players
 
@@ -336,8 +336,10 @@ OpenHo/
 **Objective:** Comprehensive testing of all Phase 2 systems
 
 **Planned:**
+- [ ] Create test executable to verify runtime behavior
 - [ ] Unit tests for RNG determinism
 - [ ] Unit tests for GameState initialization
+- [ ] Unit tests for galaxy generation
 - [ ] Unit tests for turn processing
 - [ ] Integration tests for multiplayer synchronization
 - [ ] Stress tests with RandomAI
