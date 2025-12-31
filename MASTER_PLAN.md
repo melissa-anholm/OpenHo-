@@ -1,6 +1,6 @@
 # OpenHo Master Plan
 
-**Last Updated:** December 29, 2025  
+**Last Updated:** December 31, 2025  
 **Project Status:** Phase 2 - C++ Core Implementation (In Progress)
 
 ---
@@ -115,9 +115,12 @@ OpenHo/
    - `MoneyAllocation` struct nested within `Player` class
    - Contains global allocations (research, savings) and per-planet allocations (terraforming, mining)
 
-3. **ColonizedPlanet Structure:**
-   - Inherits from `Planet` base class
+3. **ColonizedPlanet Architecture (Refactored):**
+   - No longer inherits from Planet (pointer-based composition)
+   - Holds `Planet*` pointer to base planet (not owned)
+   - Holds `Player*` pointer to owner player
    - Adds player-specific data: `population`, `income`, `allocation`
+   - Calculates `apparent_gravity` and `apparent_temperature` based on player ideals
    - Owned directly by `Player::colonized_planets` vector
 
 4. **Consolidated Planet Processing:**
@@ -128,6 +131,25 @@ OpenHo/
    - All functions use `void*` for opaque game state pointer
    - Enables Objective-C++ bridging without exposing C++ types to Swift
    - Clean separation between core engine and UI layers
+
+6. **Planet Identification:**
+   - Planet name is the primary identifier (used for lookups)
+   - Planet ID is assigned by GameState but secondary to name
+   - Both are required and assigned together at planet creation
+
+7. **Sentinel Values:**
+   - `UNKNOWN_DOUBLE_VALUE = -500.0` for unknown double fields
+   - `UNKNOWN_INT_VALUE = -500` for unknown int32_t fields
+   - `INCOME_UNKNOWN = INT32_MIN` for unknown income
+   - `NOT_OWNED = 0` for unowned planets
+   - `OWNER_UNKNOWN = UINT32_MAX` for unknown owner
+   - Player IDs must never be 0 (reserved for NOT_OWNED)
+
+8. **PlanetSnapshot:**
+   - Represents a player's knowledge of a planet at a specific observation time
+   - Two factory methods: `partial_info()` and `full_info()`
+   - Tracks which player created the snapshot (`as_seen_by`)
+   - Stores apparent values (temperature, gravity) based on observer's ideals
 
 ---
 
@@ -149,8 +171,17 @@ OpenHo/
 - ✅ Consolidated process_planets() function
 - ✅ Income calculation using colonized_planets vector
 - ✅ C API wrapper declarations in openho_core.h
+- ✅ Planet constructor requiring id, name, and coordinates
+- ✅ ColonizedPlanet refactored to pointer-based composition
+- ✅ PlanetSnapshot struct with factory methods (partial_info, full_info)
+- ✅ Sentinel value constants for unknown/unowned states
+- ✅ Game formulas for apparent gravity and temperature
+- ✅ Name-based planet lookup system in GameState
+- ✅ Player ideal_gravity and ideal_temperature accessors
 
 **In Progress:**
+- [ ] Initialize planetKnowledge vector for all players at game start
+- [ ] Implement planet observation system (update PlanetSnapshot when observed)
 - [ ] Complete C API wrapper implementation (ai_interface.cpp)
 - [ ] Implement turn processing logic:
   - [ ] Money allocation distribution
@@ -159,6 +190,7 @@ OpenHo/
   - [ ] Mining extraction
   - [ ] Ship movement and combat
   - [ ] Nova handling
+- [ ] Save/Load game state (binary or JSON format)
 - [ ] Serialization system for multiplayer sync
 - [ ] Unit tests for core systems
 
@@ -263,42 +295,55 @@ OpenHo/
 
 ## Current Session Progress
 
-**Session Date:** December 29, 2025
+**Session Date:** December 31, 2025
 
 ### Completed This Session
-1. ✅ Refactored game.cpp with complete snake_case conversion
-2. ✅ Moved population/income from Planet to ColonizedPlanet
-3. ✅ Implemented process_planets() consolidating terraforming/mining
-4. ✅ Updated income calculation to use colonized_planets vector
-5. ✅ Fixed build_entity_maps() to initialize ColonizedPlanet objects
-6. ✅ Removed duplicate function definitions
-7. ✅ Project compiles successfully
-8. ✅ Saved checkpoint (commit 38d3576)
-9. ✅ Pushed to GitHub
-10. ✅ Created PROJECT_STRUCTURE.md documenting future layering
-11. ✅ Created BUILD_SYSTEM_PLAN.md with build architecture
-12. ✅ Created build.sh and clean.sh scripts
-13. ✅ Consolidated all documentation into MASTER_PLAN.md
+1. ✅ Removed unused `turns_until_nova` member from Planet class
+2. ✅ Added explicit `#include "enums.h"` to planet.h
+3. ✅ Refactored Planet class with proper constructor
+4. ✅ Refactored ColonizedPlanet to pointer-based composition (not inheritance)
+5. ✅ Added apparent_gravity and apparent_temperature to ColonizedPlanet
+6. ✅ Created game formulas for calculating apparent values
+7. ✅ Renamed Planet members: gravity→true_gravity, temperature→true_temperature
+8. ✅ Added public getters to Player class (ideal_gravity, ideal_temperature)
+9. ✅ Implemented PlanetSnapshot struct with factory methods
+10. ✅ Created sentinel value constants (UNKNOWN_DOUBLE_VALUE, INCOME_UNKNOWN, etc.)
+11. ✅ Moved sentinel constants to enums.h
+12. ✅ Implemented Planet constructor in planet.cpp
+13. ✅ Implemented ColonizedPlanet constructor with apparent value calculation
+14. ✅ Added name-based planet lookup system (planet_name_to_index map)
+15. ✅ Updated GameState to support both id-based and name-based lookups
+16. ✅ Documented save/load game state requirement
+17. ✅ Established workflow: ask once for approval, no double-confirmation
+18. ✅ Established workflow: only commit/push after dramatic changes or accumulation
 
 ### Commits This Session
-- `38d3576` - Refactor: Complete snake_case conversion and consolidate planet processing
-- `a70e132` - docs: Add PROJECT_STRUCTURE.md and clean up README files
-- `20dba06` - build: Add command-line build system plan and scripts
-- (current) - docs: Consolidate all planning into MASTER_PLAN.md
+- `9dabed6` - Remove unused turns_until_nova member
+- `a2d389a` - Add explicit enums.h include to planet.h
+- `38aed47` - Refactor BudgetSplit as private nested struct with accessors
+- `8f22b03` - Create planet.cpp with BudgetSplit implementation
+- `8eb5131` - Rename PlanetState to PlanetNovaState and update references
+- `63a4235` - Refactor ColonizedPlanet to pointer-based composition
+- `ead89d2` - Add Planet constructor and name-based planet lookup
+- `69a7b2a` - Add PlanetSnapshot factory methods and sentinel constants
+- `95998c2` - Move sentinel constants to enums.h
 
 ---
 
 ## Next Steps (Priority Order)
 
 ### Immediate (Next Session)
-1. Implement remaining C API wrapper functions in ai_interface.cpp
-2. Write unit tests for RNG determinism
-3. Test turn processing pipeline
+1. Initialize planetKnowledge vector for all players at game start
+2. Implement planet observation system (update PlanetSnapshot when observed)
+3. Implement remaining C API wrapper functions in ai_interface.cpp
+4. Write unit tests for RNG determinism
+5. Test turn processing pipeline
 
 ### Short Term
 1. Complete turn processing logic (money allocation, research, terraforming, mining, ships, novae)
-2. Implement serialization system
-3. Comprehensive testing and validation
+2. Implement save/load game state (binary format preferred, JSON as fallback)
+3. Serialization system for multiplayer sync
+4. Comprehensive testing and validation
 
 ### Medium Term
 1. Begin Phase 3a: Objective-C++ bridge layer
@@ -330,7 +375,16 @@ OpenHo/
 
 ## Known Issues & Limitations
 
-None currently documented. Issues will be tracked here as they arise.
+### Deferred Features
+- **Save/Load Game State:** Requirement documented, implementation deferred to Phase 2c
+  - Format: Binary preferred, JSON as alternative
+  - No database unless absolutely necessary
+  - Must support mid-game persistence for human players
+
+### Design Notes
+- Player IDs must never be 0 (reserved for NOT_OWNED sentinel)
+- Planet names must be unique (used as primary identifier)
+- ColonizedPlanet uses pointer-based composition to avoid data duplication
 
 ---
 
@@ -401,7 +455,8 @@ git pull origin main    # Pull from GitHub
 ## Document History
 
 | Date | Version | Changes |
-|------|---------|---------|
+|------|---------|----------|
+| 2025-12-31 | 1.1 | Major Planet/ColonizedPlanet refactoring, PlanetSnapshot implementation, save/load requirement |
 | 2025-12-29 | 1.0 | Initial consolidation of all project plans |
 
 ---
