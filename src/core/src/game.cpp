@@ -356,7 +356,7 @@ void GameState::update_planet_incomes()
 		for (auto& colonized : player.colonized_planets)
 		{
 			// Get the actual planet object from the galaxy
-				Planet* planet = get_planet(colonized.get_id());
+			Planet* planet = get_planet(colonized.get_id());
 			if (!planet)
 			{
 				colonized.set_income(0);
@@ -375,7 +375,7 @@ void GameState::update_planet_incomes()
 			double gravHappiness = std::max(0.0, 1.0 - gravDiff / 2.0);
 			double happiness = (tempHappiness + gravHappiness) / 2.0;
 			
-				colonized.set_income(static_cast<int32_t>(colonized.get_population() * happiness * 10));
+			colonized.set_income(static_cast<int32_t>(colonized.get_population() * happiness * 10));
 		}
 	}
 }
@@ -440,44 +440,45 @@ void GameState::capture_player_public_info()
 	}
 }
 
+/*
 PlayerPublicInfo GameState::get_player_public_info(uint32_t player_id, uint32_t turn) const
 {
 	PlayerPublicInfo info;
 	std::memset(&info, 0, sizeof(PlayerPublicInfo));
 	
 	auto it = player_info_history.find(player_id);
-	if (it == player_info_history.end())
-		return info;
+	if (it == player_info_history.end() ) 
+		{ return info; }
 	
 	const auto& history = it->second;
 	
 	// Find the entry for the requested turn
 	// Since we store one entry per turn, we can use turn as an index
 	// But we need to account for the fact that history might not start at turn 0
-	if (history.empty())
-		return info;
+	if (history.empty() )
+		{ return info; }
 	
 	// If turn is within range, retrieve it
 	if (turn < history.size())
-	{
-		info = history[turn];
-	}
+		{ info = history[turn]; }
 	
 	return info;
 }
+*/
 
-PlayerPublicInfo GameState::get_player_public_info_current(uint32_t player_id) const
+// formerly PlayerPublicInfo GameState::get_player_public_info_current(uint32_t player_id) const
+PlayerPublicInfo GameState::get_player_public_info(uint32_t player_id) const
 {
 	PlayerPublicInfo info;
 	std::memset(&info, 0, sizeof(PlayerPublicInfo));
 	
 	auto it = player_info_history.find(player_id);
-	if (it == player_info_history.end())
-		return info;
+	if (it == player_info_history.end() )
+		{ return info; }
 	
 	const auto& history = it->second;
 	if (history.empty())
-		return info;
+		{ return info; }
 	
 	// Return the most recent entry
 	return history.back();
@@ -487,7 +488,7 @@ uint32_t GameState::get_player_info_history_size(uint32_t player_id) const
 {
 	auto it = player_info_history.find(player_id);
 	if (it == player_info_history.end())
-		return 0;
+		{ return 0; }
 	
 	return static_cast<uint32_t>(it->second.size());
 }
@@ -502,11 +503,11 @@ uint32_t GameState::create_ship_design(uint32_t player_id, const std::string& na
 {
 	Player* player = get_player(player_id);
 	if (!player)
-		return 0;
+		{ return 0; }
 	
 	// Check if player has reached the design limit
 	if (player->ship_designs.size() >= GameConstants::Max_Ship_Designs_Per_Player)
-		return 0;
+		{ return 0; }
 	
 	// Create the new design
 	ShipDesign design;
@@ -529,14 +530,14 @@ uint32_t GameState::create_ship_design(uint32_t player_id, const std::string& na
 const ShipDesign* GameState::get_ship_design(uint32_t player_id, uint32_t design_id) const
 {
 	const Player* player = get_player(player_id);
-	if (!player)
-		return nullptr;
+	if (!player) 
+		{ return nullptr; }
 	
 	// Search in permanent designs
 	for (const auto& design : player->ship_designs)
 	{
 		if (design.id == design_id)
-			return &design;
+			{ return &design; }
 	}
 	
 	return nullptr;
@@ -548,7 +549,7 @@ const std::vector<ShipDesign>& GameState::get_player_ship_designs(uint32_t playe
 	
 	const Player* player = get_player(player_id);
 	if (!player)
-		return emptyVector;
+		{ return emptyVector; }
 	
 	return player->ship_designs;
 }
@@ -557,15 +558,14 @@ bool GameState::delete_ship_design(uint32_t player_id, uint32_t design_id)
 {
 	Player* player = get_player(player_id);
 	if (!player)
-		return false;
+		{ return false; } 
 	
 	// Check if any fleets use this design
 	for (const auto& fleet : player->fleets)
 	{
 		if (fleet.ship_design && fleet.ship_design->id == design_id)
 		{
-			// Cannot delete a design that's in use by a fleet
-			return false;
+			return false;  // Cannot delete a design that's in use by a fleet
 		}
 	}
 	
@@ -586,19 +586,17 @@ void GameState::build_ship_from_design(uint32_t player_id, uint32_t design_id)
 {
 	Player* player = get_player(player_id);
 	if (!player)
-		return;
+		{ return; }
 	
 	// Find the design
 	const ShipDesign* design = get_ship_design(player_id, design_id);
 	if (!design)
-		return;
+		{ return; }
 	
 	// Building from the design
 	// (Implementation for actually creating the ship will go here)
 	// This will deduct costs from player->money and player->metalReserve
 }
-
-
 
 
 void GameState::process_research()
@@ -620,19 +618,19 @@ void GameState::process_research()
 	}
 }
 
-	void GameState::process_research_stream(Player& player, TechStream stream, int64_t research_budget)
-	{
-		// Calculate the budget for this specific research stream
-		int64_t stream_budget = Player::calculate_research_stream_amount(
-			player.allocation.research, stream, research_budget);
-		
-		// Convert money to research points using the conversion formula
-		int64_t research_points_gained = GameFormulas::convert_money_to_research_points(stream_budget);
-		
-		// Get the current research points and tech level for this stream
+void GameState::process_research_stream(Player& player, TechStream stream, int64_t research_budget)
+{
+	// Calculate the budget for this specific research stream
+	int64_t stream_budget = Player::calculate_research_stream_amount(
+		player.allocation.research, stream, research_budget);
+	
+	// Convert money to research points using the conversion formula
+	int64_t research_points_gained = GameFormulas::convert_money_to_research_points(stream_budget);
+	
+	// Get the current research points and tech level for this stream
 	int64_t* research_points = nullptr;
 	int32_t* tech_level = nullptr;
-	
+
 	switch (stream)
 	{
 		case TECH_RANGE:
@@ -663,8 +661,8 @@ void GameState::process_research()
 			return;
 	}
 	
-		// Add the converted research points to the player's research points
-		*research_points += research_points_gained;
+	// Add the converted research points to the player's research points
+	*research_points += research_points_gained;
 	
 	// Check if we can advance the technology level
 	while (true)
@@ -717,43 +715,35 @@ void GameState::process_planets()
 	{
 		// Calculate total money available for planet development this turn
 		int64_t total_planet_development_budget = static_cast<int64_t>(
-			player.money_income * player.allocation.planets_fraction
-		);
+			player.money_income * player.allocation.planets_fraction );
 		
 		// Iterate through each colonized planet
 		for (ColonizedPlanet& colonized : player.colonized_planets)
 		{
 			// Get the planet object
-			Planet* planet = get_planet(colonized.get_id());
+			Planet* planet = get_planet(colonized.get_id() );
 			if (!planet || planet->owner != player.id)
-				continue;  // Skip if planet doesn't exist or isn't owned by this player
+				{ continue; }  // Skip if planet doesn't exist or isn't owned by this player 
 			
 			// Calculate money allocated to this specific planet
 			int64_t planet_budget = static_cast<int64_t>(
-				total_planet_development_budget * colonized.get_funding_fraction()
-			);
+				total_planet_development_budget * colonized.get_funding_fraction() );
 			
 			// Split the planet budget between mining and terraforming
 			int64_t terraforming_budget = static_cast<int64_t>(
-				planet_budget * colonized.get_terraforming_fraction()
-			);
+				planet_budget * colonized.get_terraforming_fraction() );
 			int64_t mining_budget = static_cast<int64_t>(
-				planet_budget * colonized.get_mining_fraction()
-			);
+				planet_budget * colonized.get_mining_fraction() );
 			
 			// TERRAFORMING: Calculate and apply temperature change
 			double temperature_change = GameFormulas::calculate_temperature_change(
-				terraforming_budget,
-				planet->true_temperature,
-				player.ideal_temperature
-			);
+				terraforming_budget, planet->true_temperature, player.ideal_temperature );
+				
 			planet->true_temperature += temperature_change;
 			
 			// MINING: Calculate metal extraction and update reserves
 			int64_t metal_extracted = GameFormulas::calculate_metal_mined(
-				mining_budget,
-				planet->metal
-			);
+				mining_budget, planet->metal );
 			planet->metal -= metal_extracted;
 			player.metal_reserve += metal_extracted;
 		}
@@ -843,17 +833,17 @@ uint32_t GameState::create_fleet(uint32_t player_id, const std::string& name, ui
 Fleet* GameState::get_fleet(uint32_t player_id, uint32_t fleet_id)
 {
 	Player* player = get_player(player_id);
-	if (!player)
-		return nullptr;
+	if (!player) 
+		{ return nullptr; }
 	
 	uint64_t fleet_key = ((uint64_t)player_id << 32) | fleet_id;
 	auto it = fleet_id_to_index.find(fleet_key);
 	if (it == fleet_id_to_index.end())
-		return nullptr;
+		{ return nullptr; }
 	
 	size_t index = it->second;
 	if (index >= player->fleets.size())
-		return nullptr;
+		{ return nullptr; }
 	
 	return &player->fleets[index];
 }
@@ -862,16 +852,16 @@ const Fleet* GameState::get_fleet(uint32_t player_id, uint32_t fleet_id) const
 {
 	const Player* player = get_player(player_id);
 	if (!player)
-		return nullptr;
+		{ return nullptr; }
 	
 	uint64_t fleet_key = ((uint64_t)player_id << 32) | fleet_id;
 	auto it = fleet_id_to_index.find(fleet_key);
 	if (it == fleet_id_to_index.end())
-		return nullptr;
+		{ return nullptr; }
 	
 	size_t index = it->second;
 	if (index >= player->fleets.size())
-		return nullptr;
+		{ return nullptr; }
 	
 	return &player->fleets[index];
 }
@@ -882,7 +872,7 @@ const std::vector<Fleet>& GameState::get_player_fleets(uint32_t player_id) const
 	
 	const Player* player = get_player(player_id);
 	if (!player)
-		return emptyVector;
+		{ return emptyVector; }
 	
 	return player->fleets;
 }
@@ -891,11 +881,11 @@ bool GameState::delete_fleet(uint32_t player_id, uint32_t fleet_id)
 {
 	Player* player = get_player(player_id);
 	if (!player)
-		return false;
+		{ return false; }
 	
 	// Find and remove the fleet
 	auto it = std::find_if(player->fleets.begin(), player->fleets.end(),
-	                       [fleet_id](const Fleet& f) { return f.id == fleet_id; });
+	                       [fleet_id](const Fleet& f) { return f.id == fleet_id; } );
 	
 	if (it != player->fleets.end())
 	{
@@ -923,15 +913,15 @@ void GameState::move_fleet(uint32_t player_id, uint32_t fleet_id, uint32_t desti
 {
 	Fleet* fleet = get_fleet(player_id, fleet_id);
 	if (!fleet)
-		return;
+		{ return; }
 	
 	Planet* destination = get_planet(destination_planet_id);
 	if (!destination)
-		return;
+		{ return; }
 	
 	// If fleet is already at destination, do nothing
 	if (fleet->current_planet && fleet->current_planet->id == destination_planet_id)
-		return;
+		{ return; }
 	
 	// Set up movement
 	fleet->origin_planet = fleet->current_planet;
@@ -950,8 +940,7 @@ void GameState::move_fleet(uint32_t player_id, uint32_t fleet_id, uint32_t desti
 		if (fleet->ship_design && fleet->ship_design->get_speed() > 0)
 		{
 			fleet->turns_to_destination = static_cast<uint32_t>(
-				std::ceil(fleet->distance_to_destination / fleet->ship_design->get_speed())
-			);
+				std::ceil(fleet->distance_to_destination / fleet->ship_design->get_speed() ) );
 		}
 		else
 		{
@@ -964,7 +953,7 @@ void GameState::refuel_fleet(uint32_t player_id, uint32_t fleet_id)
 {
 	Fleet* fleet = get_fleet(player_id, fleet_id);
 	if (!fleet)
-		return;
+		{ return; }
 	
 	fleet->refuel();
 }

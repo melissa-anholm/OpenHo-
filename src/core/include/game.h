@@ -68,8 +68,7 @@ public:
 	double get_player_ideal_gravity(uint32_t player_id) const;
 	
 	// Player public information queries
-	[[nodiscard]] PlayerPublicInfo get_player_public_info(uint32_t player_id, uint32_t turn) const;
-	[[nodiscard]] PlayerPublicInfo get_player_public_info_current(uint32_t player_id) const;
+	[[nodiscard]] PlayerPublicInfo get_player_public_info(uint32_t player_id) const;
 	uint32_t get_player_info_history_size(uint32_t player_id) const;
 	
 	// Ship design management

@@ -59,8 +59,7 @@ void game_get_planet_perceived_values(void* game, uint32_t planet_id, uint32_t p
 [[nodiscard]] uint32_t game_get_num_fleets(void* game);
 
 // Player public information queries
-void game_get_player_public_info(void* game, uint32_t player_id, uint32_t turn, PlayerPublicInfo* out);
-void game_get_player_public_info_current(void* game, uint32_t player_id, PlayerPublicInfo* out);
+void game_get_player_public_info(void* game, uint32_t player_id, PlayerPublicInfo* out);
 [[nodiscard]] uint32_t game_get_player_info_history_size(void* game, uint32_t player_id);
 
 // Ship design queries and management
