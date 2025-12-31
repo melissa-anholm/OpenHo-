@@ -196,6 +196,30 @@ OpenHo/
 
 **Deliverable:** Static library `libOpenHoCore.a` with deterministic game engine
 
+### Phase 2b: Debugging AI (Future)
+
+**Status:** Not started
+
+**Purpose:** Quick implementation of a simple AI opponent for testing and debugging the base game mechanics. This AI makes random/semi-random decisions to explore the game's action space and find bugs/edge cases.
+
+**Planned:**
+- [ ] Create RandomAI class with basic decision-making
+- [ ] Implement random action selection (colonize, build ships, research, attack)
+- [ ] Add action validation (only valid actions)
+- [ ] Create test harness for running multiple games
+- [ ] Implement logging and error tracking
+- [ ] Run stress tests to find game mechanic bugs
+
+**Characteristics:**
+- Not strategically sophisticated
+- Explores game action space broadly
+- Finds edge cases and bugs
+- Quick to implement (~1-2 days)
+- Builds infrastructure for Phase 4 AI
+- Can run 100+ games for regression testing
+
+**Deliverable:** RandomAI class integrated into game engine for testing
+
 ### Phase 3a: Objective-C++ Bridge (Future)
 
 **Status:** Not started
@@ -223,6 +247,82 @@ OpenHo/
 - [ ] Settings and preferences
 
 **Deliverable:** Native macOS application `OpenHo.app`
+
+### Phase 4: Sophisticated AI Development (Future)
+
+**Status:** Planning/Design phase
+
+**Purpose:** Develop a powerful, self-improving AI opponent through a multi-layered approach combining spatial analysis, behavioral cloning, and generative adversarial networks.
+
+**Architecture Overview:**
+
+1. **Influence Maps (Spatial Analysis)**
+   - Analyze galaxy topology and player positions
+   - Calculate strategic zones, threats, opportunities
+   - Provides interpretable spatial reasoning
+
+2. **Expert Behavior Cloning**
+   - Record expert human gameplay
+   - Train neural network to recognize expert decision patterns
+   - Provides "expert taste" to discriminator
+   - Data sources: player recordings, synthetic expert data from heuristics
+
+3. **GAN Training (Self-Play Improvement)**
+   - **Generator:** Creates novel strategies and move sequences
+   - **Discriminator:** Initialized with expert behavior model, evaluates move quality
+   - **Training:** Self-play games between generator and discriminator
+   - Result: AI learns to generate expert-like but novel strategies
+   - No explicit reward function needed (discriminator provides feedback)
+
+4. **Difficulty Levels**
+   - Different training iterations = different skill levels
+   - Different discriminator weights = different personalities
+   - Seeded randomness for variety (not fully deterministic)
+
+**Development Phases:**
+
+**Phase 4a: Influence Maps & Strategic Framework**
+- [ ] Implement spatial analysis system
+- [ ] Define influence map calculations
+- [ ] Create heuristic decision-making framework
+- [ ] Baseline AI using influence maps and heuristics
+
+**Phase 4b: Behavioral Cloning**
+- [ ] Design expert data collection system
+- [ ] Record expert games (player recordings)
+- [ ] Extract features from game states
+- [ ] Train neural network on expert decisions
+- [ ] Validate cloning model accuracy
+
+**Phase 4c: GAN Training Infrastructure**
+- [ ] Design generator network architecture
+- [ ] Integrate discriminator with cloning model
+- [ ] Implement self-play training loop
+- [ ] Create training harness for offline training
+- [ ] Train multiple AI agents with different parameters
+
+**Phase 4d: Difficulty & Personality**
+- [ ] Create difficulty level progression
+- [ ] Design personality profiles (if desired)
+- [ ] Tune discriminator weights for variety
+- [ ] Validate AI quality at each difficulty level
+
+**Key Design Decisions:**
+- AI is non-deterministic (seeded randomness for variety)
+- Training happens offline before release
+- Runtime AI is fast (just evaluates learned patterns)
+- Training can be computationally expensive
+- Self-play eliminates need for explicit reward function
+
+**Dependencies:**
+- Complete Phase 2 game mechanics
+- Stable game state serialization
+- RandomAI framework from Phase 2b (reusable infrastructure)
+- Expert gameplay data
+
+**Estimated Effort:** Very High (significant ML/AI work)
+
+**Deliverable:** Trained AI models for multiple difficulty levels
 
 ---
 
@@ -344,17 +444,20 @@ OpenHo/
 2. Implement save/load game state (binary format preferred, JSON as fallback)
 3. Serialization system for multiplayer sync
 4. Comprehensive testing and validation
+5. **Phase 2b:** Implement RandomAI for game mechanic testing and debugging
 
 ### Medium Term
 1. Begin Phase 3a: Objective-C++ bridge layer
 2. Create GameBridge for UI communication
 3. Memory management and lifecycle handling
+4. Run RandomAI stress tests to validate game mechanics
 
 ### Long Term
 1. Begin Phase 3b: SwiftUI application
 2. Implement game views and controls
 3. Graphics rendering and input handling
 4. Final integration and testing
+5. **Phase 4:** Develop sophisticated AI with influence maps, behavioral cloning, and GAN training
 
 ---
 
@@ -381,10 +484,18 @@ OpenHo/
   - No database unless absolutely necessary
   - Must support mid-game persistence for human players
 
+- **Sophisticated AI:** Phase 4 feature, deferred until Phase 2 game mechanics are complete
+  - Uses influence maps, behavioral cloning, and GAN training
+  - Requires expert gameplay data for behavioral cloning
+  - Training happens offline before release
+  - Runtime AI is fast and non-deterministic
+
 ### Design Notes
 - Player IDs must never be 0 (reserved for NOT_OWNED sentinel)
 - Planet names must be unique (used as primary identifier)
 - ColonizedPlanet uses pointer-based composition to avoid data duplication
+- Phase 2b RandomAI provides infrastructure for Phase 4 sophisticated AI
+- GAN training uses discriminator initialized with expert behavior model
 
 ---
 
@@ -456,6 +567,7 @@ git pull origin main    # Pull from GitHub
 
 | Date | Version | Changes |
 |------|---------|----------|
+| 2025-12-31 | 1.2 | Add Phase 2b (Debugging AI) and Phase 4 (Sophisticated AI with GAN training) |
 | 2025-12-31 | 1.1 | Major Planet/ColonizedPlanet refactoring, PlanetSnapshot implementation, save/load requirement |
 | 2025-12-29 | 1.0 | Initial consolidation of all project plans |
 
