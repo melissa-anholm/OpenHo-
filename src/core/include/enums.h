@@ -18,7 +18,7 @@ enum ShipType
 };
 
 // Planet nova state
-enum PlanetState
+enum PlanetNovaState
 {
 	PLANET_NORMAL = 0,
 	PLANET_WARNING = 1,

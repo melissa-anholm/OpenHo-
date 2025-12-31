@@ -301,7 +301,7 @@ void GameState::initialize_planets()
 		planet.metal = 100 + rng->nextInt32Range(0, 500);
 		
 			planet.owner = 0;  // Unowned
-			planet.state = PLANET_NORMAL;
+			planet.nova_state = PLANET_NORMAL;
 		
 		galaxy.planets.push_back(planet);
 	}
@@ -349,7 +349,7 @@ void GameState::calculate_player_incomes()
 		
 		for (const auto& colonized : player.colonized_planets)
 		{
-			player.money_income += colonized.income;
+			player.money_income += colonized.get_income();
 			// Metal income calculation would go here
 		}
 	}
@@ -366,7 +366,7 @@ void GameState::update_planet_incomes()
 			Planet* planet = get_planet(colonized.id);
 			if (!planet)
 			{
-				colonized.income = 0;
+				colonized.set_income(0);
 				continue;
 			}
 			
@@ -382,7 +382,7 @@ void GameState::update_planet_incomes()
 			double gravHappiness = std::max(0.0, 1.0 - gravDiff / 2.0);
 			double happiness = (tempHappiness + gravHappiness) / 2.0;
 			
-			colonized.income = static_cast<int32_t>(colonized.population * happiness * 10);
+				colonized.set_income(static_cast<int32_t>(colonized.get_population() * happiness * 10));
 		}
 	}
 }
@@ -742,15 +742,15 @@ void GameState::process_planets()
 			
 			// Calculate money allocated to this specific planet
 			int64_t planet_budget = static_cast<int64_t>(
-				total_planet_development_budget * colonized.planet_funding_fraction
+				total_planet_development_budget * colonized.get_funding_fraction()
 			);
 			
 			// Split the planet budget between mining and terraforming
 			int64_t terraforming_budget = static_cast<int64_t>(
-				planet_budget * colonized.get_budget_split().get_terraforming_fraction()
+				planet_budget * colonized.get_terraforming_fraction()
 			);
 			int64_t mining_budget = static_cast<int64_t>(
-				planet_budget * colonized.get_budget_split().get_mining_fraction()
+				planet_budget * colonized.get_mining_fraction()
 			);
 			
 			// TERRAFORMING: Calculate and apply temperature change
