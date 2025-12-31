@@ -13,24 +13,24 @@ typedef uint32_t EntityID;
 typedef uint32_t PlayerID;
 typedef double GalaxyCoord;
 
+// ============================================================================
+// Sentinel Values for Unknown/Unowned States
+// ============================================================================
+
+constexpr double UNKNOWN_DOUBLE_VALUE = -500.0;
+constexpr int32_t UNKNOWN_INT_VALUE = -500;
+constexpr int64_t INCOME_UNKNOWN = INT32_MIN;
+constexpr PlayerID NOT_OWNED = 0;
+constexpr PlayerID OWNER_UNKNOWN = UINT32_MAX;
+
 class Player;  // Forward declaration
 
 // ============================================================================
 // Data Structures
 // ============================================================================
 
-// Planet information snapshot (what a player knows about a planet)
-struct PlanetInfo
-{
-	double temperature;
-	double gravity;
-	int32_t metal;
-	std::string name;
-	PlayerID owner;
-	int32_t population;
-	int32_t income;
-	uint32_t observation_turn;  // When this information was collected
-};
+// Forward declaration of PlanetSnapshot (defined after Planet class)
+struct PlanetSnapshot;
 
 // Planet structure (actual state on the host)
 class Planet
@@ -64,17 +64,7 @@ public:
 		double p_true_gravity,
 		double p_true_temperature,
 		int32_t p_metal,
-		PlayerID p_owner = 0)
-		: id(p_id),
-		  name(p_name),
-		  x(p_x),
-		  y(p_y),
-		  true_gravity(p_true_gravity),
-		  true_temperature(p_true_temperature),
-		  metal(p_metal),
-		  owner(p_owner),
-		  nova_state(PLANET_NORMAL)
-	{ }
+		PlayerID p_owner = 0);
 };
 
 // Colonized planet - player-specific view of a planet with allocation information
@@ -193,6 +183,37 @@ public:
 		budget_split.enforce_positive();
 		budget_split.mining_fraction = 1.0 - budget_split.terraforming_fraction;
 	}
+};
+
+// ============================================================================
+// PlanetSnapshot Definition (after Planet class)
+// ============================================================================
+
+// Planet information snapshot (what a player knows about a planet)
+struct PlanetSnapshot
+{
+	uint32_t id;
+	std::string name;
+	GalaxyCoord x;
+	GalaxyCoord y;
+	
+	PlayerID as_seen_by;  // Which player created this snapshot
+	double apparent_temperature;
+	double apparent_gravity;
+	int32_t metal;
+	PlayerID apparent_owner;
+	int32_t population;
+	int32_t income;
+	uint32_t observation_year;  // When this information was collected
+	
+	bool can_be_profitable;
+	int perceived_value;
+	
+	// Factory methods to create snapshots
+	// partial_info: only basic data (id, name, coordinates) are copied
+	// full_info: all available fields are copied with apparent values calculated
+	static PlanetSnapshot partial_info(const Planet& planet, PlayerID player_id);
+	static PlanetSnapshot full_info(const Planet& planet, PlayerID player_id, Player* owner_player);
 };
 
 #endif // OPENHO_PLANET_H

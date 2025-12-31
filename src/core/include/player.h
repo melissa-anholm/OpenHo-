@@ -42,6 +42,9 @@ struct PlayerPublicInfo
 };
 
 // Player structure
+// IMPORTANT: Player IDs must never be 0!
+// PlayerID 0 is reserved to mean "NOT_OWNED" for planets.
+// Player IDs must start from 1 and increment from there.
 class Player
 {
 	friend class GameState;  // GameState has access to all private members
@@ -138,7 +141,7 @@ private:
 	std::vector<ColonizedPlanet> colonized_planets;
 	
 	// Fog of war: player's knowledge of planets
-	std::vector<PlanetInfo> planetKnowledge;
+	std::vector<PlanetSnapshot> planetKnowledge;
 	
 	// Ship designs
 	std::vector<ShipDesign> ship_designs;      // All designs, ordered by creation (max 100)
