@@ -2,7 +2,8 @@
 #define OPENHO_PLAYER_H
 
 #include "planet.h"
-#include "ship.h"
+#include "ship_design.h"
+#include "fleet.h"
 #include <cstdint>
 #include <vector>
 #include <string>
@@ -65,6 +66,9 @@ public:
 	
 	/// Get this player's ideal gravity for planets
 	double get_ideal_gravity() const { return ideal_gravity; }
+	
+	/// Get all fleets owned by this player
+	const std::vector<Fleet>& get_fleets() const { return fleets; }
 	
 	// Technology levels for a player
 	struct TechnologyLevels
@@ -146,6 +150,10 @@ private:
 	// Ship designs
 	std::vector<ShipDesign> ship_designs;      // All designs, ordered by creation (max 100)
 	uint32_t next_ship_design_id;                // Counter for unique design IDs (never resets)
+	
+	// Fleets (groups of identical ships)
+	std::vector<Fleet> fleets;                 // All fleets owned by this player
+	uint32_t next_fleet_id;                    // Counter for unique fleet IDs (never resets)
 	
 	// Public accessor for current turn's public information
 	[[nodiscard]] PlayerPublicInfo get_player_public_info_current() const;

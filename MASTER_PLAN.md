@@ -157,7 +157,15 @@ OpenHo/
 
 ### Phase 2: C++ Core Implementation (Current)
 
-**Status:** Foundation layer complete, core logic in progress
+**Overall Status:** Foundation layer complete, core logic in progress
+
+**Deliverable:** Static library `libOpenHoCore.a` with deterministic game engine
+
+---
+
+#### Phase 2a: Core Data Structures & Foundation
+
+**Status:** ✅ COMPLETE
 
 **Completed:**
 - ✅ Project structure with CMakeLists.txt
@@ -179,28 +187,173 @@ OpenHo/
 - ✅ Name-based planet lookup system in GameState
 - ✅ Player ideal_gravity and ideal_temperature accessors
 
+---
+
+#### Phase 2b: Fleet System & Ship Design (Current)
+
+**Status:** 🔄 IN PROGRESS
+
+**Objective:** Replace individual ship management with fleet-based system; enforce immutability of ship designs
+
+**Completed:**
+- ✅ Fleet struct with multiple identical ships per fleet
+- ✅ Fleet position tracking (current_planet, origin_planet, destination_planet)
+- ✅ Fleet movement tracking (distance_to_destination, turns_to_destination)
+- ✅ Fleet fuel management (refuel() and partial_refuel() methods)
+- ✅ ShipDesign tech levels made private with public getters
+- ✅ ShipDesign constructor for initialization during creation
+- ✅ Friend function set_ship_design_tech() for controlled initialization
+- ✅ Player class updated with fleets vector and next_fleet_id counter
+- ✅ GameState fleet management methods (create_fleet, get_fleet, delete_fleet, etc.)
+
 **In Progress:**
-- [ ] Initialize planetKnowledge vector for all players at game start
-- [ ] Implement planet observation system (update PlanetSnapshot when observed)
-- [ ] Complete C API wrapper implementation (ai_interface.cpp)
-- [ ] Implement turn processing logic:
-  - [ ] Money allocation distribution
-  - [ ] Research advancement
-  - [ ] Terraforming effects
-  - [ ] Mining extraction
-  - [ ] Ship movement and combat
-  - [ ] Nova handling
-- [ ] Save/Load game state (binary or JSON format)
+- [ ] Remove or refactor individual Ship class (evaluate necessity)
+- [ ] Update GameState to remove player_ships mapping (migrate to fleets)
+- [ ] Remove galaxy.ships vector (migrate to player-owned fleets)
+- [ ] Update serialization for fleet-based system
+
+**Dependencies:** Phase 2a (complete)
+
+**Next:** Phase 2c (Galaxy Initialization)
+
+---
+
+#### Phase 2c: Galaxy Initialization (CRITICAL)
+
+**Status:** ⏳ NOT STARTED
+
+**Objective:** Generate and populate galaxy with planets; assign starting planets and resources to players
+
+**Planned:**
+- [ ] Implement galaxy generation algorithm
+- [ ] Distribute planets to players (starting positions)
+- [ ] Initialize player resources (money, metal, technology)
+- [ ] Distribute starting fleets to players
+- [ ] Initialize planetKnowledge vectors for fog of war
+- [ ] Set up initial planet observations
+
+**Dependencies:** Phase 2b (complete)
+
+**Blocks:** Phase 2d (Ship Movement), Phase 2e (Battle Mechanics), Phase 2f (Turn Processing)
+
+**Estimated Effort:** 2-3 days
+
+---
+
+#### Phase 2d: Ship Movement & Navigation (CRITICAL)
+
+**Status:** ⏳ NOT STARTED
+
+**Objective:** Implement fleet movement system with pathfinding and fuel consumption
+
+**Planned:**
+- [ ] Define fleet movement mechanics and orders
+- [ ] Implement pathfinding/navigation between planets
+- [ ] Collision detection and avoidance
+- [ ] Fuel consumption during transit
+- [ ] Execute movement orders each turn
+- [ ] Handle fleet arrival at destination
+- [ ] Implement refueling at planets
+
+**Dependencies:** Phase 2c (Galaxy Initialization)
+
+**Blocks:** Phase 2e (Battle Mechanics), Phase 2f (Turn Processing)
+
+**Estimated Effort:** 3-4 days
+
+---
+
+#### Phase 2e: Battle Mechanics (DEFERRED)
+
+**Status:** ⏳ NOT STARTED (Deferred)
+
+**Objective:** Implement combat resolution when fleets meet; defer detailed mechanics until core systems stable
+
+**Planned:**
+- [ ] Create placeholder/stub for turn processing
+- [ ] Implement fleet encounter detection
+- [ ] Basic combat resolution (damage calculation, ship destruction)
+- [ ] Victory conditions and surrender logic
+- [ ] Retreat mechanics
+- [ ] Detailed balance pass (post-Phase 2f)
+
+**Status Note:** Placeholder implementation needed for Phase 2f (Turn Processing) to function, but detailed balance/mechanics deferred until core game loop stable
+
+**Dependencies:** Phase 2d (Ship Movement)
+
+**Blocks:** Phase 2f (Turn Processing)
+
+**Estimated Effort:** 2-3 days (placeholder), 5+ days (full implementation)
+
+---
+
+#### Phase 2f: Turn Processing & Game Loop (CRITICAL)
+
+**Status:** ⏳ NOT STARTED
+
+**Objective:** Implement complete turn processing pipeline integrating all game systems
+
+**Planned:**
+- [ ] Money allocation distribution
+- [ ] Research advancement
+- [ ] Terraforming effects
+- [ ] Mining extraction
+- [ ] Ship/fleet movement execution
+- [ ] Battle resolution
+- [ ] Nova handling
+- [ ] Player public information capture (for history)
+- [ ] Turn increment and game state updates
+
+**Dependencies:** Phase 2c, 2d, 2e (all complete)
+
+**Estimated Effort:** 3-4 days
+
+---
+
+#### Phase 2g: Serialization & Save/Load
+
+**Status:** ⏳ NOT STARTED
+
+**Objective:** Implement game state persistence and multiplayer synchronization
+
+**Planned:**
+- [ ] Binary serialization format for game state
+- [ ] Save/load game state to disk
 - [ ] Serialization system for multiplayer sync
-- [ ] Unit tests for core systems
+- [ ] Checksum/validation for data integrity
+- [ ] Compression for network transmission
 
-**Deliverable:** Static library `libOpenHoCore.a` with deterministic game engine
+**Dependencies:** Phase 2f (Turn Processing complete)
 
-### Phase 2b: Debugging AI (Future)
+**Estimated Effort:** 2-3 days
 
-**Status:** Not started
+---
 
-**Purpose:** Quick implementation of a simple AI opponent for testing and debugging the base game mechanics. This AI makes random/semi-random decisions to explore the game's action space and find bugs/edge cases.
+#### Phase 2h: Testing & Validation
+
+**Status:** ⏳ NOT STARTED
+
+**Objective:** Comprehensive testing of all Phase 2 systems
+
+**Planned:**
+- [ ] Unit tests for RNG determinism
+- [ ] Unit tests for GameState initialization
+- [ ] Unit tests for turn processing
+- [ ] Integration tests for multiplayer synchronization
+- [ ] Stress tests with RandomAI
+- [ ] Edge case validation
+
+**Dependencies:** Phase 2f (Turn Processing complete)
+
+**Estimated Effort:** 2-3 days
+
+---
+
+#### Phase 2i: RandomAI for Debugging (Optional)
+
+**Status:** ⏳ NOT STARTED
+
+**Objective:** Quick implementation of simple AI for testing and debugging game mechanics
 
 **Planned:**
 - [ ] Create RandomAI class with basic decision-making
@@ -210,6 +363,8 @@ OpenHo/
 - [ ] Implement logging and error tracking
 - [ ] Run stress tests to find game mechanic bugs
 
+**Dependencies:** Phase 2f (Turn Processing complete)
+
 **Characteristics:**
 - Not strategically sophisticated
 - Explores game action space broadly
@@ -218,7 +373,11 @@ OpenHo/
 - Builds infrastructure for Phase 4 AI
 - Can run 100+ games for regression testing
 
+**Estimated Effort:** 1-2 days
+
 **Deliverable:** RandomAI class integrated into game engine for testing
+
+
 
 ### Phase 3a: Objective-C++ Bridge (Future)
 
@@ -432,61 +591,37 @@ OpenHo/
 
 ## Next Steps (Priority Order)
 
-### Critical Path Dependencies
+### Phase 2 Sub-Phase Dependency Chain
 
-Before implementing higher-level features, these foundational systems must be in place:
+Phase 2 sub-phases must be completed in strict order:
 
-**Phase 2c: Galaxy Initialization (CRITICAL)**
-- [ ] Generate/populate galaxy with planets
-- [ ] Assign starting planets to players
-- [ ] Initialize player resources and technology
-- [ ] Distribute starting ships
-- Prerequisite for: all gameplay
-
-**Phase 2d: Ship Movement (CRITICAL)**
-- [ ] Define ship movement mechanics and orders
-- [ ] Implement pathfinding/navigation
-- [ ] Collision detection and avoidance
-- [ ] Execute movement orders each turn
-- Prerequisite for: combat, exploration, planet observation
-
-**Phase 2e: Battle Mechanics (DEFERRED)**
-- [ ] Combat resolution when fleets meet
-- [ ] Damage calculation and ship destruction
-- [ ] Victory conditions and surrender
-- [ ] Retreat mechanics
-- Status: Deferred until core mechanics stable
-- Note: Placeholder/stub implementation needed for turn processing
+1. **Phase 2a: Core Data Structures** - ✅ COMPLETE
+2. **Phase 2b: Fleet System** - 🔄 IN PROGRESS (current)
+3. **Phase 2c: Galaxy Initialization** - ⏳ BLOCKED (waiting for 2b)
+4. **Phase 2d: Ship Movement** - ⏳ BLOCKED (waiting for 2c)
+5. **Phase 2e: Battle Mechanics** - ⏳ BLOCKED (waiting for 2d)
+6. **Phase 2f: Turn Processing** - ⏳ BLOCKED (waiting for 2c, 2d, 2e)
+7. **Phase 2g: Serialization** - ⏳ BLOCKED (waiting for 2f)
+8. **Phase 2h: Testing** - ⏳ BLOCKED (waiting for 2f)
+9. **Phase 2i: RandomAI** - ⏳ OPTIONAL (waiting for 2f)
 
 ### Immediate (Next Session)
-1. **Galaxy Initialization** - Set up initial game state with planets and players
-2. **Ship Movement** - Implement ship movement system
-3. Initialize planetKnowledge vector for all players at game start
-4. Implement planet observation system (update PlanetSnapshot when observed)
-5. Write unit tests for RNG determinism
 
-### Short Term
-1. Complete turn processing logic (money allocation, research, terraforming, mining, ships, novae)
-2. Implement remaining C API wrapper functions in ai_interface.cpp
-3. Implement save/load game state (binary format preferred, JSON as fallback)
-4. Serialization system for multiplayer sync
-5. Comprehensive testing and validation
-6. **Phase 2b:** Implement RandomAI for game mechanic testing and debugging
+1. **Complete Phase 2b** - Finish Fleet System implementation:
+   - Remove or refactor individual Ship class
+   - Update GameState to remove player_ships mapping
+   - Remove galaxy.ships vector
+   - Update serialization for fleet-based system
 
-### Medium Term
-1. Begin Phase 3a: Objective-C++ bridge layer
-2. Create GameBridge for UI communication
-3. Memory management and lifecycle handling
-4. Run RandomAI stress tests to validate game mechanics
+2. **Begin Phase 2c** - Galaxy Initialization:
+   - Implement galaxy generation algorithm
+   - Distribute planets to players
+   - Initialize player resources
+   - Distribute starting fleets
 
-### Long Term
-1. Begin Phase 3b: SwiftUI application
-2. Implement game views and controls
-3. Graphics rendering and input handling
-4. Final integration and testing
-5. **Phase 4:** Develop sophisticated AI with influence maps, behavioral cloning, and GAN training
+3. **Initialize planetKnowledge** - Set up fog of war system
 
----
+4. **Implement planet observation** - Update PlanetSnapshot when observed
 
 ## Testing Strategy
 

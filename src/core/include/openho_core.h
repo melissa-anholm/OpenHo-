@@ -22,7 +22,7 @@ typedef double GalaxyCoord;
 
 #include "enums.h"
 #include "planet.h"
-#include "ship.h"
+#include "ship_design.h"
 #include "player.h"
 #include "galaxy.h"
 
@@ -43,7 +43,6 @@ void game_destroy(void* game);
 [[nodiscard]] uint32_t game_get_current_turn(void* game);
 [[nodiscard]] uint32_t game_get_num_players(void* game);
 [[nodiscard]] uint32_t game_get_num_planets(void* game);
-[[nodiscard]] uint32_t game_get_num_ships(void* game);
 
 // Player queries
 void game_get_player(void* game, uint32_t player_id, Player* out);
@@ -55,9 +54,6 @@ void game_get_player(void* game, uint32_t player_id, Player* out);
 // Planet queries
 void game_get_planet(void* game, uint32_t planet_id, Planet* out);
 void game_get_planet_perceived_values(void* game, uint32_t planet_id, uint32_t player_id, double* out_temp, double* out_grav);
-
-// Ship queries
-void game_get_ship(void* game, uint32_t ship_id, Ship* out);
 
 // Fleet queries
 [[nodiscard]] uint32_t game_get_num_fleets(void* game);

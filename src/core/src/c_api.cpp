@@ -68,14 +68,7 @@ uint32_t game_get_current_turn(void* game)
 		return static_cast<uint32_t>(gameState->get_galaxy().planets.size());
 }
 
-	uint32_t game_get_num_ships(void* game)
-	{
-		if (!game)
-			return 0;
-		
-		GameState* gameState = static_cast<GameState*>(game);
-		return static_cast<uint32_t>(gameState->get_galaxy().ships.size());
-}
+
 
 uint32_t game_get_num_fleets(void* game)
 {
@@ -84,13 +77,13 @@ uint32_t game_get_num_fleets(void* game)
 	
 	GameState* gameState = static_cast<GameState*>(game);
 	
-	std::unordered_set<uint32_t> fleet_ids;
-	for (const auto& ship : gameState->get_galaxy().ships)
+	uint32_t total_fleets = 0;
+	for (const auto& player : gameState->get_galaxy().players)
 	{
-		fleet_ids.insert(ship.fleet_id);
+		total_fleets += static_cast<uint32_t>(player.get_fleets().size());
 	}
 	
-	return static_cast<uint32_t>(fleet_ids.size());
+	return total_fleets;
 }
 
 // ============================================================================
@@ -205,29 +198,6 @@ void game_get_planet_perceived_values(void* game, uint32_t planetID, uint32_t pl
 	double idealGrav = gameState->get_player_ideal_gravity(player_id);
 	double gravDiff = std::abs(planet->true_gravity - idealGrav);
 	*outGravity = std::max(0.0, 1.0 - gravDiff / 2.0);
-}
-
-// ============================================================================
-// Ship Queries
-// ============================================================================
-
-void game_get_ship(void* game, uint32_t shipID, Ship* out)
-{
-	if (!game || !out)
-		return;
-	
-	GameState* gameState = static_cast<GameState*>(game);
-	const Ship* ship = gameState->get_ship(shipID);
-	
-	if (ship)
-	{
-		*out = *ship;
-	}
-	else
-	{
-		// Return a zeroed-out ship structure
-		std::memset(out, 0, sizeof(Ship));
-	}
 }
 
 // ============================================================================
@@ -481,7 +451,7 @@ void game_delete_ship_design(void* game, uint32_t player_id, uint32_t design_id)
 		return;
 	
 	GameState* gameState = static_cast<GameState*>(game);
-	gameState->delete_ship_design(player_id, design_id);
+	(void)gameState->delete_ship_design(player_id, design_id);  // Ignore return value
 }
 
 void game_build_ship_from_design(void* game, uint32_t player_id, uint32_t design_id)

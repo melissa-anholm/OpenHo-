@@ -50,12 +50,7 @@ public:
 	// Get all planets owned by a player (O(1) lookup)
 	const std::vector<size_t>& get_player_planets(uint32_t player_id) const;
 	
-	// Ship access
-	[[nodiscard]] Ship* get_ship(uint32_t ship_id);
-	[[nodiscard]] const Ship* get_ship(uint32_t ship_id) const;
-	
-	// Get all ships owned by a player (O(1) lookup)
-	const std::vector<size_t>& get_player_ships(uint32_t player_id) const;
+
 	
 	// Player property accessors (for C API and internal use)
 	int64_t get_player_money_income(uint32_t player_id) const;
@@ -76,6 +71,15 @@ public:
 	[[nodiscard]] const std::vector<ShipDesign>& get_player_ship_designs(uint32_t player_id) const;
 	[[nodiscard]] bool delete_ship_design(uint32_t player_id, uint32_t design_id);
 	void build_ship_from_design(uint32_t player_id, uint32_t design_id);
+	
+	// Fleet management
+	[[nodiscard]] uint32_t create_fleet(uint32_t player_id, const std::string& name, uint32_t design_id, uint32_t ship_count, uint32_t planet_id);
+	[[nodiscard]] Fleet* get_fleet(uint32_t player_id, uint32_t fleet_id);
+	[[nodiscard]] const Fleet* get_fleet(uint32_t player_id, uint32_t fleet_id) const;
+	[[nodiscard]] const std::vector<Fleet>& get_player_fleets(uint32_t player_id) const;
+	[[nodiscard]] bool delete_fleet(uint32_t player_id, uint32_t fleet_id);
+	void move_fleet(uint32_t player_id, uint32_t fleet_id, uint32_t destination_planet_id);
+	void refuel_fleet(uint32_t player_id, uint32_t fleet_id);
 	
 	// Turn processing
 	void process_turn();
@@ -100,11 +104,10 @@ private:
 	// Entity ID mappings for quick lookup
 	std::unordered_map<uint32_t, size_t> planet_id_to_index;
 	std::unordered_map<std::string, size_t> planet_name_to_index;
-	std::unordered_map<uint32_t, size_t> ship_id_to_index;
 	std::unordered_map<uint32_t, size_t> player_id_to_index;
 	
-	// Player ship ownership mapping: player_id -> vector of ship indices (O(1) lookup)
-	std::unordered_map<uint32_t, std::vector<size_t>> player_ships;
+	// Fleet ownership mapping: (player_id, fleet_id) -> fleet index (O(1) lookup)
+	std::unordered_map<uint64_t, size_t> fleet_id_to_index;
 	
 	// Player planet ownership mapping: player_id -> vector of planet indices (O(1) lookup)
 	std::unordered_map<uint32_t, std::vector<size_t>> player_planets;

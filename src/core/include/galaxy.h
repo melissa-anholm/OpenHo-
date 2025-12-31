@@ -2,7 +2,6 @@
 #define OPENHO_GALAXY_H
 
 #include "planet.h"
-#include "ship.h"
 #include "player.h"
 #include <cstdint>
 #include <vector>
@@ -32,9 +31,6 @@ struct Galaxy
 	
 	// Immutable planet list
 	std::vector<Planet> planets;
-	
-	// Mutable ship list
-	std::vector<Ship> ships;
 	
 	// Players
 	std::vector<Player> players;

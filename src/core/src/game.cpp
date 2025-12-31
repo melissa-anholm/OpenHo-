@@ -171,30 +171,7 @@ const Planet* GameState::get_planet(const std::string& planet_name) const
 	return &galaxy.planets[it->second];
 }
 
-Ship* GameState::get_ship(uint32_t shipID)
-{
-	auto it = ship_id_to_index.find(shipID);
-	if (it == ship_id_to_index.end())
-		return nullptr;
-	return &galaxy.ships[it->second];
-}
 
-const Ship* GameState::get_ship(uint32_t shipID) const
-{
-	auto it = ship_id_to_index.find(shipID);
-	if (it == ship_id_to_index.end())
-		return nullptr;
-	return &galaxy.ships[it->second];
-}
-
-const std::vector<size_t>& GameState::get_player_ships(uint32_t player_id) const
-{
-	static const std::vector<size_t> emptyVector;
-	auto it = player_ships.find(player_id);
-	if (it == player_ships.end())
-		return emptyVector;
-	return it->second;
-}
 
 const std::vector<size_t>& GameState::get_player_planets(uint32_t player_id) const
 {
@@ -341,13 +318,7 @@ void GameState::initialize_players()
 			}
 		}
 	
-	// Build ship ID to index map and player ship ownership map
-	for (size_t i = 0; i < galaxy.ships.size(); ++i)
-	{
-		ship_id_to_index[galaxy.ships[i].id] = i;
-		player_ships[galaxy.ships[i].owner].push_back(i);
-	}
-	
+
 	// Build player ID to index map
 	for (size_t i = 0; i < galaxy.players.size(); ++i)
 	{
@@ -536,16 +507,12 @@ uint32_t GameState::create_ship_design(uint32_t player_id, const std::string& na
 	design.id = player->next_ship_design_id++;  // Use monotonic counter for unique IDs
 	design.name = name;
 	design.type = type;
-	design.tech_range = tech_range;
-	design.tech_speed = tech_speed;
-	design.tech_weapons = tech_weapons;
-	design.tech_shields = tech_shields;
-	design.tech_miniaturization = tech_miniaturization;
+	set_ship_design_tech(design, tech_range, tech_speed, tech_weapons, tech_shields, tech_miniaturization);
 	
 	// Calculate costs using formulas
-	design.build_cost = GameFormulas::calculate_ship_design_build_cost(tech_range, tech_speed, tech_weapons, tech_shields, tech_miniaturization);
-	design.prototype_cost = GameFormulas::calculate_ship_design_prototype_cost(tech_range, tech_speed, tech_weapons, tech_shields, tech_miniaturization);
-	design.metal_cost = GameFormulas::calculate_ship_design_metal_cost(tech_range, tech_speed, tech_weapons, tech_shields, tech_miniaturization);
+	design.build_cost = GameFormulas::calculate_ship_design_build_cost(design.get_range(), design.get_speed(), design.get_weapons(), design.get_shields(), design.get_miniaturization());
+	design.prototype_cost = GameFormulas::calculate_ship_design_prototype_cost(design.get_range(), design.get_speed(), design.get_weapons(), design.get_shields(), design.get_miniaturization());
+	design.metal_cost = GameFormulas::calculate_ship_design_metal_cost(design.get_range(), design.get_speed(), design.get_weapons(), design.get_shields(), design.get_miniaturization());
 	
 	// Add to permanent designs
 	player->ship_designs.push_back(design);
@@ -586,13 +553,12 @@ bool GameState::delete_ship_design(uint32_t player_id, uint32_t design_id)
 	if (!player)
 		return false;
 	
-	// Check if any ships use this design
-	for (const auto& ship : galaxy.ships)
+	// Check if any fleets use this design
+	for (const auto& fleet : player->fleets)
 	{
-		if (ship.owner == player_id)
+		if (fleet.ship_design && fleet.ship_design->id == design_id)
 		{
-			// Need to check if ship uses this design
-			// (This requires adding design_id to Ship struct - TBD)
+			// Cannot delete a design that's in use by a fleet
 			return false;
 		}
 	}
@@ -817,3 +783,183 @@ PlayerPublicInfo Player::get_player_public_info_current() const
 	
 	return info;
 }
+
+// ============================================================================
+// Fleet Management Methods
+// ============================================================================
+
+uint32_t GameState::create_fleet(uint32_t player_id, const std::string& name, uint32_t design_id, 
+                                 uint32_t ship_count, uint32_t planet_id)
+{
+	Player* player = get_player(player_id);
+	if (!player)
+		return 0;
+	
+	// Validate ship count
+	if (ship_count == 0 || ship_count > 1000)
+		return 0;
+	
+	// Get the ship design
+	const ShipDesign* design = get_ship_design(player_id, design_id);
+	if (!design)
+		return 0;
+	
+	// Get the planet
+	Planet* planet = get_planet(planet_id);
+	if (!planet)
+		return 0;
+	
+	// Create the fleet
+	Fleet fleet;
+	fleet.id = player->next_fleet_id++;
+	fleet.owner = player_id;
+	fleet.name = name;
+	fleet.ship_design = const_cast<ShipDesign*>(design);  // Store pointer to design
+	fleet.ship_count = ship_count;
+	fleet.fuel = design->get_range();  // Start with full fuel
+	fleet.in_transit = false;
+	fleet.current_planet = planet;
+	fleet.origin_planet = nullptr;
+	fleet.destination_planet = nullptr;
+	fleet.distance_to_destination = 0.0;
+	fleet.turns_to_destination = 0;
+	
+	// Add to player's fleets
+	player->fleets.push_back(fleet);
+	
+	// Store in fleet ID map: (player_id << 32 | fleet_id) -> index
+	uint64_t fleet_key = ((uint64_t)player_id << 32) | fleet.id;
+	fleet_id_to_index[fleet_key] = player->fleets.size() - 1;
+	
+	return fleet.id;
+}
+
+Fleet* GameState::get_fleet(uint32_t player_id, uint32_t fleet_id)
+{
+	Player* player = get_player(player_id);
+	if (!player)
+		return nullptr;
+	
+	uint64_t fleet_key = ((uint64_t)player_id << 32) | fleet_id;
+	auto it = fleet_id_to_index.find(fleet_key);
+	if (it == fleet_id_to_index.end())
+		return nullptr;
+	
+	size_t index = it->second;
+	if (index >= player->fleets.size())
+		return nullptr;
+	
+	return &player->fleets[index];
+}
+
+const Fleet* GameState::get_fleet(uint32_t player_id, uint32_t fleet_id) const
+{
+	const Player* player = get_player(player_id);
+	if (!player)
+		return nullptr;
+	
+	uint64_t fleet_key = ((uint64_t)player_id << 32) | fleet_id;
+	auto it = fleet_id_to_index.find(fleet_key);
+	if (it == fleet_id_to_index.end())
+		return nullptr;
+	
+	size_t index = it->second;
+	if (index >= player->fleets.size())
+		return nullptr;
+	
+	return &player->fleets[index];
+}
+
+const std::vector<Fleet>& GameState::get_player_fleets(uint32_t player_id) const
+{
+	static const std::vector<Fleet> emptyVector;
+	
+	const Player* player = get_player(player_id);
+	if (!player)
+		return emptyVector;
+	
+	return player->fleets;
+}
+
+bool GameState::delete_fleet(uint32_t player_id, uint32_t fleet_id)
+{
+	Player* player = get_player(player_id);
+	if (!player)
+		return false;
+	
+	// Find and remove the fleet
+	auto it = std::find_if(player->fleets.begin(), player->fleets.end(),
+	                       [fleet_id](const Fleet& f) { return f.id == fleet_id; });
+	
+	if (it != player->fleets.end())
+	{
+		size_t index = std::distance(player->fleets.begin(), it);
+		player->fleets.erase(it);
+		
+		// Remove from fleet ID map
+		uint64_t fleet_key = ((uint64_t)player_id << 32) | fleet_id;
+		fleet_id_to_index.erase(fleet_key);
+		
+		// Update indices for remaining fleets
+		for (size_t i = index; i < player->fleets.size(); ++i)
+		{
+			uint64_t key = ((uint64_t)player_id << 32) | player->fleets[i].id;
+			fleet_id_to_index[key] = i;
+		}
+		
+		return true;
+	}
+	
+	return false;
+}
+
+void GameState::move_fleet(uint32_t player_id, uint32_t fleet_id, uint32_t destination_planet_id)
+{
+	Fleet* fleet = get_fleet(player_id, fleet_id);
+	if (!fleet)
+		return;
+	
+	Planet* destination = get_planet(destination_planet_id);
+	if (!destination)
+		return;
+	
+	// If fleet is already at destination, do nothing
+	if (fleet->current_planet && fleet->current_planet->id == destination_planet_id)
+		return;
+	
+	// Set up movement
+	fleet->origin_planet = fleet->current_planet;
+	fleet->destination_planet = destination;
+	fleet->current_planet = nullptr;
+	fleet->in_transit = true;
+	
+	// Calculate distance and turns (placeholder - will be refined with actual pathfinding)
+	if (fleet->origin_planet && fleet->destination_planet)
+	{
+		double dx = fleet->destination_planet->x - fleet->origin_planet->x;
+		double dy = fleet->destination_planet->y - fleet->origin_planet->y;
+		fleet->distance_to_destination = std::sqrt(dx * dx + dy * dy);
+		
+		// Calculate turns based on fleet speed
+		if (fleet->ship_design && fleet->ship_design->get_speed() > 0)
+		{
+			fleet->turns_to_destination = static_cast<uint32_t>(
+				std::ceil(fleet->distance_to_destination / fleet->ship_design->get_speed())
+			);
+		}
+		else
+		{
+			fleet->turns_to_destination = 0;
+		}
+	}
+}
+
+void GameState::refuel_fleet(uint32_t player_id, uint32_t fleet_id)
+{
+	Fleet* fleet = get_fleet(player_id, fleet_id);
+	if (!fleet)
+		return;
+	
+	fleet->refuel();
+}
+
