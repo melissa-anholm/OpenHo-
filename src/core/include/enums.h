@@ -44,6 +44,16 @@ enum TechStream
 };
 
 // ============================================================================
+// Sentinel Values for Unknown/Unowned States
+// ============================================================================
+
+constexpr double UNKNOWN_DOUBLE_VALUE = -500.0;
+constexpr int32_t UNKNOWN_INT_VALUE = -500;
+constexpr int64_t INCOME_UNKNOWN = INT32_MIN;
+constexpr uint32_t NOT_OWNED = 0;
+constexpr uint32_t OWNER_UNKNOWN = UINT32_MAX;
+
+// ============================================================================
 // Error Codes
 // ============================================================================
 // TODO: Implement error code system in Phase 2b

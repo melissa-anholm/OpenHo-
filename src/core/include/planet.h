@@ -13,16 +13,6 @@ typedef uint32_t EntityID;
 typedef uint32_t PlayerID;
 typedef double GalaxyCoord;
 
-// ============================================================================
-// Sentinel Values for Unknown/Unowned States
-// ============================================================================
-
-constexpr double UNKNOWN_DOUBLE_VALUE = -500.0;
-constexpr int32_t UNKNOWN_INT_VALUE = -500;
-constexpr int64_t INCOME_UNKNOWN = INT32_MIN;
-constexpr PlayerID NOT_OWNED = 0;
-constexpr PlayerID OWNER_UNKNOWN = UINT32_MAX;
-
 class Player;  // Forward declaration
 
 // ============================================================================
