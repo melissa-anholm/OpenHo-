@@ -108,15 +108,21 @@ private:
 	std::vector<Player> players;  // All players in the game
 	std::unique_ptr<DeterministicRNG> rng;
 	
-	// Entity ID mappings for quick lookup
-	std::unordered_map<uint32_t, size_t> planet_id_to_index;
-	std::unordered_map<std::string, size_t> planet_name_to_index;
-	std::unordered_map<uint32_t, size_t> player_id_to_index;
+	// ========== IMMUTABLE MAPPINGS (built once, never change) ==========
+	// Entity ID to index mappings - fixed after initialization
+	std::unordered_map<uint32_t, size_t> planet_id_to_index;      // planet ID -> index in galaxy.planets
+	std::unordered_map<std::string, size_t> planet_name_to_index;  // planet name -> index in galaxy.planets
+	std::unordered_map<uint32_t, size_t> player_id_to_index;       // player ID -> index in players
+	std::unordered_map<std::string, size_t> player_name_to_index;  // player name -> index in players
 	
+	// ========== MUTABLE MAPPINGS (updated frequently) ==========
 	// Fleet ownership mapping: (player_id, fleet_id) -> fleet index (O(1) lookup)
 	std::unordered_map<uint64_t, size_t> fleet_id_to_index;
 	
-	// Player planet ownership mapping: player_id -> vector of planet indices (O(1) lookup)
+	// Per-player fleet mapping: player_id -> vector of fleet indices (updated when fleets change)
+	std::unordered_map<uint32_t, std::vector<size_t>> player_fleets;
+	
+	// Player planet ownership mapping: player_id -> vector of planet indices (updated when planets colonized/lost)
 	std::unordered_map<uint32_t, std::vector<size_t>> player_planets;
 	
 	// Player public information history: player_id -> vector of PlayerPublicInfo (one per turn)

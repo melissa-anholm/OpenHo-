@@ -11,13 +11,13 @@
 // ============================================================================
 
 GameState::GameState(const GalaxyGenerationParams& params)
-	: galaxy(params), current_ai_rng_seed(0)
+	: current_ai_rng_seed(0)
 {
 	// Initialize RNG with deterministic seed
 	rng = std::make_unique<DeterministicRNG>(params.seed, params.seed);
 	
-	// Initialize planets
-	galaxy.initialize_planets(params, rng.get());
+	// Initialize galaxy (which initializes planets)
+	galaxy = Galaxy(params, rng.get());
 	
 	// Initialize players (placeholder - will be set by game setup)
 	initialize_players();
@@ -278,6 +278,21 @@ bool GameState::deserialize_state(const std::vector<uint8_t>& data)
 // Galaxy Initialization
 // ============================================================================
 
+Galaxy::Galaxy(const GalaxyGenerationParams& params, DeterministicRNG* rng)
+{
+	// Use pre-calculated gal_size from params
+	min_x = -params.gal_size;
+	max_x = params.gal_size;
+	min_y = -params.gal_size;
+	max_y = params.gal_size;
+	
+	current_turn = 0;
+	// planets and players vectors are default-constructed (empty)
+	
+	// Initialize planets
+	initialize_planets(params, rng);
+}
+
 void Galaxy::initialize_planets(const GalaxyGenerationParams& params, DeterministicRNG* rng)
 {
 	// Generate planets based on galaxy parameters
@@ -329,10 +344,22 @@ void GameState::initialize_players()
 		}
 	
 
-	// Build player ID to index map
+	// Build player ID to index map and player name to index map
 	for (size_t i = 0; i < players.size(); ++i)
 	{
 		player_id_to_index[players[i].id] = i;
+		player_name_to_index[players[i].name] = i;
+	}
+	
+	// Build per-player fleet mapping
+	for (size_t player_idx = 0; player_idx < players.size(); ++player_idx)
+	{
+		const auto& player = players[player_idx];
+		const auto& fleets = player.get_fleets();
+		for (size_t fleet_idx = 0; fleet_idx < fleets.size(); ++fleet_idx)
+		{
+			player_fleets[player.id].push_back(fleet_idx);
+		}
 	}
 }
 

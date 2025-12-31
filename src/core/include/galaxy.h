@@ -48,18 +48,12 @@ struct Galaxy
 	// Current turn number
 	uint32_t current_turn;
 	
-	// Constructor to initialize galaxy boundaries based on generation parameters
-	Galaxy(const GalaxyGenerationParams& params)
-	{
-		// Use pre-calculated gal_size from params
-		min_x = -params.gal_size;
-		max_x = params.gal_size;
-		min_y = -params.gal_size;
-		max_y = params.gal_size;
-		
-		current_turn = 0;
-		// planets and players vectors are default-constructed (empty)
-	}
+	// Constructor to initialize galaxy boundaries and planets
+	// Implementation in game.cpp
+	Galaxy(const GalaxyGenerationParams& params, class DeterministicRNG* rng);
+	
+	// Default constructor (needed for some use cases)
+	Galaxy() : min_x(0), max_x(0), min_y(0), max_y(0), current_turn(0) {}
 	
 	// Initialize planets in the galaxy based on generation parameters
 	// Requires access to RNG, so implementation is in game.cpp
