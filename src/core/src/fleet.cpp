@@ -29,12 +29,12 @@ Fleet::Fleet(uint32_t fleet_id, PlayerID player_id, const ShipDesign* design,
 
 void Fleet::refuel()
 {
-	fuel = static_cast<int64_t>(ship_design->get_range());
+	fuel = ship_design->get_range();
 }
 
-void Fleet::partial_refuel(int64_t amount)
+void Fleet::partial_refuel(int32_t amount)
 {
 	fuel += amount;
 	if (fuel > ship_design->get_range())
-		fuel = static_cast<int64_t>(ship_design->get_range());  // Cap at maximum
+		fuel = ship_design->get_range();  // Cap at maximum
 }

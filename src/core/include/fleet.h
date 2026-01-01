@@ -31,7 +31,7 @@ public:
 	const ShipDesign* ship_design;  // All ships in fleet use same design (pointer, not owned)
 	uint32_t ship_count;            // Number of identical ships in fleet (max 1000)
 	
-	int64_t fuel;                   // Current fuel level (all ships have same amount)
+	int32_t fuel;                   // Current fuel level (all ships have same amount)
 	bool in_transit;                // Is fleet currently traveling?
 	
 	// Position tracking
@@ -49,7 +49,7 @@ public:
 	void refuel();
 	
 	/// Refuel fleet by a specific amount, capped at maximum capacity
-	void partial_refuel(int64_t amount);
+	void partial_refuel(int32_t amount);
 };
 
 #endif // FLEET_H
