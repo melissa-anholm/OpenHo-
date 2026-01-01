@@ -166,7 +166,7 @@ const ShipDesign* Player::get_ship_design(uint32_t design_id) const
 	for (const auto& design : ship_designs)
 	{
 		if (design.id == design_id)
-			return &design;
+			{ return &design; }
 	}
 	return nullptr;
 }
@@ -192,48 +192,47 @@ bool Player::delete_ship_design(uint32_t design_id)
 
 void Player::receive_player_public_info(uint32_t source_player_id, const PlayerPublicInfo& info)
 {
-// Append the new info to the history for this player
-player_info_history[source_player_id].push_back(info);
+	// Append the new info to the history for this player
+	player_info_history[source_player_id].push_back(info);
 }
 
 const std::vector<PlayerPublicInfo>* Player::get_player_info_history(uint32_t player_id) const
 {
-auto it = player_info_history.find(player_id);
-if (it != player_info_history.end())
-return &it->second;
+	auto it = player_info_history.find(player_id);
+	if (it != player_info_history.end())
+	return &it->second;
 
-return nullptr;
+	return nullptr;
 }
 
 bool Player::validate_player_info_history(uint32_t player_id) const
 {
-auto it = player_info_history.find(player_id);
-if (it == player_info_history.end())
-return false;  // No history for this player
+	auto it = player_info_history.find(player_id);
+	if (it == player_info_history.end())
+		{ return false; }  // No history for this player
 
-const auto& history = it->second;
-if (history.empty())
-return false;  // Empty history
-
-// Check for consistency: each entry should have sequential years
-for (size_t i = 1; i < history.size(); ++i)
-{
-// Year should be sequential
-if (history[i].year != history[i-1].year + 1)
-return false;
-
-// Player ID should be consistent
-if (history[i].player_id != history[i-1].player_id)
-return false;
-}
-
-return true;
+	const auto& history = it->second;
+	if (history.empty())
+		{ return false; }  // Empty history
+	
+	// Check for consistency: each entry should have sequential years
+	for (size_t i = 1; i < history.size(); ++i)
+	{
+		// Year should be sequential
+		if (history[i].year != history[i-1].year + 1)
+			{ return false; }
+		
+		// Player ID should be consistent
+		if (history[i].player_id != history[i-1].player_id)
+			{ return false; }
+	}
+	return true;
 }
 
 void Player::request_full_player_info_resync(uint32_t player_id)
 {
-// This is a placeholder - in a real implementation, this would
-// communicate with GameState to request a full resync
-// For now, we just clear the history for this player
-player_info_history[player_id].clear();
+	// This is a placeholder - in a real implementation, this would
+	// communicate with GameState to request a full resync
+	// For now, we just clear the history for this player
+	player_info_history[player_id].clear();
 }
