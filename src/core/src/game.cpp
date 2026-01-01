@@ -106,7 +106,7 @@ int64_t GameState::get_player_metal_income(uint32_t player_id) const
 int64_t GameState::get_player_money(uint32_t player_id) const
 {
 	const Player* player = get_player(player_id);
-	return player ? player->money : 0;
+	return player ? player->money_savings : 0;
 }
 
 int64_t GameState::get_player_metal_reserve(uint32_t player_id) const
@@ -382,7 +382,7 @@ void GameState::process_money_allocation()
 	for (auto& player : players)
 	{
 		// Add income to money
-		player.money += player.money_income;
+		player.money_savings += player.money_income;
 		
 		// Allocate money according to allocation settings
 		// (This will be implemented in money_allocation.cpp)
@@ -412,7 +412,7 @@ void GameState::capture_player_public_info()
 	{
 		PlayerPublicInfo info;
 		info.player_id = player.id;
-		info.turn = galaxy->current_turn;
+		info.year = galaxy->current_turn;
 		
 		// Technology levels (subset - no Radical)
 		info.tech_range = player.tech.range;
@@ -423,7 +423,7 @@ void GameState::capture_player_public_info()
 		
 		// Resources
 		info.money_income = player.money_income;
-		info.money_savings = player.money;
+		info.money_savings = player.money_savings;
 		info.metal_savings = player.metal_reserve;
 		
 		// Calculated metrics
@@ -523,7 +523,7 @@ void GameState::build_ship_from_design(uint32_t player_id, uint32_t design_id)
 	
 	// Building from the design
 	// (Implementation for actually creating the ship will go here)
-	// This will deduct costs from player->money and player->metalReserve
+	// This will deduct costs from player->money_savings and player->metalReserve
 }
 
 
@@ -682,11 +682,11 @@ void GameState::process_planets()
 // Player Public Information
 // ============================================================================
 
-PlayerPublicInfo Player::get_player_public_info_current() const
+PlayerPublicInfo Player::get_player_public_info() const
 {
 	PlayerPublicInfo info;
 	info.player_id = id;
-	info.turn = 0;  // Will be set by GameState when storing
+	info.year = 0;  // Will be set by GameState when storing
 	
 	// Technology levels (subset - no Radical)
 	info.tech_range = tech.range;
@@ -697,9 +697,8 @@ PlayerPublicInfo Player::get_player_public_info_current() const
 	
 	// Resources
 	info.money_income = money_income;
-	info.money_savings = money;
+	info.money_savings = money_savings;
 	info.metal_savings = metal_reserve;
-	info.income = current_turn_income.total_income;
 	
 	// Calculated metrics (will be set by GameState)
 	info.ship_power = 0;

@@ -22,7 +22,7 @@ typedef uint32_t PlayerID;
 struct PlayerPublicInfo
 {
 	uint32_t player_id;
-	uint32_t turn;
+	uint32_t year;
 	
 	// Technology levels (subset - no Radical)
 	int32_t tech_range;
@@ -35,7 +35,7 @@ struct PlayerPublicInfo
 	int64_t money_income;
 	int64_t money_savings;
 	int64_t metal_savings;
-	int64_t income;  // Total income this turn (for historical tracking)
+
 	
 	// Calculated metrics
 	int64_t ship_power;
@@ -155,7 +155,7 @@ public:
 
 private:
 	// Resources
-	int64_t money;  // Savings account
+	int64_t money_savings;  // Savings account
 	int64_t metal_reserve;
 		
 	// Ideal planetary conditions (hidden from player)
@@ -191,7 +191,7 @@ private:
 	uint32_t next_fleet_id;                    // Counter for unique fleet IDs (never resets)
 	
 	// Public accessor for current turn's public information
-	[[nodiscard]] PlayerPublicInfo get_player_public_info_current() const;
+	[[nodiscard]] PlayerPublicInfo get_player_public_info() const;
 
 	// ========================================================================
 	// Money Allocation Calculation Helpers
