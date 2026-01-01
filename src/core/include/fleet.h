@@ -9,10 +9,22 @@ struct Planet;
 struct ShipDesign;
 typedef uint32_t PlayerID;
 
+// Forward declaration
+class Player;
+
 /// Fleet represents a group of identical ships traveling together
 /// All ships in a fleet must have the same design and fuel level
 struct Fleet
 {
+	friend class Player;  // Only Player can construct Fleet instances
+	
+private:
+	/// Private constructor - only Player can create Fleet instances
+	Fleet(uint32_t fleet_id, PlayerID player_id, const ShipDesign* design, 
+	      uint32_t ship_count, Planet* planet);
+
+
+public:
 	uint32_t id;                    // Unique fleet identifier
 	PlayerID owner;                 // Which player owns this fleet
 	
@@ -31,21 +43,13 @@ struct Fleet
 	double distance_to_destination; // Remaining distance in light-years
 	uint32_t turns_to_destination;  // Estimated turns until arrival
 	
-	// Inline member functions
+	// Member functions (implemented in fleet.cpp)
 	
 	/// Refuel fleet to maximum capacity (based on ship design's range)
-	void refuel()
-	{
-		fuel = ship_design->get_range();
-	}
+	void refuel();
 	
 	/// Refuel fleet by a specific amount, capped at maximum capacity
-	void partial_refuel(double amount)
-	{
-		fuel += amount;
-		if (fuel > ship_design->get_range())
-			fuel = ship_design->get_range();  // Cap at maximum
-	}
+	void partial_refuel(double amount);
 };
 
 #endif // FLEET_H

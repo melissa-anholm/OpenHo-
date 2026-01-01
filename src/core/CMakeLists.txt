@@ -20,6 +20,7 @@ set(CORE_SOURCES
 	src/game_formulas.cpp
 	src/player.cpp
 	src/planet.cpp
+	src/fleet.cpp
 	src/c_api.cpp
 )
 

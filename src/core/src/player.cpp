@@ -71,18 +71,8 @@ uint32_t Player::create_fleet(uint32_t fleet_id, const ShipDesign* design, uint3
 	// Note: design pointer is validated by caller (GameState::create_fleet)
 	// Note: planet pointer is validated by caller (GameState::create_fleet)
 	
-	Fleet new_fleet;
-	new_fleet.id = fleet_id;
-	new_fleet.owner = id;
-	new_fleet.ship_design = design;
-	new_fleet.ship_count = ship_count;
-	new_fleet.fuel = design->get_range();  // Initialize fuel to design's range
-	new_fleet.in_transit = false;
-	new_fleet.current_planet = planet;
-	new_fleet.origin_planet = planet;
-	new_fleet.destination_planet = nullptr;
-	new_fleet.distance_to_destination = 0;
-	new_fleet.turns_to_destination = 0;
+	// Create fleet using private constructor (Player is a friend of Fleet)
+	Fleet new_fleet(fleet_id, id, design, ship_count, planet);
 	
 	fleets.push_back(new_fleet);
 	return fleet_id;
