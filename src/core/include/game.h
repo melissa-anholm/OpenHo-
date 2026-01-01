@@ -22,7 +22,8 @@ class GameState
 {
 public:
 	// Constructor - initializes the entire game state including galaxy and first turn
-	GameState(const GalaxyGenerationParams& params);
+	// Takes a GameSetup reference and copies the necessary data
+	GameState(const class GameSetup& setup);
 	
 	// Destructor
 	~GameState();

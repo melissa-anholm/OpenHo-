@@ -8,6 +8,7 @@
 // ============================================================================
 
 GameSetup::GameSetup()
+	: galaxy_params(100, 100, 0.5, GALAXY_RANDOM, 0)
 {
 }
 
@@ -22,10 +23,10 @@ GameSetup::~GameSetup()
 GameState* GameSetup::create_new_game()
 {
 	// Query user for galaxy parameters
-	GalaxyGenerationParams galaxy_params = query_galaxy_parameters();
+	galaxy_params = query_galaxy_parameters();
 	
 	// Query user for player configuration
-	std::vector<PlayerSetup> player_setups = query_player_configuration();
+	player_setups = query_player_configuration();
 	
 	// TODO: Apply player configuration to the game
 	// For now, we'll just create the game with default players
@@ -33,7 +34,7 @@ GameState* GameSetup::create_new_game()
 	
 	try
 	{
-		GameState* game = new GameState(galaxy_params);
+		GameState* game = new GameState(*this);
 		return game;
 	}
 	catch (const std::exception& e)

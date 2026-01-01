@@ -38,7 +38,17 @@ public:
 	/// Returns a fully initialized GameState if successful, nullptr otherwise
 	[[nodiscard]] GameState* create_new_game();
 	
+	/// Get the galaxy parameters collected during setup
+	const GalaxyGenerationParams& get_galaxy_params() const { return galaxy_params; }
+	
+	/// Get the player configurations collected during setup
+	const std::vector<PlayerSetup>& get_player_setups() const { return player_setups; }
+	
 private:
+	// Collected setup data
+	GalaxyGenerationParams galaxy_params;
+	std::vector<PlayerSetup> player_setups;
+	
 	/// Query user for galaxy generation parameters
 	[[nodiscard]] GalaxyGenerationParams query_galaxy_parameters();
 	

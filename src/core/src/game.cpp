@@ -1,4 +1,5 @@
 #include "game.h"
+#include "game_setup.h"
 #include "game_constants.h"
 #include "game_formulas.h"
 #include <algorithm>
@@ -10,17 +11,24 @@
 // GameState Constructor
 // ============================================================================
 
-GameState::GameState(const GalaxyGenerationParams& params)
+GameState::GameState(const class GameSetup& setup)
 	: current_ai_rng_seed(0)
 {
+	// Copy setup data from GameSetup
+	const GalaxyGenerationParams& galaxy_params = setup.get_galaxy_params();
+	const std::vector<PlayerSetup>& player_setups = setup.get_player_setups();
+	
 	// Initialize RNG with default seed
 	rng = std::make_unique<DeterministicRNG>(0, 0);
 	
 	// Initialize players
 	players = initialize_players();
 	
+	// TODO: Apply player_setups to configure the players
+	// For now, players are initialized with defaults
+	
 	// Initialize galaxy with provided parameters
-	initialize_galaxy(params);
+	initialize_galaxy(galaxy_params);
 	
 	// Initialize the first turn
 	start_first_turn();
