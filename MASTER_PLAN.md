@@ -189,11 +189,11 @@ OpenHo/
 
 ---
 
-#### Phase 2b: Fleet System & Ship Design (Current)
+#### Phase 2b: Fleet System & Ship Design
 
-**Status:** 🔄 IN PROGRESS
+**Status:** ✅ COMPLETE
 
-**Objective:** Replace individual ship management with fleet-based system; enforce immutability of ship designs
+**Objective:** Replace individual ship management with fleet-based system; enforce immutability of ship designs; reorganize class responsibilities
 
 **Completed:**
 - ✅ Fleet struct with multiple identical ships per fleet
@@ -205,12 +205,23 @@ OpenHo/
 - ✅ Friend function set_ship_design_tech() for controlled initialization
 - ✅ Player class updated with fleets vector and next_fleet_id counter
 - ✅ GameState fleet management methods (create_fleet, get_fleet, delete_fleet, etc.)
+- ✅ Ship class completely eliminated
+- ✅ Removed galaxy.ships vector
+- ✅ Removed player_ships mapping from GameState
+- ✅ Created ship_design.h for dedicated ShipDesign header
+- ✅ Moved Galaxy initialization to separate galaxy.cpp file
+- ✅ Deferred galaxy initialization until user provides parameters
+- ✅ Moved fleet management methods from GameState to Player class
+- ✅ Moved ship design management methods from GameState to Player class
+- ✅ GameState now acts as coordinator/facade with thin delegation methods
+- ✅ Clear separation of concerns: Player owns and manages fleets and designs
 
-**In Progress:**
-- [ ] Remove or refactor individual Ship class (evaluate necessity)
-- [ ] Update GameState to remove player_ships mapping (migrate to fleets)
-- [ ] Remove galaxy.ships vector (migrate to player-owned fleets)
-- [ ] Update serialization for fleet-based system
+**Architecture Improvements:**
+- Eliminated redundant Ship class
+- Cleaner ownership hierarchy: GameState -> Galaxy/Players -> Fleets/Designs
+- Better encapsulation with Player responsible for its own fleet/design management
+- Deferred initialization allows better control flow
+- Explicit data flow with return values from initialization methods
 
 **Dependencies:** Phase 2a (complete)
 
@@ -218,19 +229,32 @@ OpenHo/
 
 ---
 
+---
+
 #### Phase 2c: Galaxy Initialization (CRITICAL)
 
-**Status:** 🔄 IN PROGRESS
+**Status:** 🔄 IN PROGRESS (Foundation laid)
 
 **Objective:** Generate and populate galaxy with planets; assign starting planets and resources to players
 
-**Planned:**
-- [ ] Implement galaxy generation algorithm
+**Foundation Completed:**
+- ✅ GalaxyGenerationParams struct with size, n_planets, density, shape, seed
+- ✅ GalaxyShape enum (RANDOM, SPIRAL, CIRCLE, RING, CLUSTER, GRID)
+- ✅ Galaxy constructor with deferred initialization
+- ✅ Galaxy::initialize_planets() method (stub with 10 hardcoded test planets)
+- ✅ Ownership refactored: Players owned by GameState, not Galaxy
+- ✅ Immutable entity mappings (planet_id_to_index, player_id_to_index, etc.)
+- ✅ Mutable entity mappings (player_fleets, player_planets)
+
+**Planned (Next Session):**
+- [ ] Implement actual galaxy generation algorithm using GalaxyShape
 - [ ] Distribute planets to players (starting positions)
 - [ ] Initialize player resources (money, metal, technology)
 - [ ] Distribute starting fleets to players
 - [ ] Initialize planetKnowledge vectors for fog of war
 - [ ] Set up initial planet observations
+
+**Important Note:** Fleet movement (Phase 2d) may require revisiting Galaxy structure. Current design uses Planet* pointers in Fleet; this may need adjustment when implementing pathfinding and collision detection.
 
 **Dependencies:** Phase 2b (complete)
 
