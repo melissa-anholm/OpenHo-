@@ -1,6 +1,6 @@
 # OpenHo Master Plan
 
-**Last Updated:** December 31, 2025  
+**Last Updated:** January 1, 2026  
 **Project Status:** Phase 2 - C++ Core Implementation (In Progress)
 
 ---
@@ -231,9 +231,72 @@ OpenHo/
 
 ---
 
+#### Phase 2b-Extended: GameState Architecture Refactoring & Text Assets
+
+**Status:** ✅ COMPLETE (Session: Jan 1, 2026)
+
+**Objective:** Improve GameState architecture for better separation of concerns; implement text asset management system
+
+**Completed:**
+- ✅ Moved `current_turn` from Galaxy to GameState (better ownership semantics)
+- ✅ Added `current_year` tracking to GameState (independent from turn numbering)
+- ✅ Refactored fleet ID allocation: moved from Player to GameState for global uniqueness
+- ✅ Fleet constructor made private with Player as friend class (controlled construction)
+- ✅ Fleet::fuel changed from double to int32_t for consistency with tech levels
+- ✅ Added reverse enum lookup for ShipType using std::map
+- ✅ Created GameSetup orchestration layer for game initialization
+- ✅ GameState constructor now takes GameSetup reference for one-step initialization
+- ✅ GameState copies setup data (galaxy_params, player_setups) as members
+- ✅ Added `start_first_turn()` method for initial turn state setup
+- ✅ Implemented RNG state serialization for multiplayer host migration
+- ✅ Added ColonyQuality enum with reverse lookup (7 quality levels: Outpost→Abundant)
+- ✅ Added starting_colony_quality to PlayerSetup (hardcoded to NORMAL)
+- ✅ Created TextAssets system with JSON-based text management
+- ✅ Implemented TextAssets class with loaders for 5 JSON files
+- ✅ Tech level names now use explicit std::map<uint32_t, std::string> (handles non-sequential levels)
+- ✅ Added Gender enum (GENDER_F=1, GENDER_M=2)
+- ✅ Added accessor methods: get_planet_name_list(), get_player_name_list(Gender)
+- ✅ Created TextAssets directory with 5 JSON files (planets, players, ships, techs, radical)
+- ✅ Cleaned up text asset parsing (removed artifacts, split merged entries)
+
+**Architecture Improvements:**
+- GameSetup handles user interaction and parameter collection
+- GameState owns setup data for lifetime of game
+- Better encapsulation: setup concerns separated from game logic
+- RNG serialization enables seamless host migration in multiplayer
+- Text assets decoupled from code, easy to edit/maintain
+- Tech level names properly indexed by actual level numbers (not array indices)
+
+**Files Added/Modified:**
+- New: `src/core/include/game_setup.h`, `src/core/src/game_setup.cpp`
+- New: `src/core/include/text_assets.h`, `src/core/src/text_assets.cpp`
+- New: `TextAssets/` directory with 5 JSON files
+- Modified: `src/core/include/game.h`, `src/core/src/game.cpp` (GameState refactoring)
+- Modified: `src/core/include/enums.h` (added Gender, ColonyQuality)
+- Modified: `src/core/include/fleet.h`, `src/core/src/fleet.cpp` (Fleet constructor)
+- Modified: `src/core/include/player.h`, `src/core/src/player.cpp` (fleet management)
+- Modified: `src/core/include/rng.h`, `src/core/src/rng.cpp` (RNG serialization)
+
+**Commits:**
+- `ebb6f53` - Move current_turn from Galaxy to GameState
+- `ff7d4b1` - Add current_year tracking to GameState
+- `da099ee` - Reformat player.cpp for consistency
+- `ab9c8db` - Refactor create_fleet to use ShipDesign pointer
+- `3bfe3fb` - Remove name member from Fleet struct
+- `3660952` - Add private constructor to Fleet
+- `83ed930` - Change Fleet::fuel from double to int32_t
+- `d65106d` - Add reverse enum lookup for ShipType
+- `3acfd2b` - Refactor game initialization with GameSetup
+- `167329c` - GameState takes GameSetup reference in constructor
+- `45f4044` - Add RNG state serialization for multiplayer
+- `164c71b` - Add ColonyQuality enum and starting_colony_quality
+- `089ce9c` - Refactor tech level names and add player/planet name accessors
+
+---
+
 #### Phase 2c: Galaxy Initialization (CRITICAL)
 
-**Status:** 🔄 IN PROGRESS (Foundation laid)
+**Status:** ⏳ NOT STARTED (Ready to begin)
 
 **Objective:** Generate and populate galaxy with planets; assign starting planets and resources to players
 
@@ -245,6 +308,9 @@ OpenHo/
 - ✅ Ownership refactored: Players owned by GameState, not Galaxy
 - ✅ Immutable entity mappings (planet_id_to_index, player_id_to_index, etc.)
 - ✅ Mutable entity mappings (player_fleets, player_planets)
+- ✅ GameSetup orchestration layer ready
+- ✅ GameState initialization complete and tested
+- ✅ Text assets system ready for use
 
 **Planned (Next Session):**
 - [ ] Implement actual galaxy generation algorithm using GalaxyShape
@@ -261,6 +327,8 @@ OpenHo/
 **Blocks:** Phase 2d (Ship Movement), Phase 2e (Battle Mechanics), Phase 2f (Turn Processing)
 
 **Estimated Effort:** 2-3 days
+
+**Notes:** Foundation is solid and tested. Ready to implement actual galaxy generation. TextAssets system provides all necessary name data for planet/player initialization.
 
 ---
 
