@@ -15,7 +15,6 @@ struct Fleet
 {
 	uint32_t id;                    // Unique fleet identifier
 	PlayerID owner;                 // Which player owns this fleet
-	std::string name;               // Fleet name (e.g., "Alpha Squadron")
 	
 	const ShipDesign* ship_design;  // All ships in fleet use same design (pointer, not owned)
 	uint32_t ship_count;            // Number of identical ships in fleet (max 1000)
