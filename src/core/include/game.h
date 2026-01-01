@@ -70,9 +70,12 @@ public:
 	double get_player_ideal_temperature(uint32_t player_id) const;
 	double get_player_ideal_gravity(uint32_t player_id) const;
 	
-	// Player public information queries
-	[[nodiscard]] PlayerPublicInfo get_player_public_info(uint32_t player_id) const;
-	uint32_t get_player_info_history_size(uint32_t player_id) const;
+	// Player public information management
+	/// Capture current player info and distribute to all players
+	void capture_and_distribute_player_public_info();
+	
+	/// Get full player info history (for resync after disconnection)
+	[[nodiscard]] const std::vector<PlayerPublicInfo>& get_full_player_info_history(uint32_t player_id) const;
 	
 	// Ship design management (delegates to Player)
 	[[nodiscard]] uint32_t create_ship_design(uint32_t player_id, const std::string& name, ShipType type, int32_t tech_range, int32_t tech_speed, int32_t tech_weapons, int32_t tech_shields, int32_t tech_miniaturization);
@@ -148,7 +151,7 @@ private:
 	void process_planets();
 	void process_ships();
 	void process_novae();
-	void capture_player_public_info();
+
 	
 
 };

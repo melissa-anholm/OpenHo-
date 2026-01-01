@@ -5,6 +5,7 @@
 #include "ship_design.h"
 #include "fleet.h"
 #include <cstdint>
+#include <unordered_map>
 #include <vector>
 #include <string>
 
@@ -22,7 +23,8 @@ typedef uint32_t PlayerID;
 struct PlayerPublicInfo
 {
 	uint32_t player_id;
-	uint32_t year;
+	uint32_t year;      // Game year (same as turn number)
+	uint32_t turn;      // Turn number (same as year, for convenience)
 	
 	// Technology levels (subset - no Radical)
 	int32_t tech_range;
@@ -32,9 +34,12 @@ struct PlayerPublicInfo
 	int32_t tech_miniaturization;
 	
 	// Resources
-	int64_t money_income;
-	int64_t money_savings;
-	int64_t metal_savings;
+		int64_t money_income;
+		int64_t money_savings;
+		int64_t metal_savings;
+		
+	// Territory
+		uint32_t planets_owned;
 
 	
 	// Calculated metrics
@@ -190,8 +195,21 @@ private:
 	std::vector<Fleet> fleets;                 // All fleets owned by this player
 	uint32_t next_fleet_id;                    // Counter for unique fleet IDs (never resets)
 	
-	// Public accessor for current turn's public information
-	[[nodiscard]] PlayerPublicInfo get_player_public_info() const;
+	// Player public information history: player_id -> vector of PlayerPublicInfo (one per turn)
+	std::unordered_map<uint32_t, std::vector<PlayerPublicInfo>> player_info_history;
+	
+	// Player info history management
+	/// Receive a new player public info snapshot (called by GameState each turn)
+	void receive_player_public_info(uint32_t source_player_id, const PlayerPublicInfo& info);
+	
+	/// Get full player info history for a specific player (for validation/resync)
+	[[nodiscard]] const std::vector<PlayerPublicInfo>* get_player_info_history(uint32_t player_id) const;
+	
+	/// Validate consistency of player info history
+	[[nodiscard]] bool validate_player_info_history(uint32_t player_id) const;
+	
+	/// Request full resync of player info history from GameState
+	void request_full_player_info_resync(uint32_t player_id);
 
 	// ========================================================================
 	// Money Allocation Calculation Helpers

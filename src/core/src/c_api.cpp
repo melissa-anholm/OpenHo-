@@ -201,13 +201,13 @@ void game_get_planet_perceived_values(void* game, uint32_t planetID, uint32_t pl
 // Player Public Information Queries
 // ============================================================================
 
-	void game_get_player_public_info(void* game, uint32_t player_id, PlayerPublicInfo* out)
+	void game_get_full_player_info_history(void* game, uint32_t player_id, const std::vector<PlayerPublicInfo>** out)
 	{
 		if (!game || !out)
 			{ return; }
 		
 		GameState* gameState = static_cast<GameState*>(game);
-		*out = gameState->get_player_public_info(player_id);
+		*out = &gameState->get_full_player_info_history(player_id);
 }
 
 	uint32_t game_get_player_info_history_size(void* game, uint32_t player_id)
@@ -216,7 +216,8 @@ void game_get_planet_perceived_values(void* game, uint32_t planetID, uint32_t pl
 			{ return 0; }
 		
 		GameState* gameState = static_cast<GameState*>(game);
-		return gameState->get_player_info_history_size(player_id);
+		const auto& history = gameState->get_full_player_info_history(player_id);
+		return static_cast<uint32_t>(history.size());
 }
 
 // ============================================================================

@@ -229,6 +229,7 @@ void GameState::set_ai_rng_seed(uint64_t seed)
 	void GameState::process_turn()
 {
 	// Process turn in order:
+	// 0. Capture and distribute public player information from previous turn
 	// 1. Calculate player incomes
 	// 2. Update planet incomes
 	// 3. Process money allocation (research, terraforming, mining)
@@ -238,7 +239,8 @@ void GameState::set_ai_rng_seed(uint64_t seed)
 	// 7. Process mining
 	// 8. Process ships
 	// 9. Process novae
-	// 10. Capture public player information for all players
+	
+	capture_and_distribute_player_public_info();
 	
 	calculate_player_incomes();
 	update_planet_incomes();
@@ -247,7 +249,6 @@ void GameState::set_ai_rng_seed(uint64_t seed)
 	process_planets();
 	process_ships();
 	process_novae();
-	capture_player_public_info();
 	
 	galaxy->current_turn++;
 }
@@ -405,7 +406,7 @@ void GameState::process_novae()
 // Player Public Information
 // ============================================================================
 
-void GameState::capture_player_public_info()
+void GameState::capture_and_distribute_player_public_info()
 {
 	// Capture public information for all players at the current turn
 	for (const auto& player : players)
@@ -413,6 +414,7 @@ void GameState::capture_player_public_info()
 		PlayerPublicInfo info;
 		info.player_id = player.id;
 		info.year = galaxy->current_turn;
+		info.turn = galaxy->current_turn;
 		
 		// Technology levels (subset - no Radical)
 		info.tech_range = player.tech.range;
@@ -426,6 +428,9 @@ void GameState::capture_player_public_info()
 		info.money_savings = player.money_savings;
 		info.metal_savings = player.metal_reserve;
 		
+		// Territory
+		info.planets_owned = static_cast<uint32_t>(player.colonized_planets.size());
+		
 		// Calculated metrics
 		info.ship_power = GameFormulas::calculate_player_fleet_power(player.id, this);
 		info.victory_points = GameFormulas::calculate_player_victory_points(player.id, this);
@@ -435,32 +440,7 @@ void GameState::capture_player_public_info()
 	}
 }
 
-// PlayerPublicInfo GameState::get_player_public_info(uint32_t player_id) const
-PlayerPublicInfo GameState::get_player_public_info(uint32_t player_id) const
-{
-	PlayerPublicInfo info;
-	std::memset(&info, 0, sizeof(PlayerPublicInfo));
-	
-	auto it = player_info_history.find(player_id);
-	if (it == player_info_history.end() )
-		{ return info; }
-	
-	const auto& history = it->second;
-	if (history.empty())
-		{ return info; }
-	
-	// Return the most recent entry
-	return history.back();
-}
 
-uint32_t GameState::get_player_info_history_size(uint32_t player_id) const
-{
-	auto it = player_info_history.find(player_id);
-	if (it == player_info_history.end())
-		{ return 0; }
-	
-	return static_cast<uint32_t>(it->second.size());
-}
 
 // ============================================================================
 // Ship Design Management
@@ -678,34 +658,7 @@ void GameState::process_planets()
 	}
 }
 
-// ============================================================================
-// Player Public Information
-// ============================================================================
 
-PlayerPublicInfo Player::get_player_public_info() const
-{
-	PlayerPublicInfo info;
-	info.player_id = id;
-	info.year = 0;  // Will be set by GameState when storing
-	
-	// Technology levels (subset - no Radical)
-	info.tech_range = tech.range;
-	info.tech_speed = tech.speed;
-	info.tech_weapons = tech.weapons;
-	info.tech_shields = tech.shields;
-	info.tech_miniaturization = tech.miniaturization;
-	
-	// Resources
-	info.money_income = money_income;
-	info.money_savings = money_savings;
-	info.metal_savings = metal_reserve;
-	
-	// Calculated metrics (will be set by GameState)
-	info.ship_power = 0;
-	info.victory_points = 0;
-	
-	return info;
-}
 
 // ============================================================================
 // Fleet Management Methods
