@@ -122,6 +122,12 @@ PlayerSetup GameSetup::query_single_player(int player_number)
 	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 	std::getline(std::cin, player.name);
 	
+	// Query player gender
+	std::cout << "Player gender (1 = Female, 2 = Male): ";
+	int gender_input;
+	std::cin >> gender_input;
+	player.player_gender = static_cast<Gender>(gender_input);
+	
 	// Query player type
 	std::cout << "Player type (0 = Human, 1 = Computer): ";
 	int type_input;
