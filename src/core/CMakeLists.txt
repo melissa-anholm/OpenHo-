@@ -21,8 +21,9 @@ set(CORE_SOURCES
 	src/game_setup.cpp
 	src/player.cpp
 	src/planet.cpp
-	src/fleet.cpp
-	src/c_api.cpp
+		src/fleet.cpp
+		src/text_assets.cpp
+		src/c_api.cpp
 )
 
 # Create the static library

@@ -41,6 +41,13 @@ inline std::string get_ship_type_name(ShipType type)
 	return "Unknown";
 }
 
+// Gender
+enum Gender
+{
+	GENDER_F = 1,
+	GENDER_M = 2
+};
+
 // Planet nova state
 enum PlanetNovaState
 {
