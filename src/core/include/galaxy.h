@@ -45,9 +45,6 @@ struct Galaxy
 	// Immutable planet list
 	std::vector<Planet> planets;
 	
-	// Current turn number
-	uint32_t current_turn;
-	
 	// Constructor to initialize galaxy boundaries and planets
 	// Implementation in game.cpp
 	Galaxy(const GalaxyGenerationParams& params, class DeterministicRNG* rng);

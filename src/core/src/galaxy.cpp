@@ -15,8 +15,7 @@ Galaxy::Galaxy(const GalaxyGenerationParams& params, DeterministicRNG* rng)
 	min_y = -params.gal_size;
 	max_y = params.gal_size;
 	
-	current_turn = 0;
-	// planets and players vectors are default-constructed (empty)
+	// planets vector is default-constructed (empty)
 	
 	// Initialize planets
 	initialize_planets(params, rng);

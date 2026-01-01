@@ -48,7 +48,7 @@ uint32_t game_get_current_turn(void* game)
 		{ return 0; }
 	
 	GameState* gameState = static_cast<GameState*>(game);
-	return gameState->get_galaxy().current_turn;
+	return gameState->get_current_turn();
 }
 
 uint32_t game_get_num_players(void* game)

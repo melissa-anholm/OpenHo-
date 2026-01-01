@@ -185,6 +185,16 @@ std::vector<Player>& GameState::get_players()
 	return players;
 }
 
+uint32_t GameState::get_current_turn() const
+{
+	return current_turn;
+}
+
+void GameState::increment_turn()
+{
+	current_turn++;
+}
+
 // ============================================================================
 // Money Allocation
 // ============================================================================
@@ -250,7 +260,7 @@ void GameState::set_ai_rng_seed(uint64_t seed)
 	process_ships();
 	process_novae();
 	
-	galaxy->current_turn++;
+	increment_turn();
 }
 
 // ============================================================================
@@ -413,8 +423,8 @@ void GameState::capture_and_distribute_player_public_info()
 	{
 		PlayerPublicInfo info;
 		info.player_id = player.id;
-		info.year = galaxy->current_turn;
-		info.turn = galaxy->current_turn;
+		info.year = current_turn;
+		info.turn = current_turn;
 		
 		// Technology levels (subset - no Radical)
 		info.tech_range = player.tech.range;
