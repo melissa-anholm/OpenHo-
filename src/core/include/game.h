@@ -62,6 +62,9 @@ public:
 	// Get current year
 	uint32_t get_current_year() const;
 	
+	// Allocate a globally unique fleet ID
+	[[nodiscard]] uint32_t allocate_fleet_id();
+	
 	// Get all players (for iteration)
 	const std::vector<Player>& get_players() const;
 	std::vector<Player>& get_players();
@@ -96,7 +99,7 @@ public:
 	
 	// Fleet management (delegates to Player)
 	// Note: design_id is validated and looked up internally before passing to Player::create_fleet
-	[[nodiscard]] uint32_t create_fleet(uint32_t player_id, const std::string& name, uint32_t design_id, uint32_t ship_count, uint32_t planet_id);
+	[[nodiscard]] uint32_t create_fleet(uint32_t player_id, uint32_t design_id, uint32_t ship_count, uint32_t planet_id);
 	[[nodiscard]] Fleet* get_fleet(uint32_t player_id, uint32_t fleet_id);
 	[[nodiscard]] const Fleet* get_fleet(uint32_t player_id, uint32_t fleet_id) const;
 	[[nodiscard]] const std::vector<Fleet>& get_player_fleets(uint32_t player_id) const;
@@ -153,6 +156,9 @@ private:
 	
 	// Current game year (starts at 2000, increments by 10 per turn)
 	uint32_t current_year = 2000;
+	
+	// Fleet ID allocation (globally unique across all players)
+	uint32_t next_fleet_id = 1;
 	
 	// Private helper methods
 	std::vector<Player> initialize_players();

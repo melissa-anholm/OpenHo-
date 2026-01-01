@@ -80,7 +80,8 @@ public:
 	// ========================================================================
 	
 	/// Create a new fleet for this player
-	[[nodiscard]] uint32_t create_fleet(const std::string& name, const ShipDesign* design, uint32_t ship_count, uint32_t planet_id);
+	/// Note: fleet_id must be allocated by GameState via allocate_fleet_id()
+	[[nodiscard]] uint32_t create_fleet(uint32_t fleet_id, const ShipDesign* design, uint32_t ship_count, Planet* planet);
 	
 	/// Get a fleet by ID (mutable)
 	[[nodiscard]] Fleet* get_fleet(uint32_t fleet_id);
@@ -193,7 +194,6 @@ private:
 	
 	// Fleets (groups of identical ships)
 	std::vector<Fleet> fleets;                 // All fleets owned by this player
-	uint32_t next_fleet_id;                    // Counter for unique fleet IDs (never resets)
 	
 	// Player public information history: player_id -> vector of PlayerPublicInfo (one per turn)
 	std::unordered_map<uint32_t, std::vector<PlayerPublicInfo>> player_info_history;

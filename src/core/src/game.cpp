@@ -205,6 +205,11 @@ void GameState::increment_year()
 	current_year += 10;
 }
 
+uint32_t GameState::allocate_fleet_id()
+{
+	return next_fleet_id++;
+}
+
 // ============================================================================
 // Money Allocation
 // ============================================================================
@@ -685,7 +690,7 @@ void GameState::process_planets()
 // Fleet Management Methods
 // ============================================================================
 
-uint32_t GameState::create_fleet(uint32_t player_id, const std::string& name, uint32_t design_id, 
+uint32_t GameState::create_fleet(uint32_t player_id, uint32_t design_id, 
                                  uint32_t ship_count, uint32_t planet_id)
 {
 	Player* player = get_player(player_id);
@@ -697,8 +702,16 @@ uint32_t GameState::create_fleet(uint32_t player_id, const std::string& name, ui
 	if (!design)
 		return 0;  // Design not found for this player
 	
-	// Delegate to Player with validated design pointer
-	return player->create_fleet(name, design, ship_count, planet_id);
+	// Validate and get the planet
+	Planet* planet = get_planet(planet_id);
+	if (!planet)
+		return 0;  // Planet not found
+	
+	// Allocate a globally unique fleet ID
+	uint32_t fleet_id = allocate_fleet_id();
+	
+	// Delegate to Player with validated pointers
+	return player->create_fleet(fleet_id, design, ship_count, planet);
 }
 
 Fleet* GameState::get_fleet(uint32_t player_id, uint32_t fleet_id)

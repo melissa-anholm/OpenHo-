@@ -64,23 +64,22 @@ int64_t Player::calculate_research_stream_amount( const ResearchAllocation& play
 // Fleet Management
 // ============================================================================
 
-uint32_t Player::create_fleet(const std::string& name, const ShipDesign* design, uint32_t ship_count, uint32_t planet_id)
+uint32_t Player::create_fleet(uint32_t fleet_id, const ShipDesign* design, uint32_t ship_count, Planet* planet)
 {
-	// TODO: Validate planet_id is valid
 	// TODO: Validate ship_count is positive
+	// Note: fleet_id is allocated by GameState via allocate_fleet_id()
 	// Note: design pointer is validated by caller (GameState::create_fleet)
+	// Note: planet pointer is validated by caller (GameState::create_fleet)
 	
-	uint32_t fleet_id = next_fleet_id++;
 	Fleet new_fleet;
 	new_fleet.id = fleet_id;
 	new_fleet.owner = id;
-	new_fleet.name = name;
 	new_fleet.ship_design = design;
 	new_fleet.ship_count = ship_count;
-	new_fleet.fuel = 0;
+	new_fleet.fuel = design->get_range();  // Initialize fuel to design's range
 	new_fleet.in_transit = false;
-	new_fleet.current_planet = nullptr;
-	new_fleet.origin_planet = nullptr;
+	new_fleet.current_planet = planet;
+	new_fleet.origin_planet = planet;
 	new_fleet.destination_planet = nullptr;
 	new_fleet.distance_to_destination = 0;
 	new_fleet.turns_to_destination = 0;
