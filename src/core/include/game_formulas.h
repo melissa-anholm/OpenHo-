@@ -31,7 +31,7 @@ namespace GameFormulas
 	/// @return The build cost in money
 	int64_t calculate_ship_design_build_cost(int32_t tech_range, int32_t tech_speed, 
 	                                          int32_t tech_weapons, int32_t tech_shields, 
-	                                          int32_t tech_miniaturization);
+	                                          int32_t tech_mini);
 	
 	/// Calculate the prototype cost for a ship design based on its technology levels.
 	/// This is the additional cost paid only for the first ship of a new design.
@@ -45,7 +45,7 @@ namespace GameFormulas
 	/// @return The prototype cost in money
 	int64_t calculate_ship_design_prototype_cost(int32_t tech_range, int32_t tech_speed, 
 	                                              int32_t tech_weapons, int32_t tech_shields, 
-	                                              int32_t tech_miniaturization);
+	                                              int32_t tech_mini);
 	
 	/// Calculate the metal cost for a ship design based on its technology levels.
 	/// This is the metal cost to build each ship of this design.
@@ -58,7 +58,7 @@ namespace GameFormulas
 	/// @return The metal cost per ship
 	int64_t calculate_ship_design_metal_cost(int32_t tech_range, int32_t tech_speed, 
 	                                          int32_t tech_weapons, int32_t tech_shields, 
-	                                          int32_t tech_miniaturization);
+	                                          int32_t tech_mini);
 	
 	// ========================================================================
 	// Player Metrics Calculations
