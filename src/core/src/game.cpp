@@ -251,7 +251,14 @@ void GameState::set_ai_rng_seed(uint64_t seed)
 // Turn Processing
 // ============================================================================
 
-	void GameState::process_turn()
+void GameState::start_first_turn()
+{
+	// Initialize the first turn with initial game state
+	// This is called during game initialization before any process_turn() calls
+	capture_and_distribute_player_public_info();
+}
+
+void GameState::process_turn()
 {
 	// Process turn in order:
 	// 0. Capture and distribute public player information from previous turn
@@ -319,6 +326,9 @@ void GameState::initialize_galaxy(const GalaxyGenerationParams& params)
 	
 	// Build entity ID maps for quick lookup
 	build_entity_maps();
+	
+	// Initialize the first turn
+	start_first_turn();
 }
 
 void GameState::build_entity_maps()

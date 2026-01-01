@@ -69,6 +69,9 @@ public:
 	const std::vector<Player>& get_players() const;
 	std::vector<Player>& get_players();
 	
+	// Initialize the first turn (called during game initialization)
+	void start_first_turn();
+	
 	// Increment turn and year (called at end of process_turn)
 	void increment_turn();
 	void increment_year();
