@@ -585,7 +585,7 @@ void GameState::process_research_stream(Player& player, TechStream stream, int64
 			break;
 		case TECH_MINI:
 			research_points = &player.partial_research.research_points_mini;
-			tech_level = &player.tech.miniaturization;
+			tech_level = &player.tech.mini;
 			break;
 		case TECH_RADICAL:
 			research_points = &player.partial_research.research_points_radical;
@@ -616,7 +616,7 @@ void GameState::process_research_stream(Player& player, TechStream stream, int64
 			case TECH_SHIELDS:
 				advancement_cost = GameFormulas::calculate_tech_shields_advancement_cost(*tech_level);
 				break;
-			case TECH_MINIATURIZATION:
+			case TECH_MINI:
 				advancement_cost = GameFormulas::calculate_tech_mini_advancement_cost(*tech_level);
 				break;
 			case TECH_RADICAL:
