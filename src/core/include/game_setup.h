@@ -1,0 +1,52 @@
+#ifndef OPENHO_GAME_SETUP_H
+#define OPENHO_GAME_SETUP_H
+
+#include "openho_core.h"
+#include <vector>
+#include <memory>
+
+// Forward declaration
+class GameState;
+
+// ============================================================================
+// Player Setup Information
+// ============================================================================
+
+/// Configuration for a single player
+struct PlayerSetup
+{
+	std::string name;
+	PlayerType type;  // PLAYER_HUMAN or PLAYER_COMPUTER
+	int32_t ai_iq;    // AI difficulty level (0-100), only used if type == PLAYER_COMPUTER
+};
+
+// ============================================================================
+// Game Setup Manager
+// ============================================================================
+
+/// Manages the game setup flow: collecting user input for new games
+/// This class handles the orchestration of gathering all necessary parameters
+/// before creating a GameState instance.
+class GameSetup
+{
+public:
+	GameSetup();
+	~GameSetup();
+	
+	/// Start a new game setup flow
+	/// Queries user for galaxy parameters and player configuration
+	/// Returns a fully initialized GameState if successful, nullptr otherwise
+	[[nodiscard]] GameState* create_new_game();
+	
+private:
+	/// Query user for galaxy generation parameters
+	[[nodiscard]] GalaxyGenerationParams query_galaxy_parameters();
+	
+	/// Query user for player configuration
+	[[nodiscard]] std::vector<PlayerSetup> query_player_configuration();
+	
+	/// Query user for a single player's configuration
+	[[nodiscard]] PlayerSetup query_single_player(int player_number);
+};
+
+#endif // OPENHO_GAME_SETUP_H

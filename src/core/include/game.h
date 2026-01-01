@@ -21,11 +21,8 @@
 class GameState
 {
 public:
-	// Constructor
-	GameState();
-	
-	// Initialize galaxy after user provides parameters
-	void initialize_galaxy(const GalaxyGenerationParams& params);
+	// Constructor - initializes the entire game state including galaxy and first turn
+	GameState(const GalaxyGenerationParams& params);
 	
 	// Destructor
 	~GameState();
@@ -165,6 +162,7 @@ private:
 	
 	// Private helper methods
 	std::vector<Player> initialize_players();
+	void initialize_galaxy(const GalaxyGenerationParams& params);
 	void build_entity_maps();
 	void process_population_growth();
 	void check_population_decreasing_events(uint32_t planet_id);

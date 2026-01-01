@@ -18,6 +18,7 @@ set(CORE_SOURCES
 	src/galaxy.cpp
 	src/game.cpp
 	src/game_formulas.cpp
+	src/game_setup.cpp
 	src/player.cpp
 	src/planet.cpp
 	src/fleet.cpp

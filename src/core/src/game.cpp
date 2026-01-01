@@ -10,7 +10,7 @@
 // GameState Constructor
 // ============================================================================
 
-GameState::GameState()
+GameState::GameState(const GalaxyGenerationParams& params)
 	: current_ai_rng_seed(0)
 {
 	// Initialize RNG with default seed
@@ -19,8 +19,11 @@ GameState::GameState()
 	// Initialize players
 	players = initialize_players();
 	
-	// Galaxy will be initialized later via initialize_galaxy() after user provides params
-	galaxy = nullptr;
+	// Initialize galaxy with provided parameters
+	initialize_galaxy(params);
+	
+	// Initialize the first turn
+	start_first_turn();
 }
 
 // ============================================================================

@@ -36,7 +36,8 @@ extern "C"
 #endif
 
 // Game initialization and management
-[[nodiscard]] void* game_create(const GalaxyGenerationParams* params);
+// game_create() starts the game setup flow, querying user for galaxy and player configuration
+[[nodiscard]] void* game_create();
 void game_destroy(void* game);
 
 // Game state queries

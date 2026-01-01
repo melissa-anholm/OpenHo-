@@ -1,5 +1,6 @@
 #include "game.h"
 #include "openho_core.h"
+#include "game_setup.h"
 #include <cstring>
 #include <unordered_set>
 
@@ -11,15 +12,12 @@
 // Game Initialization and Management
 // ============================================================================
 
-void* game_create(const GalaxyGenerationParams* params)
+void* game_create()
 {
-	if (!params)
-		return nullptr;
-	
 	try
 	{
-		GameState* game = new GameState();
-		game->initialize_galaxy(*params);
+		GameSetup setup;
+		GameState* game = setup.create_new_game();
 		return static_cast<void*>(game);
 	}
 	catch (const std::exception& e)
