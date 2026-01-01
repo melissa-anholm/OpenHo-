@@ -692,8 +692,13 @@ uint32_t GameState::create_fleet(uint32_t player_id, const std::string& name, ui
 	if (!player)
 		return 0;
 	
-	// Delegate to Player
-	return player->create_fleet(name, design_id, ship_count, planet_id);
+	// Validate and get the ship design
+	const ShipDesign* design = player->get_ship_design(design_id);
+	if (!design)
+		return 0;  // Design not found for this player
+	
+	// Delegate to Player with validated design pointer
+	return player->create_fleet(name, design, ship_count, planet_id);
 }
 
 Fleet* GameState::get_fleet(uint32_t player_id, uint32_t fleet_id)

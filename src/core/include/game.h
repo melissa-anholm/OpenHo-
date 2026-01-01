@@ -95,6 +95,7 @@ public:
 	void build_ship_from_design(uint32_t player_id, uint32_t design_id);
 	
 	// Fleet management (delegates to Player)
+	// Note: design_id is validated and looked up internally before passing to Player::create_fleet
 	[[nodiscard]] uint32_t create_fleet(uint32_t player_id, const std::string& name, uint32_t design_id, uint32_t ship_count, uint32_t planet_id);
 	[[nodiscard]] Fleet* get_fleet(uint32_t player_id, uint32_t fleet_id);
 	[[nodiscard]] const Fleet* get_fleet(uint32_t player_id, uint32_t fleet_id) const;

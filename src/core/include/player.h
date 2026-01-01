@@ -80,7 +80,7 @@ public:
 	// ========================================================================
 	
 	/// Create a new fleet for this player
-	[[nodiscard]] uint32_t create_fleet(const std::string& name, uint32_t design_id, uint32_t ship_count, uint32_t planet_id);
+	[[nodiscard]] uint32_t create_fleet(const std::string& name, const ShipDesign* design, uint32_t ship_count, uint32_t planet_id);
 	
 	/// Get a fleet by ID (mutable)
 	[[nodiscard]] Fleet* get_fleet(uint32_t fleet_id);
