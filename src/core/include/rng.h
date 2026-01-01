@@ -2,6 +2,8 @@
 #define OPENHO_RNG_H
 
 #include <cstdint>
+#include <vector>
+#include <sstream>
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_int_distribution.hpp>
 #include <boost/random/uniform_real_distribution.hpp>
@@ -59,6 +61,22 @@ public:
 	int32_t nextAIInt32Range(int32_t min, int32_t max);  // [min, max]
 	uint32_t nextAIUInt32Range(uint32_t min, uint32_t max);  // [min, max]
 	double nextAIDoubleRange(double min, double max);  // [min, max]
+	
+	// RNG state serialization for multiplayer host migration
+	/// Serialize the AI RNG state to a byte vector for network transmission
+	[[nodiscard]] std::vector<uint8_t> serialize_ai_rng_state() const;
+	
+	/// Deserialize the AI RNG state from a byte vector received from network
+	void deserialize_ai_rng_state(const std::vector<uint8_t>& data);
+	
+	/// Get the size of serialized AI RNG state (for network planning)
+	[[nodiscard]] static size_t get_serialized_ai_rng_state_size();
+	
+	/// Serialize the deterministic RNG state to a byte vector
+	[[nodiscard]] std::vector<uint8_t> serialize_deterministic_rng_state() const;
+	
+	/// Deserialize the deterministic RNG state from a byte vector
+	void deserialize_deterministic_rng_state(const std::vector<uint8_t>& data);
 	
 private:
 	// Boost.Random engines (Mersenne Twister)

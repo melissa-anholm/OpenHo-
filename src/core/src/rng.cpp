@@ -156,3 +156,46 @@ double DeterministicRNG::nextAIDoubleRange(double min, double max)
 	boost::random::uniform_real_distribution<double> dist(min, max);
 	return dist(aiEngine);
 }
+
+// ============================================================================
+// RNG State Serialization
+// ============================================================================
+
+std::vector<uint8_t> DeterministicRNG::serialize_ai_rng_state() const
+{
+	std::ostringstream oss;
+	oss << aiEngine;
+	const std::string& str = oss.str();
+	return std::vector<uint8_t>(str.begin(), str.end());
+}
+
+void DeterministicRNG::deserialize_ai_rng_state(const std::vector<uint8_t>& data)
+{
+	std::string str(data.begin(), data.end());
+	std::istringstream iss(str);
+	iss >> aiEngine;
+}
+
+size_t DeterministicRNG::get_serialized_ai_rng_state_size()
+{
+	// MT19937-64 has 312 uint64_t values + 1 position index
+	// Text serialization is roughly 20-30 bytes per uint64_t
+	// Approximate size: ~10-15 KB for text serialization
+	// This is a rough estimate; actual size depends on the serialization format
+	return 15000;  // Conservative estimate
+}
+
+std::vector<uint8_t> DeterministicRNG::serialize_deterministic_rng_state() const
+{
+	std::ostringstream oss;
+	oss << deterministicEngine;
+	const std::string& str = oss.str();
+	return std::vector<uint8_t>(str.begin(), str.end());
+}
+
+void DeterministicRNG::deserialize_deterministic_rng_state(const std::vector<uint8_t>& data)
+{
+	std::string str(data.begin(), data.end());
+	std::istringstream iss(str);
+	iss >> deterministicEngine;
+}
