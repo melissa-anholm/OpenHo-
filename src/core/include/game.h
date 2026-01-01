@@ -69,6 +69,13 @@ public:
 	const std::vector<Player>& get_players() const;
 	std::vector<Player>& get_players();
 	
+	// Turn processing
+	/// Process the start of a turn (all game logic except turn/year increment)
+	void start_turn();
+	
+	/// Process the end of a turn (increment turn and year counters)
+	void end_turn();
+	
 	// Increment turn and year (called at end of process_turn)
 	void increment_turn();
 	void increment_year();

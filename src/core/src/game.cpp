@@ -253,17 +253,21 @@ void GameState::set_ai_rng_seed(uint64_t seed)
 
 	void GameState::process_turn()
 {
+	start_turn();
+	end_turn();
+}
+
+void GameState::start_turn()
+{
 	// Process turn in order:
 	// 0. Capture and distribute public player information from previous turn
 	// 1. Calculate player incomes
 	// 2. Update planet incomes
 	// 3. Process money allocation (research, terraforming, mining)
-	// 4. Apply money interest
-	// 5. Process research
-	// 6. Process terraforming
-	// 7. Process mining
-	// 8. Process ships
-	// 9. Process novae
+	// 4. Process research
+	// 5. Process planets
+	// 6. Process ships
+	// 7. Process novae
 	
 	capture_and_distribute_player_public_info();
 	
@@ -274,7 +278,11 @@ void GameState::set_ai_rng_seed(uint64_t seed)
 	process_planets();
 	process_ships();
 	process_novae();
-	
+}
+
+void GameState::end_turn()
+{
+	// Increment turn and year counters
 	increment_turn();
 	increment_year();
 }
