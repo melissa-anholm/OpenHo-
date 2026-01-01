@@ -22,7 +22,10 @@ class GameState
 {
 public:
 	// Constructor
-	GameState(const GalaxyGenerationParams& params);
+	GameState();
+	
+	// Initialize galaxy after user provides parameters
+	void initialize_galaxy(const GalaxyGenerationParams& params);
 	
 	// Destructor
 	~GameState();
@@ -104,7 +107,7 @@ public:
 	
 private:
 	// Game state
-	Galaxy galaxy;
+	std::unique_ptr<Galaxy> galaxy;  // Initialized in constructor with params
 	std::vector<Player> players;  // All players in the game
 	std::unique_ptr<DeterministicRNG> rng;
 	
@@ -132,7 +135,7 @@ private:
 	uint64_t current_ai_rng_seed;
 	
 	// Private helper methods
-	void initialize_players();
+	std::vector<Player> initialize_players();
 	void build_entity_maps();
 	void process_population_growth();
 	void check_population_decreasing_events(uint32_t planet_id);

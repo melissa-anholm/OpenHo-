@@ -10,20 +10,17 @@
 // GameState Constructor
 // ============================================================================
 
-GameState::GameState(const GalaxyGenerationParams& params)
+GameState::GameState()
 	: current_ai_rng_seed(0)
 {
-	// Initialize RNG with deterministic seed
-	rng = std::make_unique<DeterministicRNG>(params.seed, params.seed);
+	// Initialize RNG with default seed
+	rng = std::make_unique<DeterministicRNG>(0, 0);
 	
-	// Initialize galaxy (which initializes planets)
-	galaxy = Galaxy(params, rng.get());
+	// Initialize players
+	players = initialize_players();
 	
-	// Initialize players (placeholder - will be set by game setup)
-	initialize_players();
-	
-	// Build entity ID maps for quick lookup
-	build_entity_maps();
+	// Galaxy will be initialized later via initialize_galaxy() after user provides params
+	galaxy = nullptr;
 }
 
 // ============================================================================
@@ -40,12 +37,12 @@ GameState::~GameState()
 
 Galaxy& GameState::get_galaxy()
 {
-	return galaxy;
+	return *galaxy;
 }
 
 const Galaxy& GameState::get_galaxy() const
 {
-	return galaxy;
+	return *galaxy;
 }
 
 DeterministicRNG& GameState::get_rng()
@@ -135,7 +132,7 @@ Planet* GameState::get_planet(uint32_t planetID)
 	auto it = planet_id_to_index.find(planetID);
 	if (it == planet_id_to_index.end())
 		return nullptr;
-	return &galaxy.planets[it->second];
+	return &galaxy->planets[it->second];
 }
 
 const Planet* GameState::get_planet(uint32_t planetID) const
@@ -143,7 +140,7 @@ const Planet* GameState::get_planet(uint32_t planetID) const
 	auto it = planet_id_to_index.find(planetID);
 	if (it == planet_id_to_index.end())
 		return nullptr;
-	return &galaxy.planets[it->second];
+	return &galaxy->planets[it->second];
 }
 
 Planet* GameState::get_planet(const std::string& planet_name)
@@ -151,7 +148,7 @@ Planet* GameState::get_planet(const std::string& planet_name)
 	auto it = planet_name_to_index.find(planet_name);
 	if (it == planet_name_to_index.end())
 		return nullptr;
-	return &galaxy.planets[it->second];
+	return &galaxy->planets[it->second];
 }
 
 const Planet* GameState::get_planet(const std::string& planet_name) const
@@ -159,7 +156,7 @@ const Planet* GameState::get_planet(const std::string& planet_name) const
 	auto it = planet_name_to_index.find(planet_name);
 	if (it == planet_name_to_index.end())
 		return nullptr;
-	return &galaxy.planets[it->second];
+	return &galaxy->planets[it->second];
 }
 
 
@@ -252,7 +249,7 @@ void GameState::set_ai_rng_seed(uint64_t seed)
 	process_novae();
 	capture_player_public_info();
 	
-	galaxy.current_turn++;
+	galaxy->current_turn++;
 }
 
 // ============================================================================
@@ -275,73 +272,40 @@ bool GameState::deserialize_state(const std::vector<uint8_t>& data)
 }
 
 // ============================================================================
-// Galaxy Initialization
-// ============================================================================
-
-Galaxy::Galaxy(const GalaxyGenerationParams& params, DeterministicRNG* rng)
-{
-	// Use pre-calculated gal_size from params
-	min_x = -params.gal_size;
-	max_x = params.gal_size;
-	min_y = -params.gal_size;
-	max_y = params.gal_size;
-	
-	current_turn = 0;
-	// planets and players vectors are default-constructed (empty)
-	
-	// Initialize planets
-	initialize_planets(params, rng);
-}
-
-void Galaxy::initialize_planets(const GalaxyGenerationParams& params, DeterministicRNG* rng)
-{
-	// Generate planets based on galaxy parameters
-	// This is a placeholder implementation
-	
-	// For now, create planets according to n_planets parameter
-	for (uint32_t i = 0; i < params.n_planets; ++i)
-	{
-		uint32_t planet_id = i + 1;
-		std::string planet_name = "Planet_" + std::to_string(planet_id);
-		
-		// Random position within galaxy bounds
-		GalaxyCoord x = min_x + rng->nextDouble() * (max_x - min_x);
-		GalaxyCoord y = min_y + rng->nextDouble() * (max_y - min_y);
-		
-		// Random properties
-		double true_gravity = 0.5 + rng->nextDouble() * 1.5;  // 0.5 to 2.0
-		double true_temperature = -50.0 + rng->nextDouble() * 200.0;  // -50 to 150
-		int32_t metal = 100 + rng->nextInt32Range(0, 500);
-		
-		// Create planet using constructor
-		Planet planet(planet_id, planet_name, x, y, true_gravity, true_temperature, metal);
-		
-		planets.push_back(planet);
-	}
-}
-
-// ============================================================================
 // Private Helper Methods
 // ============================================================================
 
-void GameState::initialize_players()
+std::vector<Player> GameState::initialize_players()
 {
 	// Placeholder: Initialize players
 	// This will be called during game setup
+	std::vector<Player> new_players;
+	// TODO: Populate with initial players
+	return new_players;
 }
 
-	void GameState::build_entity_maps()
+void GameState::initialize_galaxy(const GalaxyGenerationParams& params)
+{
+	// Initialize galaxy with user-provided parameters
+	// This is called after user specifies galaxy generation parameters
+	galaxy = std::make_unique<Galaxy>(params, rng.get());
+	
+	// Build entity ID maps for quick lookup
+	build_entity_maps();
+}
+
+void GameState::build_entity_maps()
+{
+	// Build planet ID to index map, planet name to index map, and player planet ownership map
+	for (size_t i = 0; i < galaxy->planets.size(); ++i)
 	{
-		// Build planet ID to index map, planet name to index map, and player planet ownership map
-		for (size_t i = 0; i < galaxy.planets.size(); ++i)
+		planet_id_to_index[galaxy->planets[i].id] = i;
+		planet_name_to_index[galaxy->planets[i].name] = i;
+		if (galaxy->planets[i].owner != 0)
 		{
-			planet_id_to_index[galaxy.planets[i].id] = i;
-			planet_name_to_index[galaxy.planets[i].name] = i;
-			if (galaxy.planets[i].owner != 0)
-			{
-				player_planets[galaxy.planets[i].owner].push_back(i);
-			}
+			player_planets[galaxy->planets[i].owner].push_back(i);
 		}
+	}
 	
 
 	// Build player ID to index map and player name to index map
@@ -448,7 +412,7 @@ void GameState::capture_player_public_info()
 	{
 		PlayerPublicInfo info;
 		info.player_id = player.id;
-		info.turn = galaxy.current_turn;
+		info.turn = galaxy->current_turn;
 		
 		// Technology levels (subset - no Radical)
 		info.tech_range = player.tech.range;

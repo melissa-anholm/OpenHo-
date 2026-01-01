@@ -15,6 +15,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(CORE_SOURCES
 	src/rng.cpp
 	src/types.cpp
+	src/galaxy.cpp
 	src/game.cpp
 	src/game_formulas.cpp
 	src/player.cpp

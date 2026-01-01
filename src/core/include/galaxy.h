@@ -52,9 +52,6 @@ struct Galaxy
 	// Implementation in game.cpp
 	Galaxy(const GalaxyGenerationParams& params, class DeterministicRNG* rng);
 	
-	// Default constructor (needed for some use cases)
-	Galaxy() : min_x(0), max_x(0), min_y(0), max_y(0), current_turn(0) {}
-	
 	// Initialize planets in the galaxy based on generation parameters
 	// Requires access to RNG, so implementation is in game.cpp
 	void initialize_planets(const GalaxyGenerationParams& params, class DeterministicRNG* rng);

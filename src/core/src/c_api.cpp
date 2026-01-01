@@ -18,7 +18,8 @@ void* game_create(const GalaxyGenerationParams* params)
 	
 	try
 	{
-		GameState* game = new GameState(*params);
+		GameState* game = new GameState();
+		game->initialize_galaxy(*params);
 		return static_cast<void*>(game);
 	}
 	catch (const std::exception& e)
