@@ -59,12 +59,16 @@ public:
 	// Get current turn
 	uint32_t get_current_turn() const;
 	
+	// Get current year
+	uint32_t get_current_year() const;
+	
 	// Get all players (for iteration)
 	const std::vector<Player>& get_players() const;
 	std::vector<Player>& get_players();
 	
-	// Increment turn (called at end of process_turn)
+	// Increment turn and year (called at end of process_turn)
 	void increment_turn();
+	void increment_year();
 	
 
 	
@@ -145,6 +149,9 @@ private:
 	
 	// Current game turn
 	uint32_t current_turn = 0;
+	
+	// Current game year (starts at 2000, increments by 10 per turn)
+	uint32_t current_year = 2000;
 	
 	// Private helper methods
 	std::vector<Player> initialize_players();

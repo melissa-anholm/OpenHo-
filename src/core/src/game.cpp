@@ -195,6 +195,16 @@ void GameState::increment_turn()
 	current_turn++;
 }
 
+uint32_t GameState::get_current_year() const
+{
+	return current_year;
+}
+
+void GameState::increment_year()
+{
+	current_year += 10;
+}
+
 // ============================================================================
 // Money Allocation
 // ============================================================================
@@ -261,6 +271,7 @@ void GameState::set_ai_rng_seed(uint64_t seed)
 	process_novae();
 	
 	increment_turn();
+	increment_year();
 }
 
 // ============================================================================
@@ -423,7 +434,7 @@ void GameState::capture_and_distribute_player_public_info()
 	{
 		PlayerPublicInfo info;
 		info.player_id = player.id;
-		info.year = current_turn;
+		info.year = current_year;
 		info.turn = current_turn;
 		
 		// Technology levels (subset - no Radical)
