@@ -21,6 +21,11 @@ Fleet::Fleet(uint32_t fleet_id, PlayerID player_id, const ShipDesign* design,
 	  distance_to_destination(0),
 	  turns_to_destination(0)
 {
+	if(ship_design->type == SHIP_BIOLOGICAL)
+	{
+		fuel = 0;
+	}
+	descriptor = "";
 }
 
 // ============================================================================

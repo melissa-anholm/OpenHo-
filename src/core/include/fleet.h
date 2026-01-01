@@ -23,7 +23,6 @@ private:
 	Fleet(uint32_t fleet_id, PlayerID player_id, const ShipDesign* design, 
 	      uint32_t ship_count, Planet* planet);
 
-
 public:
 	uint32_t id;                    // Unique fleet identifier
 	PlayerID owner;                 // Which player owns this fleet
@@ -33,6 +32,8 @@ public:
 	
 	int32_t fuel;                   // Current fuel level (all ships have same amount)
 	bool in_transit;                // Is fleet currently traveling?
+	
+	std::string descriptor;
 	
 	// Position tracking
 	Planet* current_planet;         // Planet fleet is currently at (nullptr if in transit)

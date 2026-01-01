@@ -11,7 +11,7 @@ namespace GameFormulas
 	
 	int64_t calculate_ship_design_build_cost(int32_t tech_range, int32_t tech_speed, 
 	                                          int32_t tech_weapons, int32_t tech_shields, 
-	                                          int32_t tech_miniaturization)
+	                                          int32_t tech_mini)
 	{
 		// Placeholder: return 1
 		// Real formula will be implemented later
@@ -20,7 +20,7 @@ namespace GameFormulas
 	
 	int64_t calculate_ship_design_prototype_cost(int32_t tech_range, int32_t tech_speed, 
 	                                              int32_t tech_weapons, int32_t tech_shields, 
-	                                              int32_t tech_miniaturization)
+	                                              int32_t tech_mini)
 	{
 		// Placeholder: return 1
 		// Real formula will be implemented later
@@ -29,7 +29,7 @@ namespace GameFormulas
 	
 	int64_t calculate_ship_design_metal_cost(int32_t tech_range, int32_t tech_speed, 
 	                                          int32_t tech_weapons, int32_t tech_shields, 
-	                                          int32_t tech_miniaturization)
+	                                          int32_t tech_mini)
 	{
 		// Placeholder: return 1
 		// Real formula will be implemented later
@@ -117,7 +117,7 @@ namespace GameFormulas
 		return next_level * next_level * base_multiplier;
 	}
 	
-	int64_t calculate_tech_miniaturization_advancement_cost(int32_t current_level)
+	int64_t calculate_tech_mini_advancement_cost(int32_t current_level)
 	{
 		// Quadratic cost formula: cost = (level + 1)^2 * base_multiplier
 		int64_t base_multiplier = 100;

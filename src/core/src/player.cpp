@@ -45,8 +45,8 @@ int64_t Player::calculate_research_stream_amount( const ResearchAllocation& play
 		case TECH_SHIELDS:
 			stream_fraction = player_research.research_shields_fraction;
 			break;
-		case TECH_MINIATURIZATION:
-			stream_fraction = player_research.research_miniaturization_fraction;
+		case TECH_MINI:
+			stream_fraction = player_research.research_mini_fraction;
 			break;
 		case TECH_RADICAL:
 			stream_fraction = player_research.research_radical_fraction;
@@ -132,7 +132,7 @@ void Player::move_fleet(uint32_t fleet_id, uint32_t destination_planet_id)
 // Ship Design Management
 // ============================================================================
 
-uint32_t Player::create_ship_design(const std::string& name, ShipType type, int32_t tech_range, int32_t tech_speed, int32_t tech_weapons, int32_t tech_shields, int32_t tech_miniaturization)
+uint32_t Player::create_ship_design(const std::string& name, ShipType type, int32_t tech_range, int32_t tech_speed, int32_t tech_weapons, int32_t tech_shields, int32_t tech_mini)
 {
 	// TODO: Validate tech levels are within reasonable bounds
 	// TODO: Check max 100 designs per player
@@ -144,7 +144,7 @@ uint32_t Player::create_ship_design(const std::string& name, ShipType type, int3
 	design.type = type;
 	
 	// Set tech levels using the friend function
-	set_ship_design_tech(design, tech_range, tech_speed, tech_weapons, tech_shields, tech_miniaturization);
+	set_ship_design_tech(design, tech_range, tech_speed, tech_weapons, tech_shields, tech_mini);
 	
 	ship_designs.push_back(design);
 	return design_id;

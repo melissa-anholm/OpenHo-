@@ -31,7 +31,7 @@ struct PlayerPublicInfo
 	int32_t tech_speed;
 	int32_t tech_weapons;
 	int32_t tech_shields;
-	int32_t tech_miniaturization;
+	int32_t tech_mini;
 	
 	// Resources
 		int64_t money_income;
@@ -100,7 +100,7 @@ public:
 	// ========================================================================
 	
 	/// Create a new ship design for this player
-	[[nodiscard]] uint32_t create_ship_design(const std::string& name, ShipType type, int32_t tech_range, int32_t tech_speed, int32_t tech_weapons, int32_t tech_shields, int32_t tech_miniaturization);
+	[[nodiscard]] uint32_t create_ship_design(const std::string& name, ShipType type, int32_t tech_range, int32_t tech_speed, int32_t tech_weapons, int32_t tech_shields, int32_t tech_mini);
 	
 	/// Get a ship design by ID
 	[[nodiscard]] const ShipDesign* get_ship_design(uint32_t design_id) const;
@@ -118,7 +118,7 @@ public:
 		int32_t speed;
 		int32_t weapons;
 		int32_t shields;
-		int32_t miniaturization;
+		int32_t mini;
 		int32_t radical;
 	};
 	// Research allocation fractions for a player
@@ -129,7 +129,7 @@ public:
 		double research_speed_fraction;
 		double research_weapons_fraction;
 		double research_shields_fraction;
-		double research_miniaturization_fraction;
+		double research_mini_fraction;
 		double research_radical_fraction;
 	};
 	// Money allocation for this player (fractions-based)
@@ -155,7 +155,7 @@ public:
 		int64_t research_points_speed;
 		int64_t research_points_weapons;
 		int64_t research_points_shields;
-		int64_t research_points_miniaturization;
+		int64_t research_points_mini;
 		int64_t research_points_radical;
 	};
 

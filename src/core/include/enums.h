@@ -21,22 +21,23 @@ enum ShipType
 };
 
 // Reverse enum lookup for ShipType
-const std::map<ShipType, std::string> SHIP_TYPE_NAMES = {
-	{SHIP_SCOUT, "Scout"},
-	{SHIP_FIGHTER, "Fighter"},
-	{SHIP_COLONY, "Colony"},
-	{SHIP_SATELLITE, "Satellite"},
-	{SHIP_TANKER, "Tanker"},
-	{SHIP_DREADNOUGHT, "Dreadnought"},
-	{SHIP_BIOLOGICAL, "Biological"}
+const std::map<ShipType, std::string> SHIP_TYPE_NAMES = 
+{
+	{ SHIP_SCOUT,       "Scout"       },
+	{ SHIP_FIGHTER,     "Fighter"     },
+	{ SHIP_COLONY,      "Colony"      },
+	{ SHIP_SATELLITE,   "Satellite"   },
+	{ SHIP_TANKER,      "Tanker"      },
+	{ SHIP_DREADNOUGHT, "Dreadnought" },
+	{ SHIP_BIOLOGICAL,  "Biological"  }
 };
 
-/// Get the string name for a ShipType
+// Get the string name for a ShipType
 inline std::string get_ship_type_name(ShipType type)
 {
 	std::map<ShipType, std::string>::const_iterator it = SHIP_TYPE_NAMES.find(type);
 	if (it != SHIP_TYPE_NAMES.end())
-		return it->second;
+		{ return it->second; }
 	return "Unknown";
 }
 
@@ -62,7 +63,7 @@ enum TechStream
 	TECH_SPEED = 1,
 	TECH_WEAPONS = 2,
 	TECH_SHIELDS = 3,
-	TECH_MINIATURIZATION = 4,
+	TECH_MINI = 4,
 	TECH_RADICAL = 5
 };
 

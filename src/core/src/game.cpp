@@ -214,13 +214,13 @@ uint32_t GameState::allocate_fleet_id()
 // Money Allocation
 // ============================================================================
 
-void GameState::set_money_allocation(uint32_t player_id, const Player::MoneyAllocation& alloc)
+void GameState::set_money_allocation(uint32_t player_id, const Player::MoneyAllocation& money_alloc)
 {
 	Player* player = get_player(player_id);
 	if (!player)
 		throw std::runtime_error("Player not found");
 	
-	player->allocation = alloc;
+	player->allocation = money_alloc;
 }
 
 const Player::MoneyAllocation& GameState::get_money_allocation(uint32_t player_id) const
@@ -447,7 +447,7 @@ void GameState::capture_and_distribute_player_public_info()
 		info.tech_speed = player.tech.speed;
 		info.tech_weapons = player.tech.weapons;
 		info.tech_shields = player.tech.shields;
-		info.tech_miniaturization = player.tech.miniaturization;
+		info.tech_mini = player.tech.mini;
 		
 		// Resources
 		info.money_income = player.money_income;
@@ -474,14 +474,14 @@ void GameState::capture_and_distribute_player_public_info()
 
 uint32_t GameState::create_ship_design(uint32_t player_id, const std::string& name, ShipType type, 
                                       int32_t tech_range, int32_t tech_speed, int32_t tech_weapons, 
-                                      int32_t tech_shields, int32_t tech_miniaturization)
+                                      int32_t tech_shields, int32_t tech_mini)
 {
 	Player* player = get_player(player_id);
 	if (!player)
 		return 0;
 	
 	// Delegate to Player
-	return player->create_ship_design(name, type, tech_range, tech_speed, tech_weapons, tech_shields, tech_miniaturization);
+	return player->create_ship_design(name, type, tech_range, tech_speed, tech_weapons, tech_shields, tech_mini);
 }
 
 const ShipDesign* GameState::get_ship_design(uint32_t player_id, uint32_t design_id) const
@@ -543,11 +543,11 @@ void GameState::process_research()
 			player.allocation, player.money_income);
 		
 		// Process each research stream
-		process_research_stream(player, TECH_RANGE, research_budget);
-		process_research_stream(player, TECH_SPEED, research_budget);
+		process_research_stream(player, TECH_RANGE,   research_budget);
+		process_research_stream(player, TECH_SPEED,   research_budget);
 		process_research_stream(player, TECH_WEAPONS, research_budget);
 		process_research_stream(player, TECH_SHIELDS, research_budget);
-		process_research_stream(player, TECH_MINIATURIZATION, research_budget);
+		process_research_stream(player, TECH_MINI,    research_budget);
 		process_research_stream(player, TECH_RADICAL, research_budget);
 	}
 }
@@ -583,8 +583,8 @@ void GameState::process_research_stream(Player& player, TechStream stream, int64
 			research_points = &player.partial_research.research_points_shields;
 			tech_level = &player.tech.shields;
 			break;
-		case TECH_MINIATURIZATION:
-			research_points = &player.partial_research.research_points_miniaturization;
+		case TECH_MINI:
+			research_points = &player.partial_research.research_points_mini;
 			tech_level = &player.tech.miniaturization;
 			break;
 		case TECH_RADICAL:
@@ -594,14 +594,13 @@ void GameState::process_research_stream(Player& player, TechStream stream, int64
 		default:
 			return;
 	}
-	
 	// Add the converted research points to the player's research points
 	*research_points += research_points_gained;
 	
 	// Check if we can advance the technology level
 	while (true)
 	{
-		int64_t advancement_cost = 0;
+		int64_t advancement_cost = 10;
 		
 		switch (stream)
 		{
@@ -618,7 +617,7 @@ void GameState::process_research_stream(Player& player, TechStream stream, int64
 				advancement_cost = GameFormulas::calculate_tech_shields_advancement_cost(*tech_level);
 				break;
 			case TECH_MINIATURIZATION:
-				advancement_cost = GameFormulas::calculate_tech_miniaturization_advancement_cost(*tech_level);
+				advancement_cost = GameFormulas::calculate_tech_mini_advancement_cost(*tech_level);
 				break;
 			case TECH_RADICAL:
 				advancement_cost = GameFormulas::calculate_tech_radical_advancement_cost(*tech_level);
