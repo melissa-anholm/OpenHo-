@@ -70,6 +70,41 @@ public:
 	/// Get all fleets owned by this player
 	const std::vector<Fleet>& get_fleets() const { return fleets; }
 	
+	// ========================================================================
+	// Fleet Management
+	// ========================================================================
+	
+	/// Create a new fleet for this player
+	[[nodiscard]] uint32_t create_fleet(const std::string& name, uint32_t design_id, uint32_t ship_count, uint32_t planet_id);
+	
+	/// Get a fleet by ID (mutable)
+	[[nodiscard]] Fleet* get_fleet(uint32_t fleet_id);
+	
+	/// Get a fleet by ID (const)
+	[[nodiscard]] const Fleet* get_fleet(uint32_t fleet_id) const;
+	
+	/// Delete a fleet
+	[[nodiscard]] bool delete_fleet(uint32_t fleet_id);
+	
+	/// Move a fleet to a destination planet
+	void move_fleet(uint32_t fleet_id, uint32_t destination_planet_id);
+	
+	// ========================================================================
+	// Ship Design Management
+	// ========================================================================
+	
+	/// Create a new ship design for this player
+	[[nodiscard]] uint32_t create_ship_design(const std::string& name, ShipType type, int32_t tech_range, int32_t tech_speed, int32_t tech_weapons, int32_t tech_shields, int32_t tech_miniaturization);
+	
+	/// Get a ship design by ID
+	[[nodiscard]] const ShipDesign* get_ship_design(uint32_t design_id) const;
+	
+	/// Get all ship designs for this player
+	[[nodiscard]] const std::vector<ShipDesign>& get_ship_designs() const { return ship_designs; }
+	
+	/// Delete a ship design
+	[[nodiscard]] bool delete_ship_design(uint32_t design_id);
+	
 	// Technology levels for a player
 	struct TechnologyLevels
 	{

@@ -74,14 +74,14 @@ public:
 	[[nodiscard]] PlayerPublicInfo get_player_public_info(uint32_t player_id) const;
 	uint32_t get_player_info_history_size(uint32_t player_id) const;
 	
-	// Ship design management
+	// Ship design management (delegates to Player)
 	[[nodiscard]] uint32_t create_ship_design(uint32_t player_id, const std::string& name, ShipType type, int32_t tech_range, int32_t tech_speed, int32_t tech_weapons, int32_t tech_shields, int32_t tech_miniaturization);
 	[[nodiscard]] const ShipDesign* get_ship_design(uint32_t player_id, uint32_t design_id) const;
 	[[nodiscard]] const std::vector<ShipDesign>& get_player_ship_designs(uint32_t player_id) const;
 	[[nodiscard]] bool delete_ship_design(uint32_t player_id, uint32_t design_id);
 	void build_ship_from_design(uint32_t player_id, uint32_t design_id);
 	
-	// Fleet management
+	// Fleet management (delegates to Player)
 	[[nodiscard]] uint32_t create_fleet(uint32_t player_id, const std::string& name, uint32_t design_id, uint32_t ship_count, uint32_t planet_id);
 	[[nodiscard]] Fleet* get_fleet(uint32_t player_id, uint32_t fleet_id);
 	[[nodiscard]] const Fleet* get_fleet(uint32_t player_id, uint32_t fleet_id) const;
