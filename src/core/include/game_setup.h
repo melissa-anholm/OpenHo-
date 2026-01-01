@@ -18,6 +18,7 @@ struct PlayerSetup
 	std::string name;
 	PlayerType type;  // PLAYER_HUMAN or PLAYER_COMPUTER
 	int32_t ai_iq;    // AI difficulty level (0-100), only used if type == PLAYER_COMPUTER
+	ColonyQuality starting_colony_quality;  // Quality of the player's starting colony
 };
 
 // ============================================================================

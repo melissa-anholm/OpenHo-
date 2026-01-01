@@ -12,20 +12,17 @@
 // ============================================================================
 
 GameState::GameState(const class GameSetup& setup)
-	: current_ai_rng_seed(0)
+	: current_ai_rng_seed(0),
+	  galaxy_params(setup.get_galaxy_params()),
+	  player_setups(setup.get_player_setups())
 {
-	// Copy setup data from GameSetup
-	const GalaxyGenerationParams& galaxy_params = setup.get_galaxy_params();
-	const std::vector<PlayerSetup>& player_setups = setup.get_player_setups();
+	// Setup data has been copied and stored as members in initializer list
 	
 	// Initialize RNG with default seed
 	rng = std::make_unique<DeterministicRNG>(0, 0);
 	
-	// Initialize players
-	players = initialize_players();
-	
-	// TODO: Apply player_setups to configure the players
-	// For now, players are initialized with defaults
+	// Initialize players with setup configuration
+	players = initialize_players(player_setups);
 	
 	// Initialize galaxy with provided parameters
 	initialize_galaxy(galaxy_params);
@@ -320,12 +317,18 @@ bool GameState::deserialize_state(const std::vector<uint8_t>& data)
 // Private Helper Methods
 // ============================================================================
 
-std::vector<Player> GameState::initialize_players()
+std::vector<Player> GameState::initialize_players(const std::vector<PlayerSetup>& player_setups)
 {
-	// Placeholder: Initialize players
-	// This will be called during game setup
+	// Initialize players based on setup configuration
 	std::vector<Player> new_players;
-	// TODO: Populate with initial players
+	
+	// TODO: Populate players with initial state based on player_setups
+	// For now, create default players
+	// In the future, this will use player_setups to configure:
+	// - Player names
+	// - Player types (human vs AI)
+	// - AI difficulty levels
+	
 	return new_players;
 }
 

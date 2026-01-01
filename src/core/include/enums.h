@@ -67,6 +67,39 @@ enum TechStream
 	TECH_RADICAL = 5
 };
 
+// Colony quality levels for starting planets
+enum ColonyQuality
+{
+	COLONY_OUTPOST = 0,
+	COLONY_BARREN = 1,
+	COLONY_BACKWARD = 2,
+	COLONY_NORMAL = 3,
+	COLONY_ADVANCED = 4,
+	COLONY_THRIVING = 5,
+	COLONY_ABUNDANT = 6
+};
+
+// Reverse enum lookup for ColonyQuality
+const std::map<ColonyQuality, std::string> COLONY_QUALITY_NAMES = 
+{
+	{ COLONY_OUTPOST,   "Outpost"   },
+	{ COLONY_BARREN,    "Barren"    },
+	{ COLONY_BACKWARD,  "Backward"  },
+	{ COLONY_NORMAL,    "Normal"    },
+	{ COLONY_ADVANCED,  "Advanced"  },
+	{ COLONY_THRIVING,  "Thriving"  },
+	{ COLONY_ABUNDANT,  "Abundant"  }
+};
+
+// Get the string name for a ColonyQuality
+inline std::string get_colony_quality_name(ColonyQuality quality)
+{
+	std::map<ColonyQuality, std::string>::const_iterator it = COLONY_QUALITY_NAMES.find(quality);
+	if (it != COLONY_QUALITY_NAMES.end())
+		{ return it->second; }
+	return "Unknown";
+}
+
 // Galaxy generation shape patterns
 enum GalaxyShape
 {

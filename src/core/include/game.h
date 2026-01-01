@@ -5,6 +5,7 @@
 #include "rng.h"
 #include "game_constants.h"
 #include "game_formulas.h"
+#include "game_setup.h"
 #include <memory>
 #include <unordered_map>
 
@@ -129,6 +130,10 @@ private:
 	std::vector<Player> players;  // All players in the game
 	std::unique_ptr<DeterministicRNG> rng;
 	
+	// Setup configuration (stored for reference and serialization)
+	GalaxyGenerationParams galaxy_params;  // Galaxy generation parameters used to create this game
+	std::vector<PlayerSetup> player_setups;  // Player configurations used to create this game
+	
 	// ========== IMMUTABLE MAPPINGS (built once, never change) ==========
 	// Entity ID to index mappings - fixed after initialization
 	std::unordered_map<uint32_t, size_t> planet_id_to_index;      // planet ID -> index in galaxy.planets
@@ -162,7 +167,7 @@ private:
 	uint32_t next_fleet_id = 1;
 	
 	// Private helper methods
-	std::vector<Player> initialize_players();
+	std::vector<Player> initialize_players(const std::vector<PlayerSetup>& player_setups);
 	void initialize_galaxy(const GalaxyGenerationParams& params);
 	void build_entity_maps();
 	void process_population_growth();
