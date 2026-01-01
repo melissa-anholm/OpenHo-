@@ -1,0 +1,27 @@
+{
+  "ship_names": {
+    "scout": [
+      "Needle", "Explorer", "Looker", "Columbus", "Magellan", "Intrepid", "Wanderer", "Rudolph", "Eagle", "Sparrow",
+      "Ranger", "Whisper", "Weasel", "Enterprise", "De Gama"
+    ],
+    "dreadnought": [
+      "Devastator", "Annihilator", "Obliterator", "Exterminator", "Terminator", "Destroyer", "Decimator", "Eradicator", "Vanquisher", "Subjugator"
+    ],
+    "fighter": [
+      "Reliant", "Demon", "Hurricane", "Typhoon", "Slasher", "Patton", "Stingray", "Blaster", "Talon", "Serpent",
+      "Dragon", "Tornado", "Wraith", "Storm", "Dagger"
+    ],
+    "tanker": [
+      "Refueler", "Supplier", "Carrier", "Transporter", "Hauler", "Vessel", "Freighter", "Tanker", "Barge", "Tender"
+    ],
+    "colony": [
+      "Pioneer", "Settler", "Founder", "Builder", "Colonist", "Homesteader", "Frontiersman", "Trailblazer", "Pathfinder", "Voyager"
+    ],
+    "satellite": [
+      "Observer", "Sentinel", "Watcher", "Monitor", "Scanner", "Probe", "Tracker", "Detector", "Sensor", "Beacon"
+    ],
+    "biological": [
+      "Beast", "Creature", "Monster", "Leviathan", "Behemoth", "Titan", "Colossus", "Juggernaut", "Goliath", "Hydra"
+    ]
+  }
+}

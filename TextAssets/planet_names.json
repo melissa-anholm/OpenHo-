@@ -1,0 +1,30 @@
+{
+  "planet_names": [
+    "Sol", "Sirius", "Canopus", "Vega", "Rigel", "Capella", "Procyon", "Mira", "Altair", "Antares",
+    "Spica", "Pollux", "Castor", "Deneb", "Regulus", "Polaris", "Algol", "Proxima", "Alban", "Thuban",
+    "Mizar", "Alcor", "Doobie", "Merak", "Phad", "Megrez", "Alioth", "Alkaid", "Mintaka", "Alnilak",
+    "Atlas", "Remus", "Alcyone", "Electra", "Maia", "Merope", "Taygeta", "Sterope", "Hadar", "Quark",
+    "Mimosa", "Adhara", "Shaula", "Nath", "Almak", "Alshain", "Tarazed", "Hamal", "Izar", "Shedir",
+    "Menkar", "Diphda", "Etamin", "Acamar", "Alhena", "Alphard", "Arneb", "Nihal", "Saiph", "Markab",
+    "Kansas", "Enif", "Nunki", "Kokab", "Ain", "Ancha", "Arkab", "Atik", "Atria", "Shadow",
+    "Azha", "Baham", "Beid", "Botein", "Caph", "Coxa", "Cursa", "Dabih", "Furud", "Gedi",
+    "Gienah", "Heka", "Keid", "Maaz", "Matar", "Mirfak", "Murzim", "Delta", "Ozworld", "Okda",
+    "Phact", "Propus", "Rana", "Risha", "Sabik", "Petro", "Syrma", "Tarf", "Wasat", "Wazn",
+    "Yed", "Yildun", "Zaniah", "Zaurac", "Zosma", "Ylum", "Arrakis", "Akworld", "Colma", "Moria",
+    "Foundat", "Trantor", "Barsoom", "Aurora", "Fluffy", "Lennon", "Seti Alpha", "Paradox", "Santa Fe", "Victoria",
+    "Fez", "Binar", "Nemesis", "Harkon", "Talos", "Aries", "Taurus", "Gemini", "Cancer", "Leo",
+    "Virgo", "Libra", "Scorpio", "Pisces", "Canis", "Ursa", "Beta", "Zeta", "Upsilon", "Rho",
+    "Cepheus", "Calvin", "Hobbes", "Pooh", "Tigger", "Bambi", "Dumbo", "Tweety", "Bugs", "Torino",
+    "Denali", "St. Moritz", "Sauron", "Smaug", "Thune", "Thorin", "Gollum", "Fazaron", "Trellor", "Regor",
+    "Basil", "Ursula", "Styx", "Lentor", "Sooltar", "Romula", "Vulcan", "Hobbiton", "Kessel", "Redox",
+    "Sith", "Yavin", "Quatro", "Remulak", "Kathoon", "Thanos", "Krypton", "Darven", "Gotham", "Klah",
+    "Zaphod", "Turin", "Krikkitx", "Vogon", "Argot", "Willy", "Sirgil", "Ender", "Wobbler", "Hoth",
+    "Naboo", "Fomalhaut", "Alpheratz", "Arcturus", "Regulus", "Antares", "Aldebaran", "Betelgeuse", "Nekkar", "Seginus",
+    "Benetnasch", "Murphrid", "Alkalurops", "Acubens", "Tegmen", "Denebola", "Aldhafera", "Zavijava", "Alderamin", "Kornephoros",
+    "Yed Prior", "Al Niyat", "Andromeda", "Sheratan", "Achernar", "A Centauri", "Wolf 359", "Genesis", "Kirby", "B Centauri",
+    "Tatooine", "Alderran", "Klendathu", "Betazed", "Cardassia", "Delios VII", "Ferenginar", "I'dania", "Kostolian", "Narenda III",
+    "Ocampa", "Risa", "Talax", "Xendi Sabu", "Yadera", "Corellia", "Coruscant", "Geonosis", "Kashyyyk", "Arbra",
+    "Kamino", "Lyra", "Chetco", "Cassidy", "Zed", "Arkanatex", "Zoltar VII", "Soph", "Fluxer", "Doldun",
+    "Lochia", "Crolax", "Kylothia", "Cerebrax", "Quaz"
+  ]
+}
