@@ -183,7 +183,7 @@ namespace GameFormulas
 	/// 
 	/// @param current_level The current technology level
 	/// @return The cost in research points to advance to the next level
-	int64_t calculate_tech_miniaturization_advancement_cost(int32_t current_level);
+	int64_t calculate_tech_mini_advancement_cost(int32_t current_level);
 	
 	/// Calculate the cost to advance Radical technology from level N to N+1.
 	/// 
