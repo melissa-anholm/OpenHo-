@@ -8,7 +8,7 @@
 // ============================================================================
 
 GameSetup::GameSetup()
-	: galaxy_params(100, 100, 0.5, GALAXY_RANDOM, 0)
+	: galaxy_params(100, 0.5, GALAXY_RANDOM, 0)
 { }
 
 GameSetup::~GameSetup()
@@ -49,10 +49,6 @@ GalaxyGenerationParams GameSetup::query_galaxy_parameters()
 {
 	std::cout << "\n=== Galaxy Configuration ===" << std::endl;
 	
-	uint32_t size_param;
-	std::cout << "Galaxy size parameter (10-1000): ";
-	std::cin >> size_param;
-	
 	uint32_t n_planets;
 	std::cout << "Number of planets (5-500): ";
 	std::cin >> n_planets;
@@ -74,7 +70,7 @@ GalaxyGenerationParams GameSetup::query_galaxy_parameters()
 	
 	std::cout << std::endl;
 	
-	return GalaxyGenerationParams(size_param, n_planets, density, shape, seed);
+	return GalaxyGenerationParams(n_planets, density, shape, seed);
 }
 
 // ============================================================================
