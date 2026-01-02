@@ -128,10 +128,14 @@ private:
 	std::unique_ptr<Galaxy> galaxy;  // Initialized in constructor with params
 	std::vector<Player> players;  // All players in the game
 	std::unique_ptr<DeterministicRNG> rng;
+	std::unique_ptr<class TextAssets> text_assets;  // Text assets (names, descriptions, etc.)
 	
 	// Setup configuration (stored for reference and serialization)
 	GalaxyGenerationParams galaxy_params;  // Galaxy generation parameters used to create this game
 	std::vector<PlayerSetup> player_setups;  // Player configurations used to create this game
+	
+	// Friend class for Galaxy to access GameState members
+	friend class Galaxy;
 	
 	// ========== IMMUTABLE MAPPINGS (built once, never change) ==========
 	// Entity ID to index mappings - fixed after initialization

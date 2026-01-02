@@ -22,6 +22,15 @@ struct GalaxyGenerationParams
 	GalaxyShape shape;   // Distribution pattern (random, spiral, circle, ring, cluster, grid)
 	uint64_t seed;       // Random seed for generation
 	
+	// Default constructor for testing
+	GalaxyGenerationParams()
+		: gal_size(100),
+		  n_planets(100),
+		  density(0.5),
+		  shape(GALAXY_RANDOM),
+		  seed(0)
+	{ }
+	
 	// Constructor: calculates gal_size from size_param
 	GalaxyGenerationParams(uint32_t size_param, uint32_t planets, double dens, GalaxyShape gal_shape, uint64_t rng_seed)
 		: gal_size(static_cast<uint32_t>(std::sqrt(size_param) * 10.0)),
@@ -45,12 +54,13 @@ struct Galaxy
 	std::vector<Planet> planets;
 	
 	// Constructor to initialize galaxy boundaries and planets
+	// Takes GameState reference for access to RNG and TextAssets
 	// Implementation in game.cpp
-	Galaxy(const GalaxyGenerationParams& params, class DeterministicRNG* rng);
+	Galaxy(const GalaxyGenerationParams& params, class GameState* game_state);
 	
 	// Initialize planets in the galaxy based on generation parameters
-	// Requires access to RNG, so implementation is in game.cpp
-	void initialize_planets(const GalaxyGenerationParams& params, class DeterministicRNG* rng);
+	// Requires access to RNG and TextAssets, so implementation is in game.cpp
+	void initialize_planets(const GalaxyGenerationParams& params, class GameState* game_state);
 	
 	// Two separate RNG engines
 	// (Implementation details in rng.h)

@@ -2,6 +2,7 @@
 #include "game_setup.h"
 #include "game_constants.h"
 #include "game_formulas.h"
+#include "text_assets.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -20,6 +21,10 @@ GameState::GameState(const class GameSetup& setup)
 	
 	// Initialize RNG with default seed
 	rng = std::make_unique<DeterministicRNG>(0, 0);
+	
+	// Load text assets
+	text_assets = std::make_unique<TextAssets>();
+	text_assets->load_assets("TextAssets");
 	
 	// Initialize players with setup configuration
 	players = initialize_players(player_setups);
@@ -321,7 +326,7 @@ void GameState::initialize_galaxy(const GalaxyGenerationParams& params)
 {
 	// Initialize galaxy with user-provided parameters
 	// This is called after user specifies galaxy generation parameters
-	galaxy = std::make_unique<Galaxy>(params, rng.get());
+	galaxy = std::make_unique<Galaxy>(params, this);
 	
 	// Build entity ID maps for quick lookup
 	build_entity_maps();
