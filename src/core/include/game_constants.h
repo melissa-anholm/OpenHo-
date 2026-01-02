@@ -11,6 +11,20 @@
 
 namespace GameConstants
 {
+	constexpr double min_gravity = 0.3;
+	constexpr double max_gravity = 4.5;
+	
+	constexpr double min_temp = -400.0;
+	constexpr double max_temp =  400.0;
+	
+	constexpr int32_t min_metal = 0;
+	constexpr int32_t max_metal = 32000;
+	
+	constexpr double min_planet_distance = 4.0;
+	
+	constexpr double galaxy_max_density = 4.0;
+	constexpr double galaxy_min_density = 0.25;
+	
 	// ========================================================================
 	// Ship Design Limits
 	// ========================================================================
@@ -33,8 +47,7 @@ namespace GameConstants
 	/// Example: 0.30 means 30% interest per turn on debt.
 	/// This represents the cost of borrowing money.
 	constexpr double Money_Interest_Rate_Debt = 0.30;
-	
-	
+		
 	// ========================================================================
 	// Future Balance Parameters
 	// ========================================================================

@@ -62,12 +62,14 @@ struct Galaxy
 	// Implementation in game.cpp
 	Galaxy(const GalaxyGenerationParams& params, class GameState* game_state);
 	
-	// Generate randomized planet names (helper method)
-	// Generates n_planets unique names in random order from available_names
-	static std::vector<std::string> generate_planet_names(
-		uint32_t n_planets,
-		const std::vector<std::string>& available_names,
-		class DeterministicRNG& rng);
+	// // Generate randomized planet names (helper method)
+	// // Generates n_planets unique names in random order from available_names
+	// static std::vector<std::string> generate_planet_names(
+	// 	uint32_t n_planets,
+	// 	const std::vector<std::string>& available_names,
+	// 	class DeterministicRNG& rng);
+	static std::vector<std::string> generate_planet_names(uint32_t n_planets);
+	
 	
 	// Shape-specific planet initialization methods
 	// Each method generates planet positions according to its shape pattern

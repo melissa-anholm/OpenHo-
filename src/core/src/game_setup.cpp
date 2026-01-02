@@ -54,8 +54,17 @@ GalaxyGenerationParams GameSetup::query_galaxy_parameters()
 	std::cin >> n_planets;
 	
 	double density;
-	std::cout << "Planet distribution density (0.0-1.0): ";
+	std::cout << "Planet distribution density (0.25-4.0): ";
 	std::cin >> density;
+	// Check that density is within range!!
+	if(density>GameConstants::galaxy_max_density)
+	{
+		density=GameConstants::galaxy_max_density;
+	}
+	if(density<GameConstants::galaxy_min_density)
+	{
+		density=GameConstants::galaxy_min_density;
+	}
 	
 	std::cout << "Select galaxy shape:" << std::endl;
 	std::cout << "0 = Random, 1 = Spiral, 2 = Circle, 3 = Ring, 4 = Cluster, 5 = Grid" << std::endl;
