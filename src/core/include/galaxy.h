@@ -68,7 +68,7 @@ struct Galaxy
 	// 	uint32_t n_planets,
 	// 	const std::vector<std::string>& available_names,
 	// 	class DeterministicRNG& rng);
-	static std::vector<std::string> generate_planet_names(uint32_t n_planets);
+	static std::vector<std::string> generate_planet_names(uint32_t n_planets, class GameState* game_state);
 	
 	
 	// Shape-specific planet initialization methods

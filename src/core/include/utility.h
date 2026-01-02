@@ -5,9 +5,12 @@
 #include <string>
 #include <cstdint>
 #include <algorithm>
+#include <map>
+#include <cmath>
 
-// Forward declaration
+// Forward declarations
 class DeterministicRNG;
+class Planet;
 
 // ============================================================================
 // Randomized Subset Generation
@@ -99,5 +102,106 @@ std::vector<T> generate_randomized_subset(
 	
 	return result;
 }
+
+// ============================================================================
+// Spatial Grid for Distance Checking
+// ============================================================================
+
+/**
+ * Spatial grid data structure for efficient distance-based collision detection.
+ * Divides space into cells to avoid O(N^2) distance checking.
+ * Used during planet generation to ensure minimum spacing between planets.
+ */
+class CheckDistanceSpatialGrid
+{
+public:
+	/**
+	 * Initialize the spatial grid.
+	 * @param cell_size Size of each grid cell (should be >= min_distance)
+	 * @param max_coord Maximum coordinate value (galaxy size)
+	 */
+	CheckDistanceSpatialGrid(double cell_size, double max_coord)
+		: cell_size_(cell_size), max_coord_(max_coord)
+	{
+	}
+	
+	/**
+	 * Add a planet to the grid.
+	 * @param x X coordinate
+	 * @param y Y coordinate
+	 * @param planet_id ID of the planet (for reference)
+	 */
+	void add_planet(double x, double y, uint32_t planet_id)
+	{
+		int cell_x = static_cast<int>(x / cell_size_);
+		int cell_y = static_cast<int>(y / cell_size_);
+		cells_[{cell_x, cell_y}].push_back({x, y, planet_id});
+	}
+	
+	/**
+	 * Check if a position is valid (far enough from all existing planets).
+	 * @param x X coordinate to check
+	 * @param y Y coordinate to check
+	 * @param min_distance Minimum required distance from other planets
+	 * @return true if position is valid, false otherwise
+	 */
+	bool is_position_valid(double x, double y, double min_distance) const
+	{
+		int cell_x = static_cast<int>(x / cell_size_);
+		int cell_y = static_cast<int>(y / cell_size_);
+		
+		// Check this cell and all neighboring cells
+		for (int dx = -1; dx <= 1; ++dx)
+		{
+			for (int dy = -1; dy <= 1; ++dy)
+			{
+				int check_x = cell_x + dx;
+				int check_y = cell_y + dy;
+				
+				auto it = cells_.find({check_x, check_y});
+				if (it != cells_.end())
+				{
+					for (const auto& planet : it->second)
+					{
+						double dx_coord = x - planet.x;
+						double dy_coord = y - planet.y;
+						double distance = std::sqrt(dx_coord * dx_coord + dy_coord * dy_coord);
+						
+						if (distance < min_distance)
+							return false;
+					}
+				}
+			}
+		}
+		
+		return true;
+	}
+	
+	/**
+	 * Get the number of planets in the grid.
+	 * @return Number of planets added so far
+	 */
+	uint32_t planet_count() const
+	{
+		uint32_t count = 0;
+		for (const auto& cell : cells_)
+		{
+			count += cell.second.size();
+		}
+		return count;
+	}
+	
+private:
+	struct PlanetRecord
+	{
+		double x;
+		double y;
+		uint32_t planet_id;
+	};
+	
+	double cell_size_;
+	double max_coord_;
+	std::map<std::pair<int, int>, std::vector<PlanetRecord>> cells_;
+};
 
 #endif  // OPENHO_UTILITY_H

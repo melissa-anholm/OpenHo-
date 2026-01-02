@@ -47,7 +47,20 @@ namespace GameConstants
 	/// Example: 0.30 means 30% interest per turn on debt.
 	/// This represents the cost of borrowing money.
 	constexpr double Money_Interest_Rate_Debt = 0.30;
-		
+	
+	// ========================================================================
+	// Planet Placement
+	// ========================================================================
+	
+	/// Maximum number of attempts to find a valid position for a planet
+	/// when enforcing minimum distance constraints.
+	/// If a planet cannot be placed after this many attempts, it is skipped.
+	constexpr uint32_t Planet_Placement_Max_Attempts = 10;
+	
+	/// Debug threshold: log a warning if planet placement takes more than
+	/// this many attempts. Set to 5 for debug builds, higher for release.
+	constexpr uint32_t Planet_Placement_Debug_Threshold = 5;
+	
 	// ========================================================================
 	// Future Balance Parameters
 	// ========================================================================
