@@ -62,16 +62,45 @@ struct Galaxy
 	// Implementation in game.cpp
 	Galaxy(const GalaxyGenerationParams& params, class GameState* game_state);
 	
-	// Initialize planets in the galaxy based on generation parameters
-	// Requires access to RNG and TextAssets, so implementation is in game.cpp
-	void initialize_planets(const GalaxyGenerationParams& params, class GameState* game_state);
-	
 	// Generate randomized planet names (helper method)
 	// Generates n_planets unique names in random order from available_names
 	static std::vector<std::string> generate_planet_names(
 		uint32_t n_planets,
 		const std::vector<std::string>& available_names,
 		class DeterministicRNG& rng);
+	
+	// Shape-specific planet initialization methods
+	// Each method generates planet positions according to its shape pattern
+	// and creates Planet objects with the provided names
+	void initialize_planets_random(
+		const GalaxyGenerationParams& params,
+		const std::vector<std::string>& planet_names,
+		class GameState* game_state);
+	
+	void initialize_planets_spiral(
+		const GalaxyGenerationParams& params,
+		const std::vector<std::string>& planet_names,
+		class GameState* game_state);
+	
+	void initialize_planets_circle(
+		const GalaxyGenerationParams& params,
+		const std::vector<std::string>& planet_names,
+		class GameState* game_state);
+	
+	void initialize_planets_ring(
+		const GalaxyGenerationParams& params,
+		const std::vector<std::string>& planet_names,
+		class GameState* game_state);
+	
+	void initialize_planets_cluster(
+		const GalaxyGenerationParams& params,
+		const std::vector<std::string>& planet_names,
+		class GameState* game_state);
+	
+	void initialize_planets_grid(
+		const GalaxyGenerationParams& params,
+		const std::vector<std::string>& planet_names,
+		class GameState* game_state);
 	
 	// Two separate RNG engines
 	// (Implementation details in rng.h)
