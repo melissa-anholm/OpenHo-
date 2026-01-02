@@ -36,7 +36,6 @@ void Fleet::refuel()
 {
 	fuel = ship_design->get_range();
 }
-
 void Fleet::partial_refuel(int32_t amount)
 {
 	fuel += amount;

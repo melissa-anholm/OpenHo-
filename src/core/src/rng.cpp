@@ -108,7 +108,9 @@ uint64_t DeterministicRNG::getAISeed() const
 int32_t DeterministicRNG::nextInt32Range(int32_t min, int32_t max)
 {
 	if (min > max)
+	{
 		std::swap(min, max);
+	}
 	boost::random::uniform_int_distribution<int32_t> dist(min, max);
 	return dist(deterministicEngine);
 }
@@ -116,7 +118,9 @@ int32_t DeterministicRNG::nextInt32Range(int32_t min, int32_t max)
 uint32_t DeterministicRNG::nextUInt32Range(uint32_t min, uint32_t max)
 {
 	if (min > max)
+	{
 		std::swap(min, max);
+	}
 	boost::random::uniform_int_distribution<uint32_t> dist(min, max);
 	return dist(deterministicEngine);
 }
@@ -124,7 +128,9 @@ uint32_t DeterministicRNG::nextUInt32Range(uint32_t min, uint32_t max)
 double DeterministicRNG::nextDoubleRange(double min, double max)
 {
 	if (min > max)
+	{
 		std::swap(min, max);
+	}
 	boost::random::uniform_real_distribution<double> dist(min, max);
 	return dist(deterministicEngine);
 }
@@ -132,19 +138,21 @@ double DeterministicRNG::nextDoubleRange(double min, double max)
 // ============================================================================
 // AI Bounded Random Numbers
 // ============================================================================
-
 int32_t DeterministicRNG::nextAIInt32Range(int32_t min, int32_t max)
 {
 	if (min > max)
+	{
 		std::swap(min, max);
+	}
 	boost::random::uniform_int_distribution<int32_t> dist(min, max);
 	return dist(aiEngine);
 }
-
 uint32_t DeterministicRNG::nextAIUInt32Range(uint32_t min, uint32_t max)
 {
 	if (min > max)
+	{
 		std::swap(min, max);
+	}
 	boost::random::uniform_int_distribution<uint32_t> dist(min, max);
 	return dist(aiEngine);
 }
@@ -152,7 +160,9 @@ uint32_t DeterministicRNG::nextAIUInt32Range(uint32_t min, uint32_t max)
 double DeterministicRNG::nextAIDoubleRange(double min, double max)
 {
 	if (min > max)
+	{
 		std::swap(min, max);
+	}
 	boost::random::uniform_real_distribution<double> dist(min, max);
 	return dist(aiEngine);
 }
@@ -160,7 +170,6 @@ double DeterministicRNG::nextAIDoubleRange(double min, double max)
 // ============================================================================
 // RNG State Serialization
 // ============================================================================
-
 std::vector<uint8_t> DeterministicRNG::serialize_ai_rng_state() const
 {
 	std::ostringstream oss;

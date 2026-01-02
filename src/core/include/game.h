@@ -75,7 +75,6 @@ public:
 	void increment_turn();
 	void increment_year();
 	
-
 	
 	// Player property accessors (for C API and internal use)
 	int64_t get_player_money_income(uint32_t player_id) const;
@@ -181,9 +180,7 @@ private:
 	void process_planets();
 	void process_ships();
 	void process_novae();
-
 	
-
 };
 
 #endif // OPENHO_GAME_H

@@ -9,17 +9,14 @@
 
 GameSetup::GameSetup()
 	: galaxy_params(100, 100, 0.5, GALAXY_RANDOM, 0)
-{
-}
+{ }
 
 GameSetup::~GameSetup()
-{
-}
+{ }
 
 // ============================================================================
 // Game Creation
 // ============================================================================
-
 GameState* GameSetup::create_new_game()
 {
 	// Query user for galaxy parameters

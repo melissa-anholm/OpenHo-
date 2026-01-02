@@ -34,7 +34,6 @@ namespace GameConstants
 	/// This represents the cost of borrowing money.
 	constexpr double Money_Interest_Rate_Debt = 0.30;
 	
-
 	
 	// ========================================================================
 	// Future Balance Parameters

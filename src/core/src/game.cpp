@@ -36,8 +36,7 @@ GameState::GameState(const class GameSetup& setup)
 // ============================================================================
 
 GameState::~GameState()
-{
-}
+{ }
 
 // ============================================================================
 // Accessors
@@ -47,7 +46,6 @@ Galaxy& GameState::get_galaxy()
 {
 	return *galaxy;
 }
-
 const Galaxy& GameState::get_galaxy() const
 {
 	return *galaxy;
@@ -57,7 +55,6 @@ DeterministicRNG& GameState::get_rng()
 {
 	return *rng;
 }
-
 const DeterministicRNG& GameState::get_rng() const
 {
 	return *rng;
@@ -66,16 +63,15 @@ const DeterministicRNG& GameState::get_rng() const
 Player* GameState::get_player(uint32_t player_id)
 {
 	auto it = player_id_to_index.find(player_id);
-	if (it == player_id_to_index.end())
-		return nullptr;
+	if (it == player_id_to_index.end() )
+		{ return nullptr; }
 	return &players[it->second];
 }
-
 const Player* GameState::get_player(uint32_t player_id) const
 {
 	auto it = player_id_to_index.find(player_id);
 	if (it == player_id_to_index.end())
-		return nullptr;
+		{ return nullptr; }
 	return &players[it->second];
 }
 
@@ -84,17 +80,16 @@ Player* GameState::get_player_by_name(const std::string& name)
 	for (Player& player : players)
 	{
 		if (player.name == name)
-			return &player;
+			{ return &player; }
 	}
 	return nullptr;
 }
-
 const Player* GameState::get_player_by_name(const std::string& name) const
 {
 	for (const Player& player : players)
 	{
 		if (player.name == name)
-			return &player;
+			{ return &player; }
 	}
 	return nullptr;
 }
@@ -104,7 +99,6 @@ int64_t GameState::get_player_money_income(uint32_t player_id) const
 	const Player* player = get_player(player_id);
 	return player ? player->money_income : 0;
 }
-
 int64_t GameState::get_player_metal_income(uint32_t player_id) const
 {
 	const Player* player = get_player(player_id);
@@ -116,7 +110,6 @@ int64_t GameState::get_player_money(uint32_t player_id) const
 	const Player* player = get_player(player_id);
 	return player ? player->money_savings : 0;
 }
-
 int64_t GameState::get_player_metal_reserve(uint32_t player_id) const
 {
 	const Player* player = get_player(player_id);
@@ -128,7 +121,6 @@ double GameState::get_player_ideal_temperature(uint32_t player_id) const
 	const Player* player = get_player(player_id);
 	return player ? player->ideal_temperature : 0.0;
 }
-
 double GameState::get_player_ideal_gravity(uint32_t player_id) const
 {
 	const Player* player = get_player(player_id);
@@ -139,15 +131,14 @@ Planet* GameState::get_planet(uint32_t planetID)
 {
 	auto it = planet_id_to_index.find(planetID);
 	if (it == planet_id_to_index.end())
-		return nullptr;
+		{ return nullptr; }
 	return &galaxy->planets[it->second];
 }
-
 const Planet* GameState::get_planet(uint32_t planetID) const
 {
 	auto it = planet_id_to_index.find(planetID);
 	if (it == planet_id_to_index.end())
-		return nullptr;
+		{ return nullptr; }
 	return &galaxy->planets[it->second];
 }
 
@@ -155,26 +146,24 @@ Planet* GameState::get_planet(const std::string& planet_name)
 {
 	auto it = planet_name_to_index.find(planet_name);
 	if (it == planet_name_to_index.end())
-		return nullptr;
+		{ return nullptr; }
 	return &galaxy->planets[it->second];
 }
-
 const Planet* GameState::get_planet(const std::string& planet_name) const
 {
 	auto it = planet_name_to_index.find(planet_name);
 	if (it == planet_name_to_index.end())
-		return nullptr;
+		{ return nullptr; }
 	return &galaxy->planets[it->second];
 }
-
 
 
 const std::vector<size_t>& GameState::get_player_planets(uint32_t player_id) const
 {
 	static const std::vector<size_t> emptyVector;
 	auto it = player_planets.find(player_id);
-	if (it == player_planets.end())
-		return emptyVector;
+	if (it == player_planets.end() )
+		{ return emptyVector; } 
 	return it->second;
 }
 
@@ -193,11 +182,10 @@ std::vector<Player>& GameState::get_players()
 	return players;
 }
 
-uint32_t GameState::get_current_turn() const
+void GameState::increment_year()
 {
-	return current_turn;
+	current_year += 10;
 }
-
 void GameState::increment_turn()
 {
 	current_turn++;
@@ -207,10 +195,9 @@ uint32_t GameState::get_current_year() const
 {
 	return current_year;
 }
-
-void GameState::increment_year()
+uint32_t GameState::get_current_turn() const
 {
-	current_year += 10;
+	return current_turn;
 }
 
 uint32_t GameState::allocate_fleet_id()
@@ -225,8 +212,8 @@ uint32_t GameState::allocate_fleet_id()
 void GameState::set_money_allocation(uint32_t player_id, const Player::MoneyAllocation& money_alloc)
 {
 	Player* player = get_player(player_id);
-	if (!player)
-		throw std::runtime_error("Player not found");
+	if (!player) 
+		{ throw std::runtime_error("Player not found"); }
 	
 	player->allocation = money_alloc;
 }
@@ -243,7 +230,6 @@ const Player::MoneyAllocation& GameState::get_money_allocation(uint32_t player_i
 // ============================================================================
 // AI RNG Seed Management
 // ============================================================================
-
 uint64_t GameState::get_ai_rng_seed() const
 {
 	return current_ai_rng_seed;
@@ -258,7 +244,6 @@ void GameState::set_ai_rng_seed(uint64_t seed)
 // ============================================================================
 // Turn Processing
 // ============================================================================
-
 void GameState::start_first_turn()
 {
 	// Initialize the first turn with initial game state
@@ -358,7 +343,6 @@ void GameState::build_entity_maps()
 		}
 	}
 	
-
 	// Build player ID to index map and player name to index map
 	for (size_t i = 0; i < players.size(); ++i)
 	{
@@ -495,14 +479,13 @@ void GameState::capture_and_distribute_player_public_info()
 // ============================================================================
 // Ship Design Management
 // ============================================================================
-
 uint32_t GameState::create_ship_design(uint32_t player_id, const std::string& name, ShipType type, 
                                       int32_t tech_range, int32_t tech_speed, int32_t tech_weapons, 
                                       int32_t tech_shields, int32_t tech_mini)
 {
 	Player* player = get_player(player_id);
-	if (!player)
-		return 0;
+	if (!player) 
+		{ return 0; }
 	
 	// Delegate to Player
 	return player->create_ship_design(name, type, tech_range, tech_speed, tech_weapons, tech_shields, tech_mini);
@@ -511,8 +494,8 @@ uint32_t GameState::create_ship_design(uint32_t player_id, const std::string& na
 const ShipDesign* GameState::get_ship_design(uint32_t player_id, uint32_t design_id) const
 {
 	const Player* player = get_player(player_id);
-	if (!player)
-		return nullptr;
+	if (!player) 
+		{ return nullptr; }
 	
 	// Delegate to Player
 	return player->get_ship_design(design_id);
@@ -524,7 +507,7 @@ const std::vector<ShipDesign>& GameState::get_player_ship_designs(uint32_t playe
 	
 	const Player* player = get_player(player_id);
 	if (!player)
-		return emptyVector;
+		{ return emptyVector; }
 	
 	// Delegate to Player
 	return player->get_ship_designs();
@@ -534,7 +517,7 @@ bool GameState::delete_ship_design(uint32_t player_id, uint32_t design_id)
 {
 	Player* player = get_player(player_id);
 	if (!player)
-		return false;
+		{ return false; }
 	
 	// Delegate to Player
 	return player->delete_ship_design(design_id);
@@ -556,7 +539,7 @@ void GameState::build_ship_from_design(uint32_t player_id, uint32_t design_id)
 	// This will deduct costs from player->money_savings and player->metalReserve
 }
 
-
+// Research Processing!
 void GameState::process_research()
 {
 	// Process research for each player
@@ -708,27 +691,25 @@ void GameState::process_planets()
 }
 
 
-
 // ============================================================================
 // Fleet Management Methods
 // ============================================================================
-
 uint32_t GameState::create_fleet(uint32_t player_id, uint32_t design_id, 
                                  uint32_t ship_count, uint32_t planet_id)
 {
 	Player* player = get_player(player_id);
 	if (!player)
-		return 0;
+		{ return 0; }
 	
 	// Validate and get the ship design
 	const ShipDesign* design = player->get_ship_design(design_id);
 	if (!design)
-		return 0;  // Design not found for this player
+		{ return 0; }  // Design not found for this player
 	
 	// Validate and get the planet
 	Planet* planet = get_planet(planet_id);
 	if (!planet)
-		return 0;  // Planet not found
+		{ return 0; } // Planet not found
 	
 	// Allocate a globally unique fleet ID
 	uint32_t fleet_id = allocate_fleet_id();
@@ -741,17 +722,16 @@ Fleet* GameState::get_fleet(uint32_t player_id, uint32_t fleet_id)
 {
 	Player* player = get_player(player_id);
 	if (!player)
-		return nullptr;
+		{ return nullptr; }
 	
 	// Delegate to Player
 	return player->get_fleet(fleet_id);
 }
-
 const Fleet* GameState::get_fleet(uint32_t player_id, uint32_t fleet_id) const
 {
 	const Player* player = get_player(player_id);
-	if (!player)
-		return nullptr;
+	if (!player) 
+		{ return nullptr; }
 	
 	// Delegate to Player
 	return player->get_fleet(fleet_id);
@@ -772,7 +752,7 @@ bool GameState::delete_fleet(uint32_t player_id, uint32_t fleet_id)
 {
 	Player* player = get_player(player_id);
 	if (!player)
-		return false;
+		{ return false; }
 	
 	// Delegate to Player
 	return player->delete_fleet(fleet_id);

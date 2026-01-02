@@ -87,7 +87,6 @@ Fleet* Player::get_fleet(uint32_t fleet_id)
 	}
 	return nullptr;
 }
-
 const Fleet* Player::get_fleet(uint32_t fleet_id) const
 {
 	for (const auto& fleet : fleets)
@@ -131,7 +130,6 @@ void Player::move_fleet(uint32_t fleet_id, uint32_t destination_planet_id)
 // ============================================================================
 // Ship Design Management
 // ============================================================================
-
 uint32_t Player::create_ship_design(const std::string& name, ShipType type, int32_t tech_range, int32_t tech_speed, int32_t tech_weapons, int32_t tech_shields, int32_t tech_mini)
 {
 	// TODO: Validate tech levels are within reasonable bounds
@@ -190,7 +188,7 @@ const std::vector<PlayerPublicInfo>* Player::get_player_info_history(uint32_t pl
 	auto it = player_info_history.find(player_id);
 	if (it != player_info_history.end())
 	return &it->second;
-
+	
 	return nullptr;
 }
 

@@ -43,7 +43,7 @@ public:
 	int32_t get_weapons() const { return tech_weapons; }
 	int32_t get_shields() const { return tech_shields; }
 	int32_t get_mini() const    { return tech_mini; }
-
+	
 private:
 	// Technology levels associated with this design (immutable after construction)
 	int32_t tech_range = 0;

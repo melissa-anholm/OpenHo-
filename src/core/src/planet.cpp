@@ -5,7 +5,6 @@
 // ============================================================================
 // Planet Implementation
 // ============================================================================
-
 Planet::Planet(
 	uint32_t p_id,
 	const std::string& p_name,
@@ -30,7 +29,6 @@ Planet::Planet(
 // ============================================================================
 // ColonizedPlanet Implementation
 // ============================================================================
-
 ColonizedPlanet::ColonizedPlanet(
 	Planet* p_base,
 	Player* p_owner,
@@ -56,7 +54,6 @@ ColonizedPlanet::ColonizedPlanet(
 // ============================================================================
 // PlanetSnapshot Implementation
 // ============================================================================
-
 PlanetSnapshot PlanetSnapshot::partial_info(const Planet& planet, PlayerID player_id)
 {
 	PlanetSnapshot snapshot;

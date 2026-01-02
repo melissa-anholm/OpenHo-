@@ -8,7 +8,6 @@ namespace GameFormulas
 	// ============================================================================
 	// Ship Design Cost Calculations
 	// ============================================================================
-	
 	int64_t calculate_ship_design_build_cost(int32_t tech_range, int32_t tech_speed, 
 	                                          int32_t tech_weapons, int32_t tech_shields, 
 	                                          int32_t tech_mini)
@@ -39,7 +38,6 @@ namespace GameFormulas
 	// ============================================================================
 	// Player Metrics Calculations
 	// ============================================================================
-	
 	int64_t calculate_player_fleet_power(uint32_t player_id, GameState* game_state)
 	{
 		// Placeholder: return 1
@@ -57,21 +55,20 @@ namespace GameFormulas
 	// ============================================================================
 	// Money and Resources Calculations
 	// ============================================================================
-	
 	int64_t calculate_money_interest(int64_t savings)
 	{
-	if (savings >= 0)
-	{
-		// Positive savings: apply positive interest rate
-		double interest = savings * GameConstants::Money_Interest_Rate_Positive;
-		return static_cast<int64_t>(interest);
-	}
-	else
-	{
-		// Negative savings (debt): apply debt interest rate
-		double interest = savings * GameConstants::Money_Interest_Rate_Debt;
-		return static_cast<int64_t>(interest);
-	}
+		if (savings >= 0)
+		{
+			// Positive savings: apply positive interest rate
+			double interest = savings * GameConstants::Money_Interest_Rate_Positive;
+			return static_cast<int64_t>(interest);
+		}
+		else
+		{
+			// Negative savings (debt): apply debt interest rate
+			double interest = savings * GameConstants::Money_Interest_Rate_Debt;
+			return static_cast<int64_t>(interest);
+		}
 	}
 	
 	int64_t convert_money_to_research_points(int64_t money_allocated)
@@ -84,7 +81,6 @@ namespace GameFormulas
 	// ============================================================================
 	// Technology Advancement Calculations
 	// ============================================================================
-	
 	int64_t calculate_tech_range_advancement_cost(int32_t current_level)
 	{
 		// Quadratic cost formula: cost = (level + 1)^2 * base_multiplier
@@ -136,7 +132,6 @@ namespace GameFormulas
 	// ============================================================================
 	// Player Income Calculations
 	// ============================================================================
-	
 	int64_t calculate_planetary_income(uint32_t player_id, GameState* game_state)
 	{
 		// Placeholder: return 0
@@ -160,14 +155,12 @@ namespace GameFormulas
 	// ============================================================================
 	// Population Growth Calculations
 	// ============================================================================
-	
 	int64_t calculate_population_growth(
 		int64_t current_population,
 		double planet_temperature,
 		double planet_gravity,
 		double ideal_temperature,
-		double ideal_gravity
-	)
+		double ideal_gravity )
 	{
 		// Placeholder: simple linear growth
 		// Real formula will depend on how well the planet matches the player's ideals
@@ -179,7 +172,6 @@ namespace GameFormulas
 	// ============================================================================
 	// Terraforming and Mining Calculations
 	// ============================================================================
-	
 	double calculate_temperature_change(int64_t money_spent, double current_temperature, double target_temperature)
 	{
 		// Placeholder: simple linear conversion
@@ -223,7 +215,6 @@ namespace GameFormulas
 	// ============================================================================
 	// Planet Mechanics Calculations
 	// ============================================================================
-	
 	int32_t calculate_planet_nova_warning_duration(DeterministicRNG& rng)
 	{
 		// Placeholder: return 1
@@ -233,22 +224,21 @@ namespace GameFormulas
 	
 }  // namespace GameFormulas
 
-	// ============================================================================
-	// Planetary Perception Calculations
-	// ============================================================================
-	
-	double calculate_apparent_gravity(double ideal_gravity, double true_gravity)
-	{
-		// For now, apparent gravity equals true gravity
-		// In the future, this could be modified based on player perception,
-		// research levels, or other factors
-		return true_gravity;
-	}
-	
-	double calculate_apparent_temperature(double ideal_temperature, double true_temperature)
-	{
-		// For now, apparent temperature equals true temperature
-		// In the future, this could be modified based on player perception,
-		// research levels, or other factors
-		return true_temperature;
-	}
+// ============================================================================
+// Planetary Perception Calculations
+// ============================================================================
+double calculate_apparent_gravity(double ideal_gravity, double true_gravity)
+{
+	// For now, apparent gravity equals true gravity
+	// In the future, this could be modified based on player perception,
+	// research levels, or other factors
+	return true_gravity;
+}
+
+double calculate_apparent_temperature(double ideal_temperature, double true_temperature)
+{
+	// For now, apparent temperature equals true temperature
+	// In the future, this could be modified based on player perception,
+	// research levels, or other factors
+	return true_temperature;
+}

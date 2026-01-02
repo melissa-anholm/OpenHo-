@@ -29,8 +29,7 @@ struct GalaxyGenerationParams
 		  density(dens),
 		  shape(gal_shape),
 		  seed(rng_seed)
-	{
-	}
+	{ }
 };
 
 // Galaxy structure

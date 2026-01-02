@@ -67,8 +67,6 @@ uint32_t game_get_num_planets(void* game)
 	return static_cast<uint32_t>(gameState->get_galaxy().planets.size());
 }
 
-
-
 uint32_t game_get_num_fleets(void* game)
 {
 	if (!game)
@@ -88,11 +86,10 @@ uint32_t game_get_num_fleets(void* game)
 // ============================================================================
 // Player Queries
 // ============================================================================
-
 void game_get_player(void* game, uint32_t player_id, Player* out)
 {
 	if (!game || !out)
-		return;
+		{ return; }
 	
 	GameState* gameState = static_cast<GameState*>(game);
 	const Player* player = gameState->get_player(player_id);
@@ -145,7 +142,6 @@ void game_get_player_metal_reserve(void* game, uint32_t player_id, int64_t* out)
 // ============================================================================
 // Planet Queries
 // ============================================================================
-
 void game_get_planet(void* game, uint32_t planetID, Planet* out)
 {
 	if (!game || !out)
@@ -198,8 +194,7 @@ void game_get_planet_perceived_values(void* game, uint32_t planetID, uint32_t pl
 // ============================================================================
 // Player Public Information Queries
 // ============================================================================
-
-	void game_get_full_player_info_history(void* game, uint32_t player_id, const std::vector<PlayerPublicInfo>** out)
+void game_get_full_player_info_history(void* game, uint32_t player_id, const std::vector<PlayerPublicInfo>** out)
 	{
 		if (!game || !out)
 			{ return; }
@@ -221,7 +216,6 @@ void game_get_planet_perceived_values(void* game, uint32_t planetID, uint32_t pl
 // ============================================================================
 // Money Allocation
 // ============================================================================
-
 void game_set_money_allocation(void* game, uint32_t player_id, const Player::MoneyAllocation* money_alloc)
 {
 	if (!game || !money_alloc)
@@ -262,7 +256,6 @@ void game_get_money_allocation(void* game, uint32_t player_id, Player::MoneyAllo
 // ============================================================================
 // AI RNG Seed Management
 // ============================================================================
-
 uint64_t game_get_ai_rng_seed(void* game)
 {
 	if (!game) 
@@ -284,7 +277,6 @@ void game_set_ai_rng_seed(void* game, uint64_t seed)
 // ============================================================================
 // Turn Processing
 // ============================================================================
-
 void game_process_turn(void* game)
 {
 	if (!game)
@@ -297,7 +289,6 @@ void game_process_turn(void* game)
 // ============================================================================
 // Serialization
 // ============================================================================
-
 int game_serialize_state(void* game, void* buffer, int bufferSize)
 {
 	if (!game || !buffer || bufferSize <= 0)
@@ -370,7 +361,6 @@ int game_get_serialized_state_size(void* game)
 // ============================================================================
 // Ship Design Queries and Management
 // ============================================================================
-
 uint32_t game_create_ship_design(void* game, uint32_t player_id, const char* name, ShipType type, 
                                  int32_t tech_range, int32_t tech_speed, int32_t tech_weapons, 
                                  int32_t tech_shields, int32_t tech_miniaturization)

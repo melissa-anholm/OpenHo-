@@ -168,7 +168,6 @@ bool TextAssets::load_player_names(const std::string& assets_dir)
 			}
 		}
 	}
-
 	file.close();
 	return !male_player_names.empty() && !female_player_names.empty();
 }
@@ -177,7 +176,6 @@ const std::vector<std::string>& TextAssets::get_male_player_names() const
 {
 	return male_player_names;
 }
-
 const std::vector<std::string>& TextAssets::get_female_player_names() const
 {
 	return female_player_names;
@@ -191,7 +189,6 @@ std::string TextAssets::get_random_male_player_name(uint32_t seed) const
 	uint32_t index = seed % male_player_names.size();
 	return male_player_names[index];
 }
-
 std::string TextAssets::get_random_female_player_name(uint32_t seed) const
 {
 	if (female_player_names.empty())
@@ -296,7 +293,6 @@ bool TextAssets::load_ship_names(const std::string& assets_dir)
 			}
 		}
 	}
-
 	file.close();
 	return !ship_names.empty();
 }
@@ -306,7 +302,7 @@ const std::vector<std::string>& TextAssets::get_ship_names(const std::string& sh
 	static const std::vector<std::string> empty;
 	auto it = ship_names.find(ship_type);
 	if (it != ship_names.end())
-		return it->second;
+		{ return it->second; }
 	return empty;
 }
 
@@ -314,7 +310,7 @@ std::string TextAssets::get_random_ship_name(const std::string& ship_type, uint3
 {
 	const std::vector<std::string>& names = get_ship_names(ship_type);
 	if (names.empty())
-		return "";
+		{ return ""; }
 
 	uint32_t index = seed % names.size();
 	return names[index];

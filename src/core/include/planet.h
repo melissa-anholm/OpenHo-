@@ -113,7 +113,7 @@ private:
 	// Apparent values based on owner's preferences
 	double apparent_gravity;
 	double apparent_temperature;
-
+	
 public:
 	// Constructor: Creates a player-specific view of a planet
 	ColonizedPlanet(
@@ -123,7 +123,7 @@ public:
 		int32_t p_income = -7501,
 		double p_funding = 0.2,
 		PlanetaryBudgetSplit p_budget = PlanetaryBudgetSplit());
-
+	
 	// --- Accessors to base planet ---
 	uint32_t get_id() const { return base_planet->id; }
 	const std::string& get_name() const { return base_planet->name; }
@@ -145,7 +145,7 @@ public:
 	double get_terraforming_fraction() const { return budget_split.terraforming_fraction; }
 	double get_apparent_gravity() const { return apparent_gravity; }
 	double get_apparent_temperature() const { return apparent_temperature; }
-
+	
 	// --- Setters for player-specific data ---
 	void set_funding_fraction(double p_val) { planet_funding_fraction = p_val; }
 	void set_population(int32_t p_val) { population = p_val; }
@@ -159,7 +159,7 @@ public:
 		budget_split.terraforming_fraction = p_terra;
 		budget_split.positive_normalize();
 	}
-
+	
 	void set_mining_fraction(double p_val)
 	{
 		budget_split.mining_fraction = p_val;

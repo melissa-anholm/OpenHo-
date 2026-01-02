@@ -24,7 +24,6 @@ Galaxy::Galaxy(const GalaxyGenerationParams& params, DeterministicRNG* rng)
 // ============================================================================
 // Galaxy Initialization
 // ============================================================================
-
 void Galaxy::initialize_planets(const GalaxyGenerationParams& params, DeterministicRNG* rng)
 {
 	// Generate planets based on galaxy parameters
