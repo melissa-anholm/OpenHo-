@@ -248,6 +248,9 @@ void Galaxy::initialize_planets_circle(
 	
 	// Placeholder: Circle distribution
 	// TODO: Implement circle galaxy distribution algorithm
+	// FUTURE: Use Poisson disk sampling (Bridson's algorithm) for uniform distribution
+	// See Documentation/PoissonDiskSamplingOverview.md for details
+	// This will eliminate placement failures and ensure well-spaced planets
 	for (uint32_t i = 0; i < params.n_planets; ++i)
 	{
 		uint32_t planet_id = i + 1;
