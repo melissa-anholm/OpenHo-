@@ -3,6 +3,7 @@
 #include "text_assets.h"
 #include "rng.h"
 #include "planet.h"
+#include "utility.h"
 #include <string>
 
 // ============================================================================
@@ -23,6 +24,16 @@ Galaxy::Galaxy(const GalaxyGenerationParams& params, GameState* game_state)
 // ============================================================================
 // Galaxy Initialization
 // ============================================================================
+
+std::vector<std::string> Galaxy::generate_planet_names(
+	uint32_t n_planets,
+	const std::vector<std::string>& available_names,
+	DeterministicRNG& rng)
+{
+	// Generate randomized planet names using the utility function
+	return generate_randomized_subset(available_names, n_planets, rng);
+}
+
 void Galaxy::initialize_planets(const GalaxyGenerationParams& params, GameState* game_state)
 {
 	// Generate planets based on galaxy parameters
@@ -31,22 +42,17 @@ void Galaxy::initialize_planets(const GalaxyGenerationParams& params, GameState*
 	const TextAssets& text_assets = *game_state->text_assets;
 	const std::vector<std::string>& available_planet_names = text_assets.get_planet_names();
 	
-	// For now, create planets according to n_planets parameter
+	// Step 1: Generate randomized planet names (no repeats, random order)
+	std::vector<std::string> planet_names = generate_planet_names(
+		params.n_planets,
+		available_planet_names,
+		rng);
+	
+	// Step 2: Create planets with all properties
 	for (uint32_t i = 0; i < params.n_planets; ++i)
 	{
 		uint32_t planet_id = i + 1;  // Start planet IDs from 1
-		
-		// Get planet name from TextAssets (cycle through available names if needed)
-		std::string planet_name;
-		if (i < available_planet_names.size())
-		{
-			planet_name = available_planet_names[i];
-		}
-		else
-		{
-			// Fallback if we run out of names
-			planet_name = "Planet_" + std::to_string(planet_id);
-		}
+		const std::string& planet_name = planet_names[i];
 		
 		// Random position within galaxy bounds
 		GalaxyCoord x_coord = rng.nextDouble() * gal_size;
@@ -54,7 +60,7 @@ void Galaxy::initialize_planets(const GalaxyGenerationParams& params, GameState*
 		
 		// Random properties (using deterministic RNG)
 		double true_gravity = 0.3 + rng.nextDouble() * 3.7;  // 0.3 to 4.0
-		double true_temperature = -400.0 + rng.nextDouble() * 800.0;  // -50 to 150
+		double true_temperature = -400.0 + rng.nextDouble() * 800.0;  // -400 to 400
 		int32_t metal = rng.nextInt32Range(0, 30000);
 		
 		// Create planet using constructor

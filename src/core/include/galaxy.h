@@ -66,6 +66,13 @@ struct Galaxy
 	// Requires access to RNG and TextAssets, so implementation is in game.cpp
 	void initialize_planets(const GalaxyGenerationParams& params, class GameState* game_state);
 	
+	// Generate randomized planet names (helper method)
+	// Generates n_planets unique names in random order from available_names
+	static std::vector<std::string> generate_planet_names(
+		uint32_t n_planets,
+		const std::vector<std::string>& available_names,
+		class DeterministicRNG& rng);
+	
 	// Two separate RNG engines
 	// (Implementation details in rng.h)
 };
