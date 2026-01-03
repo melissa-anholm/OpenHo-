@@ -157,7 +157,6 @@ public:
 	void set_income(int32_t p_val) { income = p_val; }
 	void set_apparent_gravity(double p_val) { apparent_gravity = p_val; }
 	void set_apparent_temperature(double p_val) { apparent_temperature = p_val; }
-	void set_desirability(int32_t p_val) { desirability = std::max(1, std::min(3, p_val)); }  // Clamp to 1-3
 	
 	void set_budget_split(double p_mining, double p_terra)
 	{
@@ -180,8 +179,8 @@ public:
 		budget_split.mining_fraction = 1.0 - budget_split.terraforming_fraction;
 	}
 	
-	// Recalculate desirability based on current conditions
-	void recalculate_desirability();
+	// Update desirability based on current conditions
+	void update_desirability();
 	
 	// Get desirability as a descriptive string
 	const char* get_desirability_description() const

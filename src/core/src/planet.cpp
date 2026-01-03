@@ -53,7 +53,7 @@ ColonizedPlanet::ColonizedPlanet(
 	base_planet->owner = p_owner->id;
 }
 
-void ColonizedPlanet::recalculate_desirability()
+void ColonizedPlanet::update_desirability()
 {
 	// Placeholder: All planets are maximally desirable (3)
 	desirability = 3;
