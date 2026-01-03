@@ -74,38 +74,50 @@ enum TechStream
 	TECH_RADICAL = 5
 };
 
-// Colony quality levels for starting planets
-enum ColonyQuality
+// Starting colony quality levels for initial planets
+enum StartingColonyQuality
 {
-	COLONY_OUTPOST = 0,
-	COLONY_BARREN = 1,
-	COLONY_BACKWARD = 2,
-	COLONY_NORMAL = 3,
-	COLONY_ADVANCED = 4,
-	COLONY_THRIVING = 5,
-	COLONY_ABUNDANT = 6
+	START_OUTPOST = 0,
+	START_BARREN = 1,
+	START_BACKWARD = 2,
+	START_NORMAL = 3,
+	START_ADVANCED = 4,
+	START_THRIVING = 5,
+	START_ABUNDANT = 6
 };
 
-// Reverse enum lookup for ColonyQuality
-const std::map<ColonyQuality, std::string> COLONY_QUALITY_NAMES = 
+// Reverse enum lookup for StartingColonyQuality
+const std::map<StartingColonyQuality, std::string> STARTING_COLONY_QUALITY_NAMES = 
 {
-	{ COLONY_OUTPOST,   "Outpost"   },
-	{ COLONY_BARREN,    "Barren"    },
-	{ COLONY_BACKWARD,  "Backward"  },
-	{ COLONY_NORMAL,    "Normal"    },
-	{ COLONY_ADVANCED,  "Advanced"  },
-	{ COLONY_THRIVING,  "Thriving"  },
-	{ COLONY_ABUNDANT,  "Abundant"  }
+	{ START_OUTPOST,   "Outpost"   },
+	{ START_BARREN,    "Barren"    },
+	{ START_BACKWARD,  "Backward"  },
+	{ START_NORMAL,    "Normal"    },
+	{ START_ADVANCED,  "Advanced"  },
+	{ START_THRIVING,  "Thriving"  },
+	{ START_ABUNDANT,  "Abundant"  }
 };
 
-// Get the string name for a ColonyQuality
-inline std::string get_colony_quality_name(ColonyQuality quality)
+// Get the string name for a StartingColonyQuality
+inline std::string get_starting_colony_quality_name(StartingColonyQuality quality)
 {
-	std::map<ColonyQuality, std::string>::const_iterator it = COLONY_QUALITY_NAMES.find(quality);
-	if (it != COLONY_QUALITY_NAMES.end())
+	std::map<StartingColonyQuality, std::string>::const_iterator it = STARTING_COLONY_QUALITY_NAMES.find(quality);
+	if (it != STARTING_COLONY_QUALITY_NAMES.end())
 		{ return it->second; }
 	return "Unknown";
 }
+
+// Legacy aliases for backward compatibility (deprecated)
+using ColonyQuality = StartingColonyQuality;
+const auto& COLONY_QUALITY_NAMES = STARTING_COLONY_QUALITY_NAMES;
+inline std::string get_colony_quality_name(StartingColonyQuality quality) { return get_starting_colony_quality_name(quality); }
+constexpr auto COLONY_OUTPOST = START_OUTPOST;
+constexpr auto COLONY_BARREN = START_BARREN;
+constexpr auto COLONY_BACKWARD = START_BACKWARD;
+constexpr auto COLONY_NORMAL = START_NORMAL;
+constexpr auto COLONY_ADVANCED = START_ADVANCED;
+constexpr auto COLONY_THRIVING = START_THRIVING;
+constexpr auto COLONY_ABUNDANT = START_ABUNDANT;
 
 // Galaxy generation shape patterns
 enum GalaxyShape

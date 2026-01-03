@@ -173,6 +173,10 @@ private:
 	std::vector<Player> initialize_players(const std::vector<PlayerSetup>& player_setups);
 	void initialize_galaxy(const GalaxyGenerationParams& params);
 	void build_entity_maps();
+	
+	// Starting planet assignment (for random galaxies)
+	std::vector<size_t> generate_suitable_home_planets() const;
+	void assign_planets_random(StartingColonyQuality quality);
 	void process_population_growth();
 	void check_population_decreasing_events(uint32_t planet_id);
 	void calculate_player_incomes();

@@ -79,6 +79,30 @@ namespace GameConstants
 	constexpr double Galaxy_Expansion_Factor = 0.05;
 	
 	// ========================================================================
+	// Starting Planet Constants
+	// ========================================================================
+	
+	/// Suitable gravity range for starting planets [min, max]
+	/// Players' ideal_gravity will be set to their starting planet's true_gravity
+	/// This range ensures starting planets have reasonable gravity values
+	constexpr double Starting_Planet_Min_Gravity = 0.5;
+	constexpr double Starting_Planet_Max_Gravity = 2.0;
+	
+	/// Starting colony initial values
+	/// TODO: These values are currently uniform for all StartingColonyQuality levels.
+	/// This is only correct for START_NORMAL. In the future, differentiate based on quality:
+	/// - START_OUTPOST: minimal values, gravity may not match ideal
+	/// - START_BARREN: low values
+	/// - START_BACKWARD: below normal values
+	/// - START_NORMAL: these values
+	/// - START_ADVANCED: above normal values
+	/// - START_THRIVING: high values
+	/// - START_ABUNDANT: very high values
+	constexpr int32_t Starting_Colony_Population = 1000000;  // 1 million
+	constexpr int32_t Starting_Colony_Metal = 15000;
+	constexpr int32_t Starting_Colony_Income = 30000;
+	
+	// ========================================================================
 	// Future Balance Parameters
 	// ========================================================================
 	// Add new constants here as needed for game balance tuning.
