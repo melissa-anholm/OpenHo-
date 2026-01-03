@@ -88,19 +88,46 @@ namespace GameConstants
 	constexpr double Starting_Planet_Min_Gravity = 0.5;
 	constexpr double Starting_Planet_Max_Gravity = 2.0;
 	
-	/// Starting colony initial values
-	/// TODO: These values are currently uniform for all StartingColonyQuality levels.
-	/// This is only correct for START_NORMAL. In the future, differentiate based on quality:
-	/// - START_OUTPOST: minimal values, gravity may not match ideal
-	/// - START_BARREN: low values
-	/// - START_BACKWARD: below normal values
-	/// - START_NORMAL: these values
-	/// - START_ADVANCED: above normal values
-	/// - START_THRIVING: high values
-	/// - START_ABUNDANT: very high values
-	constexpr int32_t Starting_Colony_Population = 1000000;  // 1 million
-	constexpr int32_t Starting_Colony_Metal = 15000;
-	constexpr int32_t Starting_Colony_Income = 30000;
+	/// Starting colony initial values indexed by StartingColonyQuality
+	/// Access: Starting_Colony_Population[START_NORMAL], etc.
+	/// Quality Levels:
+	/// - START_OUTPOST (0): minimal values
+	/// - START_BARREN (1): low values
+	/// - START_BACKWARD (2): below normal values
+	/// - START_NORMAL (3): baseline values
+	/// - START_ADVANCED (4): above normal values
+	/// - START_THRIVING (5): high values
+	/// - START_ABUNDANT (6): very high values
+	
+	constexpr int32_t Starting_Colony_Population[] = {
+		500000,      // START_OUTPOST
+		750000,      // START_BARREN
+		875000,      // START_BACKWARD
+		1000000,     // START_NORMAL
+		1250000,     // START_ADVANCED
+		1500000,     // START_THRIVING
+		2000000      // START_ABUNDANT
+	};
+	
+	constexpr int32_t Starting_Colony_Metal[] = {
+		5000,        // START_OUTPOST
+		10000,       // START_BARREN
+		12500,       // START_BACKWARD
+		15000,       // START_NORMAL
+		18750,       // START_ADVANCED
+		22500,       // START_THRIVING
+		30000        // START_ABUNDANT
+	};
+	
+	constexpr int32_t Starting_Colony_Income[] = {
+		10000,       // START_OUTPOST
+		20000,       // START_BARREN
+		25000,       // START_BACKWARD
+		30000,       // START_NORMAL
+		37500,       // START_ADVANCED
+		45000,       // START_THRIVING
+		60000        // START_ABUNDANT
+	};
 	
 	// ========================================================================
 	// Future Balance Parameters

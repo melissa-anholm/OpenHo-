@@ -877,13 +877,15 @@ void GameState::assign_planets_random(StartingColonyQuality quality)
 		// Set player's ideal gravity to match starting planet
 		player.ideal_gravity = planet.true_gravity;
 		
-		// Create ColonizedPlanet entry for this player
+		// Create ColonizedPlanet entry for this player with quality-based values
 		ColonizedPlanet colonized_planet(
 			&planet,
 			&player,
-			GameConstants::Starting_Colony_Population,
-			GameConstants::Starting_Colony_Income
+			GameConstants::Starting_Colony_Population[quality],
+			GameConstants::Starting_Colony_Income[quality]
 		);
+		
+		// TODO: Set metal based on quality (add to ColonizedPlanet if needed)
 		
 		// Add to player's colonized planets
 		player.colonized_planets.push_back(colonized_planet);
