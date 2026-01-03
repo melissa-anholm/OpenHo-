@@ -177,6 +177,13 @@ The project uses a command-line build system (no Xcode dependency) with CMake fo
 - [ ] Handle gravity mismatch for START_OUTPOST quality colonies
 - [ ] Implement error handling when insufficient suitable planets
 
+**Important Note - Min Planets & Homeworld Assignment Strategy:**
+- ⚠️ **TODO:** Current "min planets" and "homeworld assignment" strategy is designed for RANDOM and GRID shapes
+- For CLUSTER and SPIRAL galaxies, this strategy will need to be reworked
+- The solution can likely be integrated into the planet initialization routines for each shape
+- Each shape may have different optimal approaches for ensuring suitable home planets are available
+- This should be addressed when implementing cluster and spiral shape initialization
+
 **Future Enhancement (Phase 2c-Extended):**
 - [ ] Implement Poisson disk sampling (Bridson's algorithm) for circle/ring/cluster shapes
 - [ ] See Documentation/PoissonDiskSamplingOverview.md for algorithm details

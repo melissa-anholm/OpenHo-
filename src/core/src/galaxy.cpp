@@ -136,24 +136,27 @@ void Galaxy::initialize_planets_random(
 	          << " with " << planets_placed << " planets.\n";
 }
 
-void Galaxy::initialize_planets_spiral(
-	const GalaxyGenerationParams& params,
-	const std::vector<std::string>& planet_names,
-	GameState* game_state)
-{
-	DeterministicRNG& rng = game_state->get_rng();
-	
-	// Calculate size from planets and density
-	gal_size = std::sqrt(double(params.n_planets)) * 
-	           (GameConstants::Galaxy_Size_Scale_Base + GameConstants::Galaxy_Size_Scale_Density / params.density);
-	
-	// Initialize spatial grid for distance checking
-	CheckDistanceSpatialGrid grid(GameConstants::min_planet_distance, gal_size);
-	
-	uint32_t planets_skipped = 0;
-	
-	// Placeholder: Spiral distribution
-	// TODO: Implement spiral galaxy distribution algorithm
+	void Galaxy::initialize_planets_spiral(
+		const GalaxyGenerationParams& params,
+		const std::vector<std::string>& planet_names,
+		GameState* game_state)
+	{
+		DeterministicRNG& rng = game_state->get_rng();
+		
+		// Calculate size from planets and density
+		gal_size = std::sqrt(double(params.n_planets)) * 
+		           (GameConstants::Galaxy_Size_Scale_Base + GameConstants::Galaxy_Size_Scale_Density / params.density);
+		
+		// Initialize spatial grid for distance checking
+		CheckDistanceSpatialGrid grid(GameConstants::min_planet_distance, gal_size);
+		
+		uint32_t planets_skipped = 0;
+		
+		// Placeholder: Spiral distribution
+		// TODO: Implement spiral galaxy distribution algorithm
+		// IMPORTANT: When implementing spiral shape, rework the "min planets" and "homeworld assignment" strategy
+		// The current strategy (designed for RANDOM/GRID) may not work well for spiral distributions.
+		// Consider integrating suitable home planet availability into this initialization routine.
 	for (uint32_t i = 0; i < params.n_planets; ++i)
 	{
 		uint32_t planet_id = i + 1;
@@ -320,8 +323,11 @@ void Galaxy::initialize_planets_cluster(
 	
 	uint32_t planets_skipped = 0;
 	
-	// Placeholder: Cluster distribution
-	// TODO: Implement cluster galaxy distribution algorithm
+		// Placeholder: Cluster distribution
+		// TODO: Implement cluster galaxy distribution algorithm
+		// IMPORTANT: When implementing cluster shape, rework the "min planets" and "homeworld assignment" strategy
+		// The current strategy (designed for RANDOM/GRID) may not work well for cluster distributions.
+		// Consider integrating suitable home planet availability into this initialization routine.
 	for (uint32_t i = 0; i < params.n_planets; ++i)
 	{
 		uint32_t planet_id = i + 1;
