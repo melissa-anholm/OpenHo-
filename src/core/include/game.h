@@ -171,13 +171,14 @@ private:
 	
 	// Private helper methods
 	std::vector<Player> initialize_players(const std::vector<PlayerSetup>& player_setups);
-	void initialize_galaxy(const GalaxyGenerationParams& params);
+	std::vector<Planet*> initialize_galaxy(const GalaxyGenerationParams& params);
 	void build_entity_maps();
 	
 	// Starting planet assignment (for random galaxies)
 	std::vector<Planet*> find_suitable_home_planets() const;
-	std::vector<size_t> generate_suitable_home_planets() const;
-	void assign_planets_random(StartingColonyQuality quality);
+	// Assign suitable planets to players based on their starting colony quality
+	// Takes the suitable planets vector to avoid recalculating it
+	void assign_planets_random(const std::vector<Planet*>& suitable_planets);
 	void process_population_growth();
 	void check_population_decreasing_events(uint32_t planet_id);
 	void calculate_player_incomes();
