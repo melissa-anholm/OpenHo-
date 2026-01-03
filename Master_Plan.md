@@ -1,6 +1,6 @@
 # OpenHo Master Plan
 
-**Last Updated:** January 2, 2026 (Session 3)  
+**Last Updated:** January 3, 2026 (Session 4)  
 **Project Status:** Phase 2 - C++ Core Implementation (In Progress)
 
 ---
@@ -269,7 +269,13 @@ The project uses a command-line build system (no Xcode dependency) with CMake fo
    - Enables easy tuning and differentiation by quality level
    - TODO markers remind to adjust values during balance testing
 
-### Recent Commits (Session 3 - Jan 2, 2026)
+### Recent Commits (Session 4 - Jan 3, 2026)
+
+1. `6f54cca` - Implement galaxy generation validation and retry logic
+2. `0c08966` - Add TODO reminders for cluster and spiral galaxies
+3. `cffb6dd` - Implement per-player ideal_gravity assignment with START_OUTPOST randomization
+
+### Previous Commits (Session 3 - Jan 2, 2026)
 
 1. `8ed7cda` - Implement spatial grid for planet collision detection
 2. `b184f0c` - Implement improved galaxy size formula for random shape
@@ -283,10 +289,18 @@ The project uses a command-line build system (no Xcode dependency) with CMake fo
 
 ## Next Steps
 
-**Immediate (Phase 2d continuation):**
-- Implement gravity mismatch for START_OUTPOST quality
-- Implement error handling for insufficient suitable planets
-- Test starting planet assignment with various galaxy configurations
+**Immediate (Phase 2d continuation - Session 4 Complete):**
+- ✅ Implement galaxy generation validation and retry logic (up to 5 attempts)
+- ✅ Implement per-player ideal_gravity assignment
+- ✅ Implement START_OUTPOST randomization (±0.20, constrained, rounded to 2 decimals)
+- ✅ Fix initialization flow and eliminate inefficiency
+- [ ] Test starting planet assignment with various configurations
+- [ ] Validate START_OUTPOST gravity randomization
+
+**Next (Phase 2d continuation):**
+- [ ] Implement gravity mismatch penalty for START_OUTPOST
+- [ ] Add validation for edge cases
+- [ ] Test with multiple player configurations
 
 **Short-term (Phase 2c continuation):**
 - Implement spiral, circle, ring, and cluster galaxy distribution algorithms
