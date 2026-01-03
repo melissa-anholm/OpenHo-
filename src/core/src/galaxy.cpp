@@ -66,8 +66,10 @@ void Galaxy::initialize_planets_random(
 {
 	DeterministicRNG& rng = game_state->get_rng();
 	
-	// Calculate size from planets and density.  This will definitely have to be adjusted later.  
-	gal_size = (std::sqrt(double(params.n_planets)) * 40.0) / params.density;
+	// Calculate galaxy size using density-aware formula
+	// Formula: gal_size = sqrt(n_planets) * (base + density_factor / density)
+	gal_size = std::sqrt(double(params.n_planets)) * 
+	           (GameConstants::Galaxy_Size_Scale_Base + GameConstants::Galaxy_Size_Scale_Density / params.density);
 	
 	// Initialize spatial grid for distance checking
 	CheckDistanceSpatialGrid grid(GameConstants::min_planet_distance, gal_size);

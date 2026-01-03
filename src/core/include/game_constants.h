@@ -61,6 +61,15 @@ namespace GameConstants
 	/// this many attempts. Set to 5 for debug builds, higher for release.
 	constexpr uint32_t Planet_Placement_Debug_Threshold = 5;
 	
+	/// Galaxy size scaling constants for random shape distribution.
+	/// Formula: gal_size = sqrt(n_planets) * (Galaxy_Size_Scale_Base + Galaxy_Size_Scale_Density / density)
+	/// This ensures:
+	/// - At density=2.0: compact galaxy with 4-5 neighbors within radius 6
+	/// - At density=0.5: sparse galaxy with 3-4 neighbors within radius 12
+	/// - Scales appropriately with planet count
+	constexpr double Galaxy_Size_Scale_Base = 5.0;
+	constexpr double Galaxy_Size_Scale_Density = 6.4;
+	
 	// ========================================================================
 	// Future Balance Parameters
 	// ========================================================================
