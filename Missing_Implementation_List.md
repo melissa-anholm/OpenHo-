@@ -256,30 +256,91 @@ Current formula: `cost = (level + 1)^2 * 100`
 
 These have clear logic but need implementation. No reverse-engineering needed.
 
+### Galaxy Shape Distribution Algorithms
+
+**Status:** Placeholder (all currently use random distribution)  
+**Location:** `galaxy.cpp`
+
+**Functions needing implementation:**
+
+- `initialize_planets_spiral()` - Spiral arm galaxy distribution
+  - Current: Falls back to random distribution
+  - Design question: How many spiral arms? How tight? How to distribute planets along arms?
+  - Notes: Should ensure suitable home planets are distributed across arms
+  - TODO: Rework min planets/homeworld assignment strategy for spiral shape
+
+- `initialize_planets_circle()` - Circular disk galaxy distribution
+  - Current: Falls back to random distribution
+  - Design question: Uniform circle or concentrated toward center? Poisson disk sampling?
+  - Notes: Mentioned using Bridson's algorithm for Poisson disk sampling
+  - Suggested approach: Uniform distribution within a circular boundary
+
+- `initialize_planets_ring()` - Ring/torus galaxy distribution
+  - Current: Falls back to random distribution
+  - Design question: How wide is the ring? How to distribute planets around it?
+  - Notes: Should create a visible ring structure
+  - Suggested approach: Generate points at varying radii within a ring band
+
+- `initialize_planets_cluster()` - Clustered galaxy distribution
+  - Current: Falls back to random distribution
+  - Design question: How many clusters? How tight? How to distribute planets within clusters?
+  - Notes: Should create distinct clusters of planets
+  - TODO: Rework min planets/homeworld assignment strategy for cluster shape
+  - Suggested approach: Generate cluster centers, then place planets around each center
+
+**Implementation Considerations:**
+- All must respect minimum distance constraints between planets
+- All must use DeterministicRNG for reproducible results
+- All must handle placement failures gracefully
+- All should ensure suitable home planets are available (especially spiral and cluster)
+- Consider using Poisson disk sampling for uniform distribution within shapes
+
+**Design Questions to Answer:**
+1. **Spiral:** How many arms? Logarithmic or Archimedean spiral? How tightly wound?
+2. **Circle:** Uniform throughout? Density gradient? Hollow or filled?
+3. **Ring:** Inner and outer radius? Width of ring? Density variation?
+4. **Cluster:** Number of clusters? Cluster size? Overlap between clusters?
+5. **All:** Should distribution ensure suitable home planets are spread across the shape?
+
 ---
 
-### Apparent Gravity/Temperature Perception
+### Apparent Gravity/Temperature Perception Conversion
 
-**Status:** Placeholder (returns true value)  
+**Status:** Placeholder (returns true value unchanged)  
 **Location:** `game_formulas.cpp`
 
-- `calculate_apparent_gravity()` - How player perceives planet's gravity
+- `calculate_apparent_gravity()` - Convert true gravity to perceived gravity
   - Depends on: ideal_gravity, true_gravity
   - Notes: Used for planet desirability calculations
   - Current: Returns true_gravity unchanged
   - **Key Design Question:** How do we convert from true gravity to perceived gravity for a given player? Linear, or something else?
   
-- `calculate_apparent_temperature()` - How player perceives planet's temperature
+- `calculate_apparent_temperature()` - Convert true temperature to perceived temperature
   - Depends on: ideal_temperature, true_temperature
   - Notes: Used for planet desirability calculations
   - Current: Returns true_temperature unchanged
   - **Key Design Question:** How do we convert from true temperature to perceived temperature for a given player? Linear, or something else?
 
-**Implementation Notes:**
+**Implementation Considerations:**
 - These functions determine how "suitable" a planet appears to a player
-- The conversion formula affects planet desirability and strategy
-- Effects on actual game mechanics (population growth, income) are handled separately in those formulas
-- Consider if perception should be linear (e.g., penalty proportional to mismatch) or non-linear
+- The conversion formula affects planet desirability and player strategy
+- Effects on actual game mechanics (population growth, income) are handled separately
+- Consider if perception should be:
+  - Linear (e.g., penalty proportional to mismatch)
+  - Non-linear (e.g., exponential penalty for large mismatches)
+  - Threshold-based (e.g., acceptable range with sharp penalty outside)
+  - Asymmetric (e.g., different penalties for too hot vs. too cold)
+
+**Design Questions to Answer:**
+1. Should perception be linear or non-linear?
+2. Should there be an "acceptable range" where planets are perceived as ideal?
+3. How severe should the penalty be for mismatches?
+4. Should the formula be the same for gravity and temperature?
+5. Should perception be affected by player research level?
+
+
+
+
 
 ---
 
@@ -425,10 +486,10 @@ Functions needed for game flow but not core mechanics.
 | Category | Count | Status | Priority |
 |----------|-------|--------|----------|
 | Data-Driven Values | 9 | Placeholder | High |
-| Non-Data-Driven Functions | 4 | Stub | High |
+| Non-Data-Driven Functions | 6 | Stub | High |
 | Partially Implemented | 2 | Incomplete | Medium |
 | Infrastructure | 2 | Stub | Medium |
-| **Total** | **17** | - | - |
+| **Total** | **19** | - | - |
 
 ---
 
@@ -438,6 +499,7 @@ Functions needed for game flow but not core mechanics.
 1. Turn ready tracking (multiplayer coordination)
 2. Player initial setup (populate with starting values)
 3. Apparent gravity/temperature perception (design the conversion formula)
+4. Galaxy shape distribution algorithms (design the placement strategies)
 
 ### Phase 2 (Core Mechanics - Some Reverse-Engineering)
 1. Population growth with mismatch penalties (data-driven)
@@ -465,9 +527,13 @@ Functions needed for game flow but not core mechanics.
 - May want to set up testing harness to verify formulas
 - Consider creating UI for testing different balance values
 - Document any assumptions made during reverse-engineering
-- Key design questions to answer:
-  - Apparent gravity/temperature: Linear conversion or something else?
-  - Population growth: How severe are mismatch penalties?
-  - Planetary income: What's the base formula?
-  - Terraforming/mining: Constant efficiency or diminishing returns?
-
+- **Key Design Questions to Answer:**
+- **Apparent gravity/temperature:** Linear conversion or something else? Acceptable range?
+- **Population growth:** How severe are mismatch penalties? Linear or exponential?
+- **Planetary income:** What's the base formula? How do conditions affect it?
+- **Terraforming/mining:** Constant efficiency or diminishing returns?
+- **Galaxy shapes:** How to distribute planets for each shape? Poisson disk sampling?
+- **Spiral galaxy:** How many arms? How tightly wound? How to ensure suitable homes?
+- **Circle galaxy:** Uniform or density gradient? Hollow or filled?
+- **Ring galaxy:** Inner/outer radius? Ring width? Density variation?
+- **Cluster galaxy:** Number of clusters? Size? Overlap? How to ensure suitable homes?
