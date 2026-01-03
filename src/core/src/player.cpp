@@ -223,3 +223,29 @@ void Player::request_full_player_info_resync(uint32_t player_id)
 	// For now, we just clear the history for this player
 	player_info_history[player_id].clear();
 }
+
+
+// ============================================================================
+// Technology Accessors
+// ============================================================================
+
+int32_t Player::get_tech_level(uint32_t tech_type) const
+{
+	switch (tech_type)
+	{
+		case 0:  // TECH_RANGE
+			return tech.range;
+		case 1:  // TECH_SPEED
+			return tech.speed;
+		case 2:  // TECH_WEAPONS
+			return tech.weapons;
+		case 3:  // TECH_SHIELDS
+			return tech.shields;
+		case 4:  // TECH_MINI
+			return tech.mini;
+		case 5:  // TECH_RADICAL
+			return tech.radical;
+		default:
+			return -1;  // Invalid tech type
+	}
+}

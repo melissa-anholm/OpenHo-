@@ -59,15 +59,7 @@ ErrorCode game_can_player_build_fleet(
 	if (!game_state)
 		return ErrorCode::INVALID_PARAMETER;
 	
-	// TODO: Implement validation
-	// - Check player exists
-	// - Check design exists and belongs to player
-	// - Check player owns planet
-	// - Check sufficient money/metal
-	// - Check tech levels available
-	// - Check ship count valid
-	
-	return ErrorCode::SUCCESS;
+	return game_state->check_player_build_fleet(player_id, design_id, ship_count, planet_id);
 }
 
 uint32_t game_player_build_fleet(
@@ -80,8 +72,12 @@ uint32_t game_player_build_fleet(
 	if (!game_state)
 		return 0;
 	
-	// TODO: Implement with validation
-	return 0;
+	// Validate first
+	if (game_state->check_player_build_fleet(player_id, design_id, ship_count, planet_id) != ErrorCode::SUCCESS)
+		return 0;
+	
+	// Delegate to GameState
+	return game_state->create_fleet(player_id, design_id, ship_count, planet_id);
 }
 
 // ============================================================================
@@ -102,14 +98,7 @@ ErrorCode game_can_player_design_ship(
 	if (!game_state || !name)
 		return ErrorCode::INVALID_PARAMETER;
 	
-	// TODO: Implement validation
-	// - Check player exists
-	// - Check design name valid and not duplicate
-	// - Check tech levels available to player
-	// - Check tech levels in valid range
-	// - Check design limit not reached
-	
-	return ErrorCode::SUCCESS;
+	return game_state->check_player_design_ship(player_id, std::string(name), static_cast<ShipType>(ship_type), tech_range, tech_speed, tech_weapons, tech_shields, tech_miniaturization);
 }
 
 uint32_t game_player_design_ship(
@@ -126,8 +115,12 @@ uint32_t game_player_design_ship(
 	if (!game_state || !name)
 		return 0;
 	
-	// TODO: Implement with validation
-	return 0;
+	// Validate first
+	if (game_state->check_player_design_ship(player_id, std::string(name), static_cast<ShipType>(ship_type), tech_range, tech_speed, tech_weapons, tech_shields, tech_miniaturization) != ErrorCode::SUCCESS)
+		return 0;
+	
+	// Delegate to GameState
+	return game_state->create_ship_design(player_id, std::string(name), static_cast<ShipType>(ship_type), tech_range, tech_speed, tech_weapons, tech_shields, tech_miniaturization);
 }
 
 // ============================================================================
@@ -144,11 +137,7 @@ ErrorCode game_can_player_set_spending_allocation(
 	if (!game_state)
 		return ErrorCode::INVALID_PARAMETER;
 	
-	// TODO: Implement validation
-	// - Check player exists
-	// - Check fractions valid (sum to ~1.0, all >= 0.0)
-	
-	return ErrorCode::SUCCESS;
+	return game_state->check_player_set_spending_allocation(player_id, savings_fraction, research_fraction, planets_fraction);
 }
 
 ErrorCode game_player_set_spending_allocation(
@@ -161,7 +150,16 @@ ErrorCode game_player_set_spending_allocation(
 	if (!game_state)
 		return ErrorCode::INVALID_PARAMETER;
 	
-	// TODO: Implement with validation
+	// Validate first
+	if (game_state->check_player_set_spending_allocation(player_id, savings_fraction, research_fraction, planets_fraction) != ErrorCode::SUCCESS)
+		return ErrorCode::INVALID_ALLOCATION;
+	
+	// Delegate to GameState - note: research allocation struct needs to be populated
+	Player::MoneyAllocation alloc;
+	alloc.savings_fraction = savings_fraction;
+	alloc.research_fraction = research_fraction;
+	alloc.planets_fraction = planets_fraction;
+	game_state->set_money_allocation(player_id, alloc);
 	return ErrorCode::SUCCESS;
 }
 
@@ -178,13 +176,7 @@ ErrorCode game_can_player_move_fleet(
 	if (!game_state)
 		return ErrorCode::INVALID_PARAMETER;
 	
-	// TODO: Implement validation
-	// - Check player exists
-	// - Check fleet exists and belongs to player
-	// - Check destination planet exists
-	// - Check fleet not already in transit
-	
-	return ErrorCode::SUCCESS;
+	return game_state->check_player_move_fleet(player_id, fleet_id, destination_planet_id);
 }
 
 ErrorCode game_player_move_fleet(
@@ -196,7 +188,12 @@ ErrorCode game_player_move_fleet(
 	if (!game_state)
 		return ErrorCode::INVALID_PARAMETER;
 	
-	// TODO: Implement with validation
+	// Validate first
+	if (game_state->check_player_move_fleet(player_id, fleet_id, destination_planet_id) != ErrorCode::SUCCESS)
+		return ErrorCode::VALIDATION_FAILED;
+	
+	// Delegate to GameState
+	game_state->move_fleet(player_id, fleet_id, destination_planet_id);
 	return ErrorCode::SUCCESS;
 }
 
@@ -214,12 +211,7 @@ ErrorCode game_can_player_set_planet_allocation(
 	if (!game_state)
 		return ErrorCode::INVALID_PARAMETER;
 	
-	// TODO: Implement validation
-	// - Check player exists
-	// - Check planet exists and owned by player
-	// - Check fractions valid (sum to ~1.0, all >= 0.0)
-	
-	return ErrorCode::SUCCESS;
+	return game_state->check_player_set_planet_allocation(player_id, planet_id, mining_fraction, terraforming_fraction);
 }
 
 ErrorCode game_player_set_planet_allocation(
@@ -232,6 +224,10 @@ ErrorCode game_player_set_planet_allocation(
 	if (!game_state)
 		return ErrorCode::INVALID_PARAMETER;
 	
-	// TODO: Implement with validation
+	// Validate first
+	if (game_state->check_player_set_planet_allocation(player_id, planet_id, mining_fraction, terraforming_fraction) != ErrorCode::SUCCESS)
+		return ErrorCode::INVALID_ALLOCATION;
+	
+	// TODO: Implement actual allocation setting in GameState
 	return ErrorCode::SUCCESS;
 }

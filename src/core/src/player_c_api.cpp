@@ -26,32 +26,28 @@ int64_t player_get_money(const Player* player)
 {
 	if (!player)
 		return -1;
-	// TODO: Add getter to Player class if not present
-	return 0;
+	return player->get_money();
 }
 
 int64_t player_get_metal(const Player* player)
 {
 	if (!player)
 		return -1;
-	// TODO: Add getter to Player class if not present
-	return 0;
+	return player->get_metal();
 }
 
 int64_t player_get_money_income(const Player* player)
 {
 	if (!player)
 		return -1;
-	// TODO: Add getter to Player class if not present
-	return 0;
+	return player->get_money_income();
 }
 
 int64_t player_get_metal_income(const Player* player)
 {
 	if (!player)
 		return -1;
-	// TODO: Add getter to Player class if not present
-	return 0;
+	return player->get_metal_income();
 }
 
 ErrorCode player_get_spending_allocation(
@@ -63,10 +59,10 @@ ErrorCode player_get_spending_allocation(
 	if (!player || !out_savings_fraction || !out_research_fraction || !out_planets_fraction)
 		return ErrorCode::INVALID_PARAMETER;
 	
-	// TODO: Implement when allocation structure is accessible
-	*out_savings_fraction = 0.0;
-	*out_research_fraction = 0.0;
-	*out_planets_fraction = 0.0;
+	const auto& alloc = player->get_spending_allocation();
+	*out_savings_fraction = alloc.savings_fraction;
+	*out_research_fraction = alloc.research_fraction;
+	*out_planets_fraction = alloc.planets_fraction;
 	
 	return ErrorCode::SUCCESS;
 }
@@ -268,8 +264,7 @@ int32_t player_get_tech_level(const Player* player, uint32_t tech_type)
 	if (!player || tech_type > 5)
 		return -1;
 	
-	// TODO: Implement when tech structure is accessible
-	return 0;
+	return player->get_tech_level(tech_type);
 }
 
 double player_get_research_allocation(const Player* player, uint32_t tech_type)
@@ -277,6 +272,22 @@ double player_get_research_allocation(const Player* player, uint32_t tech_type)
 	if (!player || tech_type > 5)
 		return -1.0;
 	
-	// TODO: Implement when research allocation is accessible
-	return 0.0;
+	const auto& alloc = player->get_spending_allocation().research;
+	switch (tech_type)
+	{
+		case 0:  // TECH_RANGE
+			return alloc.research_range_fraction;
+		case 1:  // TECH_SPEED
+			return alloc.research_speed_fraction;
+		case 2:  // TECH_WEAPONS
+			return alloc.research_weapons_fraction;
+		case 3:  // TECH_SHIELDS
+			return alloc.research_shields_fraction;
+		case 4:  // TECH_MINI
+			return alloc.research_mini_fraction;
+		case 5:  // TECH_RADICAL
+			return alloc.research_radical_fraction;
+		default:
+			return -1.0;
+	}
 }

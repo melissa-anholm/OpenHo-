@@ -75,44 +75,9 @@ public:
 	/// Get all fleets owned by this player
 	const std::vector<Fleet>& get_fleets() const { return fleets; }
 	
-	/// Get all colonized planets owned by this player
-	const std::vector<ColonizedPlanet>& get_colonized_planets() const { return colonized_planets; }
-	
 	// ========================================================================
-	// Fleet Management
+	// Type Definitions (used by accessors below)
 	// ========================================================================
-	
-	/// Create a new fleet for this player
-	/// Note: fleet_id must be allocated by GameState via allocate_fleet_id()
-	[[nodiscard]] uint32_t create_fleet(uint32_t fleet_id, const ShipDesign* design, uint32_t ship_count, Planet* planet);
-	
-	/// Get a fleet by ID (mutable)
-	[[nodiscard]] Fleet* get_fleet(uint32_t fleet_id);
-	
-	/// Get a fleet by ID (const)
-	[[nodiscard]] const Fleet* get_fleet(uint32_t fleet_id) const;
-	
-	/// Delete a fleet
-	[[nodiscard]] bool delete_fleet(uint32_t fleet_id);
-	
-	/// Move a fleet to a destination planet
-	void move_fleet(uint32_t fleet_id, uint32_t destination_planet_id);
-	
-	// ========================================================================
-	// Ship Design Management
-	// ========================================================================
-	
-	/// Create a new ship design for this player
-	[[nodiscard]] uint32_t create_ship_design(const std::string& name, ShipType type, int32_t tech_range, int32_t tech_speed, int32_t tech_weapons, int32_t tech_shields, int32_t tech_mini);
-	
-	/// Get a ship design by ID
-	[[nodiscard]] const ShipDesign* get_ship_design(uint32_t design_id) const;
-	
-	/// Get all ship designs for this player
-	[[nodiscard]] const std::vector<ShipDesign>& get_ship_designs() const { return ship_designs; }
-	
-	/// Delete a ship design
-	[[nodiscard]] bool delete_ship_design(uint32_t design_id);
 	
 	// Technology levels for a player
 	struct TechnologyLevels
@@ -161,6 +126,66 @@ public:
 		int64_t research_points_mini;
 		int64_t research_points_radical;
 	};
+	
+	/// Get all colonized planets owned by this player
+	const std::vector<ColonizedPlanet>& get_colonized_planets() const { return colonized_planets; }
+	
+	/// Get this player's current money savings
+	int64_t get_money() const { return money_savings; }
+	
+	/// Get this player's current metal reserve
+	int64_t get_metal() const { return metal_reserve; }
+	
+	/// Get this player's money income per turn
+	int64_t get_money_income() const { return money_income; }
+	
+	/// Get this player's metal income per turn
+	int64_t get_metal_income() const { return metal_income; }
+	
+	/// Get this player's technology levels
+	const TechnologyLevels& get_tech_levels() const { return tech; }
+	
+	/// Get a specific technology level (0=range, 1=speed, 2=weapons, 3=shields, 4=mini, 5=radical)
+	int32_t get_tech_level(uint32_t tech_type) const;
+	
+	/// Get this player's spending allocation
+	const MoneyAllocation& get_spending_allocation() const { return allocation; }
+	
+	// ========================================================================
+	// Fleet Management
+	// ========================================================================
+	
+	/// Create a new fleet for this player
+	/// Note: fleet_id must be allocated by GameState via allocate_fleet_id()
+	[[nodiscard]] uint32_t create_fleet(uint32_t fleet_id, const ShipDesign* design, uint32_t ship_count, Planet* planet);
+	
+	/// Get a fleet by ID (mutable)
+	[[nodiscard]] Fleet* get_fleet(uint32_t fleet_id);
+	
+	/// Get a fleet by ID (const)
+	[[nodiscard]] const Fleet* get_fleet(uint32_t fleet_id) const;
+	
+	/// Delete a fleet
+	[[nodiscard]] bool delete_fleet(uint32_t fleet_id);
+	
+	/// Move a fleet to a destination planet
+	void move_fleet(uint32_t fleet_id, uint32_t destination_planet_id);
+	
+	// ========================================================================
+	// Ship Design Management
+	// ========================================================================
+	
+	/// Create a new ship design for this player
+	[[nodiscard]] uint32_t create_ship_design(const std::string& name, ShipType type, int32_t tech_range, int32_t tech_speed, int32_t tech_weapons, int32_t tech_shields, int32_t tech_mini);
+	
+	/// Get a ship design by ID
+	[[nodiscard]] const ShipDesign* get_ship_design(uint32_t design_id) const;
+	
+	/// Get all ship designs for this player
+	[[nodiscard]] const std::vector<ShipDesign>& get_ship_designs() const { return ship_designs; }
+	
+	/// Delete a ship design
+	[[nodiscard]] bool delete_ship_design(uint32_t design_id);
 
 private:
 	// Resources

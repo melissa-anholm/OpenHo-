@@ -975,3 +975,179 @@ void GameState::assign_planets_random(const std::vector<Planet*>& suitable_plane
 	
 	std::cout << "Successfully assigned starting planets to all " << players.size() << " players.\n";
 }
+
+
+// ============================================================================
+// Validation Methods (check_* pattern)
+// ============================================================================
+
+ErrorCode GameState::check_player_build_fleet(uint32_t player_id, uint32_t design_id, uint32_t ship_count, uint32_t planet_id) const
+{
+	// Check player exists
+	const Player* player = get_player(player_id);
+	if (!player)
+		return ErrorCode::INVALID_PLAYER_ID;
+	
+	// Check design exists and belongs to player
+	const ShipDesign* design = get_ship_design(player_id, design_id);
+	if (!design)
+		return ErrorCode::SHIP_DESIGN_NOT_FOUND;
+	
+	// Check planet exists
+	const Planet* planet = get_planet(planet_id);
+	if (!planet)
+		return ErrorCode::INVALID_PLANET_ID;
+	
+	// Check player owns the planet
+	bool owns_planet = false;
+	for (const auto& colonized : player->get_colonized_planets())
+	{
+		if (colonized.get_id() == planet_id)
+		{
+			owns_planet = true;
+			break;
+		}
+	}
+	if (!owns_planet)
+		return ErrorCode::PLANET_NOT_OWNED;
+	
+	// Check ship count is valid
+	if (ship_count == 0)
+		return ErrorCode::INVALID_FLEET_SIZE;
+	
+	// Check player has sufficient money/metal for fleet construction
+	int64_t total_cost = design->metal_cost * ship_count;
+	if (player->get_metal() < total_cost)
+		return ErrorCode::INSUFFICIENT_METAL;
+	
+	return ErrorCode::SUCCESS;
+}
+
+ErrorCode GameState::check_player_design_ship(uint32_t player_id, const std::string& name, ShipType type, int32_t tech_range, int32_t tech_speed, int32_t tech_weapons, int32_t tech_shields, int32_t tech_mini) const
+{
+	// Check player exists
+	const Player* player = get_player(player_id);
+	if (!player)
+		return ErrorCode::INVALID_PLAYER_ID;
+	
+	// Check design name is not empty
+	if (name.empty())
+		return ErrorCode::INVALID_PARAMETER;
+	
+	// Check design name is not duplicate
+	for (const auto& design : player->get_ship_designs())
+	{
+		if (design.name == name)
+			return ErrorCode::DESIGN_NAME_DUPLICATE;
+	}
+	
+	// Check design limit not reached (max 100)
+	if (player->get_ship_designs().size() >= 100)
+		return ErrorCode::SHIP_DESIGN_LIMIT_REACHED;
+	
+	// Check tech levels are available to player
+	const auto& tech = player->get_tech_levels();
+	if (tech_range > tech.range)
+		return ErrorCode::TECH_LEVEL_NOT_AVAILABLE;
+	if (tech_speed > tech.speed)
+		return ErrorCode::TECH_LEVEL_NOT_AVAILABLE;
+	if (tech_weapons > tech.weapons)
+		return ErrorCode::TECH_LEVEL_NOT_AVAILABLE;
+	if (tech_shields > tech.shields)
+		return ErrorCode::TECH_LEVEL_NOT_AVAILABLE;
+	if (tech_mini > tech.mini)
+		return ErrorCode::TECH_LEVEL_NOT_AVAILABLE;
+	
+	// Check tech levels are in valid range (0-10)
+	if (tech_range < 0 || tech_range > 10)
+		return ErrorCode::INVALID_PARAMETER;
+	if (tech_speed < 0 || tech_speed > 10)
+		return ErrorCode::INVALID_PARAMETER;
+	if (tech_weapons < 0 || tech_weapons > 10)
+		return ErrorCode::INVALID_PARAMETER;
+	if (tech_shields < 0 || tech_shields > 10)
+		return ErrorCode::INVALID_PARAMETER;
+	if (tech_mini < 0 || tech_mini > 10)
+		return ErrorCode::INVALID_PARAMETER;
+	
+	return ErrorCode::SUCCESS;
+}
+
+ErrorCode GameState::check_player_set_spending_allocation(uint32_t player_id, double savings_frac, double research_frac, double planets_frac) const
+{
+	// Check player exists
+	if (!get_player(player_id))
+		return ErrorCode::INVALID_PLAYER_ID;
+	
+	// Check fractions are valid (all >= 0.0)
+	if (savings_frac < 0.0 || research_frac < 0.0 || planets_frac < 0.0)
+		return ErrorCode::INVALID_ALLOCATION;
+	
+	// Check fractions sum to approximately 1.0 (allow small floating point error)
+	double total = savings_frac + research_frac + planets_frac;
+	if (std::abs(total - 1.0) > 0.001)  // Allow 0.1% error
+		return ErrorCode::INVALID_ALLOCATION;
+	
+	return ErrorCode::SUCCESS;
+}
+
+ErrorCode GameState::check_player_move_fleet(uint32_t player_id, uint32_t fleet_id, uint32_t destination_planet_id) const
+{
+	// Check player exists
+	const Player* player = get_player(player_id);
+	if (!player)
+		return ErrorCode::INVALID_PLAYER_ID;
+	
+	// Check fleet exists and belongs to player
+	const Fleet* fleet = get_fleet(player_id, fleet_id);
+	if (!fleet)
+		return ErrorCode::FLEET_NOT_FOUND;
+	
+	// Check destination planet exists
+	const Planet* dest_planet = get_planet(destination_planet_id);
+	if (!dest_planet)
+		return ErrorCode::INVALID_PLANET_ID;
+	
+	// Check fleet is not already in transit
+	if (fleet->in_transit)
+		return ErrorCode::FLEET_IN_TRANSIT;
+	
+	return ErrorCode::SUCCESS;
+}
+
+ErrorCode GameState::check_player_set_planet_allocation(uint32_t player_id, uint32_t planet_id, double mining_frac, double terraforming_frac) const
+{
+	// Check player exists
+	const Player* player = get_player(player_id);
+	if (!player)
+		return ErrorCode::INVALID_PLAYER_ID;
+	
+	// Check planet exists
+	const Planet* planet = get_planet(planet_id);
+	if (!planet)
+		return ErrorCode::INVALID_PLANET_ID;
+	
+	// Check player owns the planet
+	bool owns_planet = false;
+	for (const auto& colonized : player->get_colonized_planets())
+	{
+		if (colonized.get_id() == planet_id)
+		{
+			owns_planet = true;
+			break;
+		}
+	}
+	if (!owns_planet)
+		return ErrorCode::PLANET_NOT_OWNED;
+	
+	// Check fractions are valid (all >= 0.0)
+	if (mining_frac < 0.0 || terraforming_frac < 0.0)
+		return ErrorCode::INVALID_ALLOCATION;
+	
+	// Check fractions sum to approximately 1.0 (allow small floating point error)
+	double total = mining_frac + terraforming_frac;
+	if (std::abs(total - 1.0) > 0.001)  // Allow 0.1% error
+		return ErrorCode::INVALID_ALLOCATION;
+	
+	return ErrorCode::SUCCESS;
+}

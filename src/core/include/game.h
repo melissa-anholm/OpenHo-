@@ -6,6 +6,7 @@
 #include "game_constants.h"
 #include "game_formulas.h"
 #include "game_setup.h"
+#include "error_codes.h"
 #include <memory>
 #include <unordered_map>
 
@@ -114,6 +115,25 @@ public:
 	// Money allocation
 	void set_money_allocation(uint32_t player_id, const Player::MoneyAllocation& alloc);
 	const Player::MoneyAllocation& get_money_allocation(uint32_t player_id) const;
+	
+	// ========================================================================
+	// Validation Methods (check_* pattern)
+	// ========================================================================
+	
+	/// Check if a player can build a fleet with given parameters
+	[[nodiscard]] ErrorCode check_player_build_fleet(uint32_t player_id, uint32_t design_id, uint32_t ship_count, uint32_t planet_id) const;
+	
+	/// Check if a player can design a ship with given parameters
+	[[nodiscard]] ErrorCode check_player_design_ship(uint32_t player_id, const std::string& name, ShipType type, int32_t tech_range, int32_t tech_speed, int32_t tech_weapons, int32_t tech_shields, int32_t tech_mini) const;
+	
+	/// Check if a player can set spending allocation
+	[[nodiscard]] ErrorCode check_player_set_spending_allocation(uint32_t player_id, double savings_frac, double research_frac, double planets_frac) const;
+	
+	/// Check if a player can move a fleet
+	[[nodiscard]] ErrorCode check_player_move_fleet(uint32_t player_id, uint32_t fleet_id, uint32_t destination_planet_id) const;
+	
+	/// Check if a player can set planet allocation
+	[[nodiscard]] ErrorCode check_player_set_planet_allocation(uint32_t player_id, uint32_t planet_id, double mining_frac, double terraforming_frac) const;
 	
 	// AI RNG seed management
 	uint64_t get_ai_rng_seed() const;
