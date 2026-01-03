@@ -17,22 +17,17 @@ enum class ErrorCode : uint32_t
 	INVALID_PLAYER_ID = 2,
 	INVALID_PLANET_ID = 3,
 	INVALID_FLEET_ID = 4,
-	INVALID_DESIGN_ID = 5,
 	
 	// Player state errors
 	INSUFFICIENT_MONEY = 10,
 	INSUFFICIENT_METAL = 11,
-	INSUFFICIENT_FUNDS = 12,  // Either money or metal
-	INVALID_TECH_LEVEL = 13,
-	TECH_LEVEL_NOT_AVAILABLE = 14,
-	TECH_LEVEL_OUT_OF_RANGE = 15,
+	TECH_LEVEL_NOT_AVAILABLE = 12,
 	
 	// Ship design errors
 	INVALID_SHIP_TYPE = 20,
 	SHIP_DESIGN_LIMIT_REACHED = 21,  // Max 100 designs per player
 	SHIP_DESIGN_NOT_FOUND = 22,
-	INVALID_DESIGN_NAME = 23,
-	DESIGN_NAME_DUPLICATE = 24,
+	DESIGN_NAME_DUPLICATE = 23,
 	
 	// Fleet errors
 	FLEET_NOT_FOUND = 30,
@@ -75,28 +70,18 @@ inline const char* error_code_to_string(ErrorCode code)
 			return "Invalid planet ID";
 		case ErrorCode::INVALID_FLEET_ID:
 			return "Invalid fleet ID";
-		case ErrorCode::INVALID_DESIGN_ID:
-			return "Invalid design ID";
 		case ErrorCode::INSUFFICIENT_MONEY:
 			return "Insufficient money";
 		case ErrorCode::INSUFFICIENT_METAL:
 			return "Insufficient metal";
-		case ErrorCode::INSUFFICIENT_FUNDS:
-			return "Insufficient funds";
-		case ErrorCode::INVALID_TECH_LEVEL:
-			return "Invalid technology level";
 		case ErrorCode::TECH_LEVEL_NOT_AVAILABLE:
 			return "Technology level not available";
-		case ErrorCode::TECH_LEVEL_OUT_OF_RANGE:
-			return "Technology level out of range";
 		case ErrorCode::INVALID_SHIP_TYPE:
 			return "Invalid ship type";
 		case ErrorCode::SHIP_DESIGN_LIMIT_REACHED:
 			return "Ship design limit reached";
 		case ErrorCode::SHIP_DESIGN_NOT_FOUND:
 			return "Ship design not found";
-		case ErrorCode::INVALID_DESIGN_NAME:
-			return "Invalid design name";
 		case ErrorCode::DESIGN_NAME_DUPLICATE:
 			return "Design name already exists";
 		case ErrorCode::FLEET_NOT_FOUND:
