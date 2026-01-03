@@ -1,7 +1,7 @@
 # OpenHo Master Plan
 
-**Last Updated:** January 3, 2026 (Session 5)  
-**Project Status:** Phase 2 - C++ Core Implementation (In Progress)
+**Last Updated:** January 3, 2026 (Session 5 - Continued)  
+**Project Status:** Phase 2 - C++ Core Implementation & UI Architecture Planning (In Progress)
 
 ---
 
@@ -33,7 +33,7 @@ The project uses a command-line build system (no Xcode dependency) with CMake fo
 
 ### Phase 2: C++ Core Implementation (Current)
 
-**Overall Status:** Foundation layer complete, galaxy generation substantially complete, starting planet assignment complete
+**Overall Status:** Foundation layer complete, galaxy generation substantially complete, starting planet assignment complete, C API validation layer implemented
 
 **Deliverable:** Static library `libOpenHoCore.a` with deterministic game engine
 
@@ -349,10 +349,43 @@ The project uses a command-line build system (no Xcode dependency) with CMake fo
 - [ ] Add validation for edge cases
 - [ ] Test with multiple player configurations
 
+---
+
+## UI Architecture & C API Strategy (Session 5)
+
+**Decision:** Player-centric C API design with GameState validation layer
+
+**Architecture:**
+```
+UI ↔ C API (thin wrapper) ↔ GameState (validation) ↔ Player (actions)
+```
+
+**Key Principles:**
+1. **Player C API:** Direct access to Player class methods for frequent UI operations
+2. **GameState Validation:** All validation logic centralized in GameState with `check_*` methods
+3. **Separation of Concerns:** C API is a thin bridge; business logic stays in C++ core
+4. **Error Codes:** Comprehensive enum for UI error handling and feedback
+
+**Implemented (Session 5):**
+- ✅ Error code system (23 consolidated codes)
+- ✅ Player getter methods (money, metal, income, tech levels, allocation)
+- ✅ GameState validation methods:
+  - `check_player_build_fleet()` - resource and ownership validation
+  - `check_player_design_ship()` - design constraints validation
+  - `check_player_set_spending_allocation()` - allocation fraction validation
+  - `check_player_move_fleet()` - fleet state validation
+  - `check_player_set_planet_allocation()` - planet allocation validation
+- ✅ C API wrappers with validation-then-delegate pattern
+
+**TODO (Reminders from earlier sessions):**
+- Min planets and homeworld assignment strategy needs rework for cluster/spiral galaxies
+- Integrate into planet initialization routines for each shape
+
 **Short-term (Phase 2c continuation):**
 - Implement spiral, circle, ring, and cluster galaxy distribution algorithms
 - Consider Poisson disk sampling for circle/ring/cluster shapes
 - Test all galaxy shapes with various parameters
+- Rework min planets/homeworld assignment for cluster and spiral shapes
 
 **Medium-term (Phase 2e - Game Mechanics):**
 - Implement turn processing with income/interest calculations
@@ -364,6 +397,18 @@ The project uses a command-line build system (no Xcode dependency) with CMake fo
 - Objective-C++ bridging layer
 - SwiftUI user interface
 - macOS application packaging
+
+---
+
+---
+
+## Recent Commits (Session 5)
+
+1. `d4231f9` - Add validation methods to GameState and getter methods to Player
+2. `88d01a9` - Consolidate duplicate error codes
+3. `586c644` - Implement Player C API wrapper and GameState validation layer
+4. `69b8b8b` - Rename MASTER_PLAN.md to Master_Plan.md and update with Session 4 progress
+5. `cffb6dd` - Implement per-player ideal_gravity assignment with START_OUTPOST randomization
 
 ---
 
