@@ -175,6 +175,7 @@ private:
 	void build_entity_maps();
 	
 	// Starting planet assignment (for random galaxies)
+	std::vector<Planet*> find_suitable_home_planets() const;
 	std::vector<size_t> generate_suitable_home_planets() const;
 	void assign_planets_random(StartingColonyQuality quality);
 	void process_population_growth();

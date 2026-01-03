@@ -133,6 +133,16 @@ namespace GameConstants
 		60000        // START_ABUNDANT
 	};
 	
+	/// Minimum planet buffer for galaxy generation
+	/// When calculating minimum required planets for N players:
+	/// min_planets = N / suitable_fraction * Min_Planet_Buffer
+	/// This 10% buffer ensures we have extra planets beyond the minimum
+	constexpr double Min_Planet_Buffer = 1.1;
+	
+	/// Maximum number of retries when galaxy generation fails to produce
+	/// enough suitable home planets for the requested number of players
+	constexpr uint32_t Galaxy_Gen_Retry_Count = 5;
+	
 	// ========================================================================
 	// Future Balance Parameters
 	// ========================================================================

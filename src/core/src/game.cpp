@@ -326,8 +326,45 @@ std::vector<Player> GameState::initialize_players(const std::vector<PlayerSetup>
 void GameState::initialize_galaxy(const GalaxyGenerationParams& params)
 {
 	// Initialize galaxy with user-provided parameters
-	// This is called after user specifies galaxy generation parameters
-	galaxy = std::make_unique<Galaxy>(params, this);
+	// Retry if we don't have enough suitable home planets for all players
+	
+	uint32_t attempt = 0;
+	bool success = false;
+	
+	while (attempt < GameConstants::Galaxy_Gen_Retry_Count && !success)
+	{
+		// Create galaxy with current parameters
+		GalaxyGenerationParams attempt_params = params;
+		attempt_params.seed = params.seed + attempt;
+		
+		galaxy = std::make_unique<Galaxy>(attempt_params, this);
+		
+		// Check if we have enough suitable home planets
+		std::vector<Planet*> suitable_planets = find_suitable_home_planets();
+		
+		if (suitable_planets.size() >= players.size())
+		{
+			success = true;
+			if (attempt > 0)
+			{
+				std::cout << "Galaxy generated successfully on attempt " << (attempt + 1) 
+				          << " with " << suitable_planets.size() << " suitable home planets.\n";
+			}
+		}
+		else
+		{
+			std::cerr << "Attempt " << (attempt + 1) << "/" << GameConstants::Galaxy_Gen_Retry_Count 
+			          << ": Only " << suitable_planets.size() << " suitable planets found, need " 
+			          << players.size() << ". Retrying...\n";
+			attempt++;
+		}
+	}
+	
+	if (!success)
+	{
+		throw std::runtime_error("Failed to generate galaxy with sufficient home planets after " + 
+		                         std::to_string(GameConstants::Galaxy_Gen_Retry_Count) + " attempts.");
+	}
 	
 	// Build entity ID maps for quick lookup
 	build_entity_maps();
@@ -819,6 +856,28 @@ void GameState::refuel_fleet(uint32_t player_id, uint32_t fleet_id)
 // Starting Planet Assignment (for random galaxies)
 // ============================================================================
 
+std::vector<Planet*> GameState::find_suitable_home_planets() const
+{
+	std::vector<Planet*> suitable_planets;
+	
+	// Filter planets by gravity range
+	for (Planet& planet : galaxy->planets)
+	{
+		// Check if gravity is within suitable range
+		if (planet.true_gravity >= GameConstants::Starting_Planet_Min_Gravity &&
+		    planet.true_gravity <= GameConstants::Starting_Planet_Max_Gravity)
+		{
+			// Check if planet is not already owned
+			if (planet.owner == NOT_OWNED)
+			{
+				suitable_planets.push_back(&planet);
+			}
+		}
+	}
+	
+	return suitable_planets;
+}
+
 std::vector<size_t> GameState::generate_suitable_home_planets() const
 {
 	std::vector<size_t> suitable_planets;
@@ -845,8 +904,8 @@ std::vector<size_t> GameState::generate_suitable_home_planets() const
 
 void GameState::assign_planets_random(StartingColonyQuality quality)
 {
-	// Generate list of suitable home planets
-	std::vector<size_t> suitable_planets = generate_suitable_home_planets();
+	// Get list of suitable home planets (already validated in initialize_galaxy)
+	std::vector<Planet*> suitable_planets = find_suitable_home_planets();
 	
 	// Validate that we have enough suitable planets
 	if (suitable_planets.size() < players.size())
@@ -868,18 +927,17 @@ void GameState::assign_planets_random(StartingColonyQuality quality)
 	for (size_t player_idx = 0; player_idx < players.size(); ++player_idx)
 	{
 		Player& player = players[player_idx];
-		size_t planet_idx = suitable_planets[player_idx];
-		Planet& planet = galaxy->planets[planet_idx];
+		Planet* planet = suitable_planets[player_idx];
 		
 		// Set planet ownership
-		planet.owner = player.id;
+		planet->owner = player.id;
 		
 		// Set player's ideal gravity to match starting planet
-		player.ideal_gravity = planet.true_gravity;
+		player.ideal_gravity = planet->true_gravity;
 		
 		// Create ColonizedPlanet entry for this player with quality-based values
 		ColonizedPlanet colonized_planet(
-			&planet,
+			planet,
 			&player,
 			GameConstants::Starting_Colony_Population[quality],
 			GameConstants::Starting_Colony_Income[quality]
@@ -891,11 +949,15 @@ void GameState::assign_planets_random(StartingColonyQuality quality)
 		player.colonized_planets.push_back(colonized_planet);
 		
 		// Update player_planets mapping
-		player_planets[player.id].push_back(planet_idx);
+		auto it = planet_id_to_index.find(planet->id);
+		if (it != planet_id_to_index.end())
+		{
+			player_planets[player.id].push_back(it->second);
+		}
 		
 		// Log assignment
 		std::cout << "Player " << player.name << " assigned starting planet: " 
-		          << planet.name << " (gravity: " << planet.true_gravity << ")\n";
+		          << planet->name << " (gravity: " << planet->true_gravity << ")\n";
 	}
 	
 	std::cout << "Successfully assigned starting planets to all " << players.size() << " players.\n";
