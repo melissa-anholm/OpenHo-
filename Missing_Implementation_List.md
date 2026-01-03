@@ -361,8 +361,8 @@ These have clear logic but need implementation. No reverse-engineering needed.
 - `calculate_apparent_temperature()` - Convert true temperature to perceived temperature
   - Depends on: ideal_temperature, true_temperature
   - Notes: Used for planet desirability calculations
-  - Current: Returns true_temperature unchanged
-  - **Key Design Question:** How do we convert from true temperature to perceived temperature for a given player? Linear, or something else?
+  - Current: ❌ INCOMPLETE - Previous formula violated monotonicity constraint (perceived temp not monotonic with ideal temp)
+  - **Key Design Question:** How do we convert from true temperature to perceived temperature for a given player? Must ensure perceived temperature is monotonic with ideal temperature.
 
 **Implementation Considerations:**
 - These functions determine how "suitable" a planet appears to a player

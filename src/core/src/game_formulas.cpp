@@ -242,12 +242,13 @@ double calculate_apparent_temperature(double ideal_temperature, double true_temp
 	// Formula: perceived = ideal + (true - ideal) * compression_factor
 	// Compression factor approaches 0 near absolute zero (0K)
 	
-	const double ABSOLUTE_ZERO_K = 0.0;
-	const double COMPRESSION_CONSTANT = 50.0;
+	// ❌ INCOMPLETE - Formula violates monotonicity constraint
+	// Previous formula violated the requirement that perceived temperature must be monotonic with ideal temperature
+	// TODO: Design new formula that satisfies:
+	//   1. Perceived temp increases monotonically with ideal temp (for same true temp)
+	//   2. Still accounts for mismatch between ideal and true
+	//   3. Prevents perceived temp from going below absolute zero (0K)
+	// For now, return true temperature unchanged (placeholder)
 	
-	double distance_to_abs_zero = true_temperature - ABSOLUTE_ZERO_K;
-	double compression_factor = distance_to_abs_zero / (distance_to_abs_zero + COMPRESSION_CONSTANT);
-	double perceived_temp = ideal_temperature + (true_temperature - ideal_temperature) * compression_factor;
-	
-	return std::max(perceived_temp, ABSOLUTE_ZERO_K);
+	return true_temperature;
 }
