@@ -1,80 +1,79 @@
 #include "galaxy.h"
 #include "game.h"
 #include "text_assets.h"
-#include "rng.h"
-#include "planet.h"
 #include "utility.h"
 #include "game_constants.h"
 #include <cmath>
 #include <iostream>
 
-// ============================================================================
-// Galaxy Constructor
-// ============================================================================
 Galaxy::Galaxy(const GalaxyGenerationParams& params, GameState* game_state)
 {
-	// Generate randomized planet names list
-	std::vector<std::string> planet_names = generate_planet_names(params.n_planets, game_state);
-		
 	// Dispatch to shape-specific initialization
-	switch(params.shape)
+	switch (params.shape)
 	{
 		case GALAXY_RANDOM:
-			initialize_planets_random(params, planet_names, game_state);
+			initialize_planets_random(params, {}, game_state);
 			break;
 		case GALAXY_SPIRAL:
-			initialize_planets_spiral(params, planet_names, game_state);
+			initialize_planets_spiral(params, {}, game_state);
 			break;
 		case GALAXY_CIRCLE:
-			initialize_planets_circle(params, planet_names, game_state);
+			initialize_planets_circle(params, {}, game_state);
 			break;
 		case GALAXY_RING:
-			initialize_planets_ring(params, planet_names, game_state);
+			initialize_planets_ring(params, {}, game_state);
 			break;
 		case GALAXY_CLUSTER:
-			initialize_planets_cluster(params, planet_names, game_state);
+			initialize_planets_cluster(params, {}, game_state);
 			break;
 		case GALAXY_GRID:
-			initialize_planets_grid(params, planet_names, game_state);
-			break;
-		default:
-			// Fallback to random if unknown shape
-			initialize_planets_random(params, planet_names, game_state);
+			initialize_planets_grid(params, {}, game_state);
 			break;
 	}
 }
 
-// ============================================================================
-// Helper: Generate Randomized Planet Names
-// ============================================================================
-std::vector<std::string> Galaxy::generate_planet_names(uint32_t n_planets, GameState* game_state)
-{
-	DeterministicRNG& rng = game_state->get_rng();
-	const TextAssets& text_assets = *game_state->text_assets;
-	const std::vector<std::string>& available_names = text_assets.get_planet_names();
-
-	return generate_randomized_subset(available_names, n_planets, rng);
-}
-
-// ============================================================================
-// Shape-Specific Initialization Methods
-// ============================================================================
-void Galaxy::initialize_planets_random(
-	const GalaxyGenerationParams& params,
-	const std::vector<std::string>& planet_names,
+std::vector<std::string> Galaxy::generate_planet_names(
+	uint32_t n_planets,
 	GameState* game_state)
 {
 	DeterministicRNG& rng = game_state->get_rng();
 	
-	// Calculate galaxy size using density-aware formula
-	// Formula: gal_size = sqrt(n_planets) * (base + density_factor / density)
+	return generate_randomized_subset(game_state->text_assets->get_planet_name_list(), n_planets, rng);
+}
+
+void Galaxy::initialize_planets_random(
+	const GalaxyGenerationParams& params,
+	const std::vector<std::string>& planet_names_unused,
+	GameState* game_state)
+{
+	DeterministicRNG& rng = game_state->get_rng();
+	
+	// Generate randomized planet names
+	const std::vector<std::string> planet_names = generate_planet_names(params.n_planets, game_state);
+	
+	// Calculate galaxy size using density-aware formula with reduction factor
+	// Formula: gal_size = sqrt(n_planets) * (base + density_factor / density) * (1 - reduction_factor)
 	gal_size = std::sqrt(double(params.n_planets)) * 
-	           (GameConstants::Galaxy_Size_Scale_Base + GameConstants::Galaxy_Size_Scale_Density / params.density);
+	           (GameConstants::Galaxy_Size_Scale_Base + GameConstants::Galaxy_Size_Scale_Density / params.density) *
+	           (1.0 - GameConstants::Galaxy_Size_Reduction_Factor);
+	
+	GalaxyCoord original_gal_size = gal_size;
 	
 	// Initialize spatial grid for distance checking
-	CheckDistanceSpatialGrid grid(GameConstants::min_planet_distance, gal_size);
+	// Use larger grid to account for potential expansion
+	CheckDistanceSpatialGrid grid(GameConstants::min_planet_distance, gal_size * 2.0);
 	
+	// Galaxy is centered at (0, 0)
+	GalaxyCoord half_size = gal_size / 2.0;
+	GalaxyCoord min_x = -half_size;
+	GalaxyCoord max_x = half_size;
+	GalaxyCoord min_y = -half_size;
+	GalaxyCoord max_y = half_size;
+	
+	uint32_t attempts_per_expansion = static_cast<uint32_t>(std::floor(std::sqrt(double(params.n_planets)) / 2.0));
+	uint32_t max_attempts_per_planet = params.n_planets;
 	uint32_t planets_skipped = 0;
+	uint32_t planets_placed = 0;
 	
 	for (uint32_t i = 0; i < params.n_planets; ++i)
 	{
@@ -90,11 +89,25 @@ void Galaxy::initialize_planets_random(
 		uint32_t attempt = 0;
 		bool placed = false;
 		
-		while (attempt < GameConstants::Planet_Placement_Max_Attempts && !placed)
+		while (attempt < max_attempts_per_planet && !placed)
 		{
-			// Generate random position within galaxy bounds
-			GalaxyCoord x_coord = rng.nextDouble() * gal_size;
-			GalaxyCoord y_coord = rng.nextDouble() * gal_size;
+			// Check if we need to expand the galaxy boundaries
+			if (attempt > 0 && attempt % attempts_per_expansion == 0)
+			{
+				// Expand boundaries by 5% around center (0, 0)
+				GalaxyCoord expansion_factor = 1.0 + GameConstants::Galaxy_Expansion_Factor;
+				min_x *= expansion_factor;
+				max_x *= expansion_factor;
+				min_y *= expansion_factor;
+				max_y *= expansion_factor;
+				
+				// Update gal_size to reflect new bounds
+				gal_size = max_x - min_x;
+			}
+			
+			// Generate random position within current galaxy bounds
+			GalaxyCoord x_coord = min_x + rng.nextDouble() * (max_x - min_x);
+			GalaxyCoord y_coord = min_y + rng.nextDouble() * (max_y - min_y);
 			
 			// Check if position is valid (far enough from other planets)
 			if (grid.is_position_valid(x_coord, y_coord, GameConstants::min_planet_distance))
@@ -104,66 +117,23 @@ void Galaxy::initialize_planets_random(
 				planets.push_back(planet);
 				grid.add_planet(x_coord, y_coord, planet_id);
 				placed = true;
+				planets_placed++;
 			}
 			
 			attempt++;
-			
-			// Debug output if exceeds threshold
-			if (attempt > GameConstants::Planet_Placement_Debug_Threshold && attempt == GameConstants::Planet_Placement_Debug_Threshold + 1)
-			{
-				std::cerr << "Warning: Planet " << planet_id << " (" << planet_name 
-				          << ") took " << attempt << " attempts to place\n";
-			}
 		}
 		
 		if (!placed)
 		{
 			planets_skipped++;
-			std::cerr << "Failed to place planet " << planet_id << " (" << planet_name 
-			          << ") after " << GameConstants::Planet_Placement_Max_Attempts << " attempts\n";
 		}
 	}
 	
-	if (planets_skipped > 0)
-	{
-		std::cerr << "Skipped " << planets_skipped << " planets due to placement failures\n";
-	}
-}
-
-void Galaxy::initialize_planets_grid(
-	const GalaxyGenerationParams& params,
-	const std::vector<std::string>& planet_names,
-	GameState* game_state)
-{
-	DeterministicRNG& rng = game_state->get_rng();
-	
-	double planet_spacing = 4.0 + 2.0/(params.density);  // this is probably fine...
-	int rows_num = int(std::sqrt(double(params.n_planets)));
-	
-	int k=0;
-	for (uint32_t i = 0; i < (uint32_t)rows_num; i++)
-	{
-		for(int j=0; j<rows_num; j++)
-		{
-			GalaxyCoord x_coord = planet_spacing * i;
-			GalaxyCoord y_coord = planet_spacing * j;
-			
-			uint32_t planet_id = k + 1;
-			const std::string& planet_name = planet_names[k];
-			k++;
-			
-			// Random properties (using deterministic RNG)
-			double true_gravity = GameConstants::min_gravity + rng.nextDouble() * (GameConstants::max_gravity - GameConstants::min_gravity);
-			double true_temperature = GameConstants::min_temp + rng.nextDouble() * (GameConstants::max_temp - GameConstants::min_temp);
-			int32_t metal = rng.nextInt32Range(GameConstants::min_metal, GameConstants::max_metal);
-			
-			Planet planet(planet_id, planet_name, x_coord, y_coord, true_gravity, true_temperature, metal);
-			planets.push_back(planet);
-		}
-	}
-	
-	// Set gal_size based on grid
-	gal_size = planet_spacing * rows_num;
+	// Output summary
+	std::cout << "Attempted to generate a galaxy of size " << original_gal_size << " x " << original_gal_size 
+	          << " with " << params.n_planets << " planets.\n";
+	std::cout << "Actual galaxy generated with size " << gal_size << " x " << gal_size 
+	          << " with " << planets_placed << " planets.\n";
 }
 
 void Galaxy::initialize_planets_spiral(
@@ -174,7 +144,8 @@ void Galaxy::initialize_planets_spiral(
 	DeterministicRNG& rng = game_state->get_rng();
 	
 	// Calculate size from planets and density
-	gal_size = (std::sqrt(double(params.n_planets)) * 40.0) * params.density;
+	gal_size = std::sqrt(double(params.n_planets)) * 
+	           (GameConstants::Galaxy_Size_Scale_Base + GameConstants::Galaxy_Size_Scale_Density / params.density);
 	
 	// Initialize spatial grid for distance checking
 	CheckDistanceSpatialGrid grid(GameConstants::min_planet_distance, gal_size);
@@ -211,25 +182,12 @@ void Galaxy::initialize_planets_spiral(
 			}
 			
 			attempt++;
-			
-			if (attempt > GameConstants::Planet_Placement_Debug_Threshold && attempt == GameConstants::Planet_Placement_Debug_Threshold + 1)
-			{
-				std::cerr << "Warning: Planet " << planet_id << " (" << planet_name 
-				          << ") took " << attempt << " attempts to place\n";
-			}
 		}
 		
 		if (!placed)
 		{
 			planets_skipped++;
-			std::cerr << "Failed to place planet " << planet_id << " (" << planet_name 
-			          << ") after " << GameConstants::Planet_Placement_Max_Attempts << " attempts\n";
 		}
-	}
-	
-	if (planets_skipped > 0)
-	{
-		std::cerr << "Skipped " << planets_skipped << " planets due to placement failures\n";
 	}
 }
 
@@ -241,7 +199,8 @@ void Galaxy::initialize_planets_circle(
 	DeterministicRNG& rng = game_state->get_rng();
 	
 	// Calculate size from planets and density
-	gal_size = (std::sqrt(double(params.n_planets)) * 40.0) * params.density;
+	gal_size = std::sqrt(double(params.n_planets)) * 
+	           (GameConstants::Galaxy_Size_Scale_Base + GameConstants::Galaxy_Size_Scale_Density / params.density);
 	
 	// Initialize spatial grid for distance checking
 	CheckDistanceSpatialGrid grid(GameConstants::min_planet_distance, gal_size);
@@ -281,25 +240,12 @@ void Galaxy::initialize_planets_circle(
 			}
 			
 			attempt++;
-			
-			if (attempt > GameConstants::Planet_Placement_Debug_Threshold && attempt == GameConstants::Planet_Placement_Debug_Threshold + 1)
-			{
-				std::cerr << "Warning: Planet " << planet_id << " (" << planet_name 
-				          << ") took " << attempt << " attempts to place\n";
-			}
 		}
 		
 		if (!placed)
 		{
 			planets_skipped++;
-			std::cerr << "Failed to place planet " << planet_id << " (" << planet_name 
-			          << ") after " << GameConstants::Planet_Placement_Max_Attempts << " attempts\n";
 		}
-	}
-	
-	if (planets_skipped > 0)
-	{
-		std::cerr << "Skipped " << planets_skipped << " planets due to placement failures\n";
 	}
 }
 
@@ -311,7 +257,8 @@ void Galaxy::initialize_planets_ring(
 	DeterministicRNG& rng = game_state->get_rng();
 	
 	// Calculate size from planets and density
-	gal_size = (std::sqrt(double(params.n_planets)) * 40.0) * params.density;
+	gal_size = std::sqrt(double(params.n_planets)) * 
+	           (GameConstants::Galaxy_Size_Scale_Base + GameConstants::Galaxy_Size_Scale_Density / params.density);
 	
 	// Initialize spatial grid for distance checking
 	CheckDistanceSpatialGrid grid(GameConstants::min_planet_distance, gal_size);
@@ -348,25 +295,12 @@ void Galaxy::initialize_planets_ring(
 			}
 			
 			attempt++;
-			
-			if (attempt > GameConstants::Planet_Placement_Debug_Threshold && attempt == GameConstants::Planet_Placement_Debug_Threshold + 1)
-			{
-				std::cerr << "Warning: Planet " << planet_id << " (" << planet_name 
-				          << ") took " << attempt << " attempts to place\n";
-			}
 		}
 		
 		if (!placed)
 		{
 			planets_skipped++;
-			std::cerr << "Failed to place planet " << planet_id << " (" << planet_name 
-			          << ") after " << GameConstants::Planet_Placement_Max_Attempts << " attempts\n";
 		}
-	}
-	
-	if (planets_skipped > 0)
-	{
-		std::cerr << "Skipped " << planets_skipped << " planets due to placement failures\n";
 	}
 }
 
@@ -378,7 +312,8 @@ void Galaxy::initialize_planets_cluster(
 	DeterministicRNG& rng = game_state->get_rng();
 	
 	// Calculate size from planets and density
-	gal_size = (std::sqrt(double(params.n_planets)) * 40.0) * params.density;
+	gal_size = std::sqrt(double(params.n_planets)) * 
+	           (GameConstants::Galaxy_Size_Scale_Base + GameConstants::Galaxy_Size_Scale_Density / params.density);
 	
 	// Initialize spatial grid for distance checking
 	CheckDistanceSpatialGrid grid(GameConstants::min_planet_distance, gal_size);
@@ -415,24 +350,50 @@ void Galaxy::initialize_planets_cluster(
 			}
 			
 			attempt++;
-			
-			if (attempt > GameConstants::Planet_Placement_Debug_Threshold && attempt == GameConstants::Planet_Placement_Debug_Threshold + 1)
-			{
-				std::cerr << "Warning: Planet " << planet_id << " (" << planet_name 
-				          << ") took " << attempt << " attempts to place\n";
-			}
 		}
 		
 		if (!placed)
 		{
 			planets_skipped++;
-			std::cerr << "Failed to place planet " << planet_id << " (" << planet_name 
-			          << ") after " << GameConstants::Planet_Placement_Max_Attempts << " attempts\n";
 		}
 	}
+}
+
+void Galaxy::initialize_planets_grid(
+	const GalaxyGenerationParams& params,
+	const std::vector<std::string>& planet_names,
+	GameState* game_state)
+{
+	DeterministicRNG& rng = game_state->get_rng();
 	
-	if (planets_skipped > 0)
+	double planet_spacing = 4.0 + 2.0/(params.density);  // this is probably fine...
+	
+	uint32_t cols_num = static_cast<uint32_t>(std::ceil(std::sqrt(double(params.n_planets))));
+	uint32_t rows_num = static_cast<uint32_t>(std::ceil(double(params.n_planets) / cols_num));
+	
+	gal_size = std::max(cols_num, rows_num) * planet_spacing;
+	
+	uint32_t planet_idx = 0;
+	for (uint32_t row = 0; row < rows_num && planet_idx < params.n_planets; ++row)
 	{
-		std::cerr << "Skipped " << planets_skipped << " planets due to placement failures\n";
+		for (uint32_t col = 0; col < cols_num && planet_idx < params.n_planets; ++col)
+		{
+			uint32_t planet_id = planet_idx + 1;
+			const std::string& planet_name = planet_names[planet_idx];
+			
+			// Random properties
+			double true_gravity = GameConstants::min_gravity + rng.nextDouble() * (GameConstants::max_gravity - GameConstants::min_gravity);
+			double true_temperature = GameConstants::min_temp + rng.nextDouble() * (GameConstants::max_temp - GameConstants::min_temp);
+			int32_t metal = rng.nextInt32Range(GameConstants::min_metal, GameConstants::max_metal);
+			
+			// Grid positions
+			GalaxyCoord x_coord = col * planet_spacing;
+			GalaxyCoord y_coord = row * planet_spacing;
+			
+			Planet planet(planet_id, planet_name, x_coord, y_coord, true_gravity, true_temperature, metal);
+			planets.push_back(planet);
+			
+			planet_idx++;
+		}
 	}
 }

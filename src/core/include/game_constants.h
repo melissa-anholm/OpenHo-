@@ -70,6 +70,14 @@ namespace GameConstants
 	constexpr double Galaxy_Size_Scale_Base = 5.0;
 	constexpr double Galaxy_Size_Scale_Density = 6.4;
 	
+	/// Reduction factor applied to initial galaxy size.
+	/// Helps ensure planets can be placed without excessive expansion.
+	constexpr double Galaxy_Size_Reduction_Factor = 0.15;
+	
+	/// Expansion factor applied to galaxy boundaries when placement becomes difficult.
+	/// Each expansion increases both x and y dimensions by this percentage.
+	constexpr double Galaxy_Expansion_Factor = 0.05;
+	
 	// ========================================================================
 	// Future Balance Parameters
 	// ========================================================================
