@@ -14,8 +14,10 @@ namespace GameConstants
 	constexpr double min_gravity = 0.3;
 	constexpr double max_gravity = 4.5;
 	
-	constexpr double min_temp = -400.0;
-	constexpr double max_temp =  400.0;
+	// Temperature constants in Kelvin
+	// Range: 40K to 500K (approximately -233°C to 227°C, or -388°F to 440°F)
+	constexpr double min_temp = 40.0;   // Kelvin
+	constexpr double max_temp = 500.0;  // Kelvin
 	
 	constexpr int32_t min_metal = 0;
 	constexpr int32_t max_metal = 32000;
