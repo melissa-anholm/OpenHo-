@@ -712,6 +712,9 @@ void GameState::process_planets()
 			if (!planet || planet->owner != player.id)
 				{ continue; }  // Skip if planet doesn't exist or isn't owned by this player 
 			
+			// Recalculate planet desirability
+			colonized.recalculate_desirability();
+			
 			// Calculate money allocated to this specific planet
 			int64_t planet_budget = static_cast<int64_t>(
 				total_planet_development_budget * colonized.get_funding_fraction() );

@@ -114,6 +114,9 @@ private:
 	double apparent_gravity;
 	double apparent_temperature;
 	
+	// Planet desirability rating (1-3 scale)
+	int32_t desirability;  // 1 = poor, 2 = moderate, 3 = excellent
+	
 public:
 	// Constructor: Creates a player-specific view of a planet
 	ColonizedPlanet(
@@ -122,7 +125,8 @@ public:
 		int32_t p_pop = 10,
 		int32_t p_income = -7501,
 		double p_funding = 0.2,
-		PlanetaryBudgetSplit p_budget = PlanetaryBudgetSplit());
+		PlanetaryBudgetSplit p_budget = PlanetaryBudgetSplit(),
+		int32_t p_desirability = 2);
 	
 	// --- Accessors to base planet ---
 	uint32_t get_id() const { return base_planet->id; }
@@ -145,6 +149,7 @@ public:
 	double get_terraforming_fraction() const { return budget_split.terraforming_fraction; }
 	double get_apparent_gravity() const { return apparent_gravity; }
 	double get_apparent_temperature() const { return apparent_temperature; }
+	int32_t get_desirability() const { return desirability; }
 	
 	// --- Setters for player-specific data ---
 	void set_funding_fraction(double p_val) { planet_funding_fraction = p_val; }
@@ -152,6 +157,7 @@ public:
 	void set_income(int32_t p_val) { income = p_val; }
 	void set_apparent_gravity(double p_val) { apparent_gravity = p_val; }
 	void set_apparent_temperature(double p_val) { apparent_temperature = p_val; }
+	void set_desirability(int32_t p_val) { desirability = std::max(1, std::min(3, p_val)); }  // Clamp to 1-3
 	
 	void set_budget_split(double p_mining, double p_terra)
 	{
@@ -172,6 +178,21 @@ public:
 		budget_split.terraforming_fraction = p_val;
 		budget_split.enforce_positive();
 		budget_split.mining_fraction = 1.0 - budget_split.terraforming_fraction;
+	}
+	
+	// Recalculate desirability based on current conditions
+	void recalculate_desirability();
+	
+	// Get desirability as a descriptive string
+	const char* get_desirability_description() const
+	{
+		switch (desirability)
+		{
+			case 1: return "Poor";
+			case 2: return "Moderate";
+			case 3: return "Excellent";
+			default: return "Unknown";
+		}
 	}
 };
 
