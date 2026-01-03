@@ -316,12 +316,16 @@ std::vector<Player> GameState::initialize_players(const std::vector<PlayerSetup>
 	// Initialize players based on setup configuration
 	std::vector<Player> new_players;
 	
-	// TODO: Populate players with initial state based on player_setups
-	// For now, create default players
-	// In the future, this will use player_setups to configure:
-	// - Player names
-	// - Player types (human vs AI)
-	// - AI difficulty levels
+	// TODO: IMPORTANT - Player initialization is not yet implemented
+	// This function currently returns an empty vector.
+	// When implemented, it should:
+	// 1. Create a Player object for each PlayerSetup
+	// 2. Initialize player names, types (human vs AI), and AI difficulty
+	// 3. Set ideal_gravity based on starting colony quality
+	//    - For START_OUTPOST: randomize within +/-0.20 of homeworld
+	//    - For other qualities: set to homeworld values
+	// 4. ideal_temperature will be assigned after homeworld is determined
+	//    in assign_planets_random() after planets are distributed
 	
 	return new_players;
 }

@@ -230,15 +230,24 @@ namespace GameFormulas
 double calculate_apparent_gravity(double ideal_gravity, double true_gravity)
 {
 	// For now, apparent gravity equals true gravity
-	// In the future, this could be modified based on player perception,
-	// research levels, or other factors
+	// Gravity does not have the same absolute zero constraint as temperature
+	// Future enhancements could add perception effects based on research or other factors
 	return true_gravity;
 }
 
 double calculate_apparent_temperature(double ideal_temperature, double true_temperature)
 {
-	// For now, apparent temperature equals true temperature
-	// In the future, this could be modified based on player perception,
-	// research levels, or other factors
-	return true_temperature;
+	// Calculate perceived temperature based on ideal and true temperature
+	// All temperatures are in Kelvin
+	// Formula: perceived = ideal + (true - ideal) * compression_factor
+	// Compression factor approaches 0 near absolute zero (0K)
+	
+	const double ABSOLUTE_ZERO_K = 0.0;
+	const double COMPRESSION_CONSTANT = 50.0;
+	
+	double distance_to_abs_zero = true_temperature - ABSOLUTE_ZERO_K;
+	double compression_factor = distance_to_abs_zero / (distance_to_abs_zero + COMPRESSION_CONSTANT);
+	double perceived_temp = ideal_temperature + (true_temperature - ideal_temperature) * compression_factor;
+	
+	return std::max(perceived_temp, ABSOLUTE_ZERO_K);
 }

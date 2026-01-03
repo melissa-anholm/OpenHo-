@@ -13,6 +13,51 @@ class DeterministicRNG;
 class Planet;
 
 // ============================================================================
+// Temperature Conversion Utilities
+// ============================================================================
+// All internal game temperatures are stored in Kelvin.
+// These utilities convert between Kelvin and other temperature scales.
+
+namespace TemperatureUtils
+{
+	constexpr double ABSOLUTE_ZERO_K = 0.0;
+	constexpr double CELSIUS_OFFSET = 273.15;
+	constexpr double FAHRENHEIT_FACTOR = 9.0 / 5.0;
+	
+	inline double celsius_from_kelvin(double temp_k)
+	{
+		return temp_k - CELSIUS_OFFSET;
+	}
+	
+	inline double fahrenheit_from_kelvin(double temp_k)
+	{
+		double celsius = celsius_from_kelvin(temp_k);
+		return celsius * FAHRENHEIT_FACTOR + 32.0;
+	}
+	
+	inline double kelvin_from_celsius(double temp_c)
+	{
+		return temp_c + CELSIUS_OFFSET;
+	}
+	
+	inline double kelvin_from_fahrenheit(double temp_f)
+	{
+		double celsius = (temp_f - 32.0) / FAHRENHEIT_FACTOR;
+		return kelvin_from_celsius(celsius);
+	}
+	
+	inline double fahrenheit_from_celsius(double temp_c)
+	{
+		return temp_c * FAHRENHEIT_FACTOR + 32.0;
+	}
+	
+	inline double celsius_from_fahrenheit(double temp_f)
+	{
+		return (temp_f - 32.0) / FAHRENHEIT_FACTOR;
+	}
+}  // namespace TemperatureUtils
+
+// ============================================================================
 // Randomized Subset Generation
 // ============================================================================
 
