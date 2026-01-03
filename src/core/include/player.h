@@ -75,6 +75,9 @@ public:
 	/// Get all fleets owned by this player
 	const std::vector<Fleet>& get_fleets() const { return fleets; }
 	
+	/// Get all colonized planets owned by this player
+	const std::vector<ColonizedPlanet>& get_colonized_planets() const { return colonized_planets; }
+	
 	// ========================================================================
 	// Fleet Management
 	// ========================================================================

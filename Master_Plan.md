@@ -1,6 +1,6 @@
 # OpenHo Master Plan
 
-**Last Updated:** January 3, 2026 (Session 4)  
+**Last Updated:** January 3, 2026 (Session 5)  
 **Project Status:** Phase 2 - C++ Core Implementation (In Progress)
 
 ---
@@ -284,6 +284,53 @@ The project uses a command-line build system (no Xcode dependency) with CMake fo
 5. `d2eb995` - Implement starting planet assignment for random galaxies
 6. `9307af8` - Add quality-indexed arrays for starting colony values
 7. `c9a05f6` - Add TODO reminder for starting colony value adjustments
+
+---
+
+## C API Architecture & UI Integration (Session 5 Planning)
+
+### Design Principles
+
+**C API serves as the bridge between UI and C++ core:**
+- UI accesses Player data and actions through Player C API
+- UI accesses GameState for turn management and game-level queries
+- All player-specific actions (spending, ship design, fleet building) go through Player API
+- All validation happens in GameState (centralized, auditable)
+
+### API Structure
+
+**GameState C API (existing + new):**
+- Turn management: `game_process_turn()`, `game_mark_player_turn_ready()`
+- Turn queries: `game_get_turn_status()`, `game_get_current_year()`, `game_get_current_turn()`
+- Entity access: `game_get_player()`, `game_get_planet()`, `game_get_fleet()`
+- Validation & Actions: `game_can_player_build_fleet()`, `game_player_build_fleet()`, etc.
+
+**Player C API (new):**
+- Spending allocation: `player_set_spending_allocation()`, `player_get_spending_allocation()`
+- Ship design: `player_design_ship()`, `player_get_ship_designs()`, `player_delete_ship_design()`
+- Fleet building: `player_build_fleet()`, `player_get_fleets()`, `player_move_fleet()`, `player_delete_fleet()`
+- Planet management: `player_get_colonized_planets()`, `player_set_planet_allocation()`
+- Read-only access: `player_get_ideal_gravity()`, `player_get_ideal_temperature()`, `player_get_money()`, etc.
+
+### Validation Strategy
+
+**Three layers of validation:**
+1. **UI-side (preventive):** Don't show invalid options (e.g., unavailable tech levels)
+2. **GameState-side (defensive):** Validate all player actions before execution
+3. **Player-side (internal):** Maintain state consistency
+
+**Validation pattern:**
+- `game_can_player_build_fleet(player_id, design_id, ship_count, planet_id)` → error_code
+- `game_player_build_fleet(player_id, design_id, ship_count, planet_id)` → error_code
+- Error codes map to specific failure reasons (insufficient funds, invalid tech, planet not owned, etc.)
+
+### Key Architectural Decisions
+
+- **Player holds GameState pointer:** For internal fleet ID allocation and validation
+- **GameState owns all validation:** Centralized, easier to audit and maintain
+- **Error codes instead of exceptions:** Better for C API, easier to map to UI feedback
+- **Immediate execution:** Player actions take effect immediately (not queued)
+- **Turn processing is game-level:** UI calls `game_process_turn()` when all players are ready
 
 ---
 
