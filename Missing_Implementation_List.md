@@ -21,14 +21,15 @@ These require playing through the original Spaceward Ho! and reverse-engineering
 
 ### Planet Desirability Rating
 
-**Status:** Not yet implemented  
-**Location:** Needs to be created (possibly in game_formulas.cpp or planet.cpp)
+**Status:** ✅ Implemented (placeholder - all planets get desirability 3)  
+**Location:** `planet.h` / `planet.cpp` (ColonizedPlanet class)
 
-- `calculate_planet_desirability()` - Overall suitability rating for a planet
+- `ColonizedPlanet::recalculate_desirability()` - Overall suitability rating for a planet
   - Depends on: apparent_gravity, apparent_temperature, metal_remaining, population (if colonized), etc.
   - Notes: Used by UI to display planet attractiveness; recalculated when colonized and each turn
-  - Current: Does not exist
+  - Current: Placeholder returns 3 (all planets maximally desirable)
   - **Key Design Question:** What factors contribute to desirability? How are they weighted?
+  - **Implementation Notes:** Infrastructure in place; ready for real formula when reverse-engineered
 
 **Usage Pattern:**
 1. **Exploration:** Calculate on-the-fly for UI display (not stored)
@@ -527,10 +528,11 @@ Functions needed for game flow but not core mechanics.
 
 | Category | Count | Status | Priority |
 |----------|-------|--------|----------|
-| Data-Driven Values | 10 | Placeholder/Missing | High |
+| Data-Driven Values | 9 | Placeholder/Missing | High |
 | Non-Data-Driven Functions | 6 | Stub | High |
 | Partially Implemented | 2 | Incomplete | Medium |
 | Infrastructure | 2 | Stub | Medium |
+| **Implemented** | 1 | ✅ Complete (placeholder) | - |
 | **Total** | **20** | - | - |
 
 ---

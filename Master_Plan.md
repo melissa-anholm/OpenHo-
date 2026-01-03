@@ -1,6 +1,6 @@
 # OpenHo Master Plan
 
-**Last Updated:** January 3, 2026 (Session 5 - Continued)  
+**Last Updated:** January 3, 2026 (Session 5 - Extended)  
 **Project Status:** Phase 2 - C++ Core Implementation & UI Architecture Planning (In Progress)
 
 ---
@@ -48,6 +48,9 @@ The project uses a command-line build system (no Xcode dependency) with CMake fo
 - ✅ Core data structures (Planet, Player, Ship, Galaxy, etc.)
 - ✅ Deterministic RNG with dual engines
 - ✅ GameState class framework
+- ✅ Error code system (23 error codes)
+- ✅ Player C API wrapper with validation layer
+- ✅ Planet desirability rating infrastructure (placeholder)
 - ✅ Entity ID mapping system
 - ✅ Population growth system integrated into turn processing
 - ✅ Snake_case naming convention applied throughout
@@ -401,14 +404,70 @@ UI ↔ C API (thin wrapper) ↔ GameState (validation) ↔ Player (actions)
 ---
 
 ---
+## Session 5 Summary: UI Architecture & Implementation Foundations
 
-## Recent Commits (Session 5)
+### Major Accomplishments
 
-1. `d4231f9` - Add validation methods to GameState and getter methods to Player
-2. `88d01a9` - Consolidate duplicate error codes
+**1. UI Architecture Design (Approved)**
+- Established Player-centric C API design
+- Centralized validation in GameState
+- Thin wrapper pattern for C API
+- Per-player starting colony quality support
+- Clear separation of concerns
+
+**2. Error Code System**
+- Created comprehensive error code enum (23 codes)
+- Consolidated duplicates (removed 7 redundant codes)
+- Covers all validation scenarios
+- Ready for UI error handling
+
+**3. C API Validation Layer**
+- Added validation methods to GameState (check_player_*)
+- Added getter methods to Player class
+- Implemented check/action pattern for all player operations
+- Updated C API wrappers to delegate to core methods
+
+**4. Planet Desirability Rating**
+- Implemented placeholder (all planets get desirability 3)
+- Integrated into turn processing
+- Infrastructure ready for real formula
+- Stored with ColonizedPlanet, recalculated each turn
+
+**5. Documentation**
+- Created Missing_Implementation_List.md (20 items)
+- Categorized by data-driven vs non-data-driven
+- Added design questions for each category
+- Provided reverse-engineering approaches
+
+### Key Design Decisions
+
+**Player-GameState Relationship:**
+- Player holds pointer to GameState for fleet ID allocation
+- Keeps internal bookkeeping opaque to UI
+- GameState owns all validation logic
+
+**Validation Pattern:**
+- game_can_player_X() - Check validity (returns ErrorCode)
+- game_player_X() - Execute action (re-validates, then delegates)
+- Prevents invalid state transitions
+
+**Planet Desirability:**
+- 1-3 scale (Poor, Moderate, Excellent)
+- Stored with ColonizedPlanet
+- Recalculated at start of turn processing
+- Placeholder: all planets maximally desirable
+
+### Recent Commits (Session 5 Extended)
+
+1. `cffb6dd` - Implement per-player ideal_gravity assignment with START_OUTPOST randomization
+2. `69b8b8b` - Rename MASTER_PLAN.md to Master_Plan.md and update with Session 4 progress
 3. `586c644` - Implement Player C API wrapper and GameState validation layer
-4. `69b8b8b` - Rename MASTER_PLAN.md to Master_Plan.md and update with Session 4 progress
-5. `cffb6dd` - Implement per-player ideal_gravity assignment with START_OUTPOST randomization
+4. `88d01a9` - Consolidate duplicate error codes
+5. `d4231f9` - Add validation methods to GameState and getter methods to Player
+6. `c5a14ae` - Update Missing_Implementation_List.md with corrected categorizations
+7. `ab582bc` - Add galaxy shape distribution algorithms to Missing_Implementation_List.md
+8. `b8b90cf` - Add planet desirability rating to Missing_Implementation_List.md
+9. `5507477` - Implement placeholder planet desirability rating (1-3 scale)
 
 ---
 
