@@ -19,6 +19,48 @@
 
 These require playing through the original Spaceward Ho! and reverse-engineering the formulas/values used.
 
+### Planet Desirability Rating
+
+**Status:** Not yet implemented  
+**Location:** Needs to be created (possibly in game_formulas.cpp or planet.cpp)
+
+- `calculate_planet_desirability()` - Overall suitability rating for a planet
+  - Depends on: apparent_gravity, apparent_temperature, metal_remaining, population (if colonized), etc.
+  - Notes: Used by UI to display planet attractiveness; recalculated when colonized and each turn
+  - Current: Does not exist
+  - **Key Design Question:** What factors contribute to desirability? How are they weighted?
+
+**Usage Pattern:**
+1. **Exploration:** Calculate on-the-fly for UI display (not stored)
+2. **Colonization:** Calculate and store with ColonizedPlanet object
+3. **Turn Processing:** Recalculate each turn as part of planet processing
+
+**Factors to Consider:**
+- Gravity mismatch (via apparent_gravity)
+- Temperature mismatch (via apparent_temperature)
+- Metal availability (affects long-term value)
+- Population (if colonized; affects current productivity)
+- Existing infrastructure (if colonized)
+- Distance from other planets (strategic value)
+- Proximity to enemy planets (defensive value)
+
+**Reverse-Engineering Approach:**
+- Play original game and observe planet ratings
+- Test with various gravity/temperature combinations
+- Test with different metal amounts
+- Determine if rating is numeric (0-100), star-based (1-5), or descriptive
+- Identify which factors are most important
+- Determine if rating changes based on player tech level or research
+
+**Implementation Notes:**
+- Should return a consistent numeric value (e.g., 0-100 or 0.0-1.0)
+- Must account for player's ideal_gravity and ideal_temperature
+- May need to consider player's current tech levels
+- Should be deterministic (same inputs = same output)
+- Consider if desirability should change as player researches new tech
+
+---
+
 ### Planetary Income Calculation
 
 **Status:** Placeholder (returns 0)  
@@ -485,11 +527,11 @@ Functions needed for game flow but not core mechanics.
 
 | Category | Count | Status | Priority |
 |----------|-------|--------|----------|
-| Data-Driven Values | 9 | Placeholder | High |
+| Data-Driven Values | 10 | Placeholder/Missing | High |
 | Non-Data-Driven Functions | 6 | Stub | High |
 | Partially Implemented | 2 | Incomplete | Medium |
 | Infrastructure | 2 | Stub | Medium |
-| **Total** | **19** | - | - |
+| **Total** | **20** | - | - |
 
 ---
 
@@ -504,9 +546,10 @@ Functions needed for game flow but not core mechanics.
 ### Phase 2 (Core Mechanics - Some Reverse-Engineering)
 1. Population growth with mismatch penalties (data-driven)
 2. Planetary income calculation (data-driven)
-3. Terraforming efficiency (data-driven)
-4. Mining efficiency (data-driven)
-5. Fleet movement and combat basics
+3. Planet desirability rating (somewhat data-driven)
+4. Terraforming efficiency (data-driven)
+5. Mining efficiency (data-driven)
+6. Fleet movement and combat basics
 
 ### Phase 3 (Balance - Heavy Reverse-Engineering)
 1. Ship design costs (build, prototype, metal) - data-driven
@@ -537,3 +580,5 @@ Functions needed for game flow but not core mechanics.
 - **Circle galaxy:** Uniform or density gradient? Hollow or filled?
 - **Ring galaxy:** Inner/outer radius? Ring width? Density variation?
 - **Cluster galaxy:** Number of clusters? Size? Overlap? How to ensure suitable homes?
+- **Planet desirability:** What factors matter most? How are they weighted? Numeric or descriptive rating?
+- **Desirability factors:** How much weight for gravity vs. temperature? Metal availability? Distance? Tech level effects?
