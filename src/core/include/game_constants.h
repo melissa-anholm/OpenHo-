@@ -90,6 +90,10 @@ namespace GameConstants
 	
 	/// Starting colony initial values indexed by StartingColonyQuality
 	/// Access: Starting_Colony_Population[START_NORMAL], etc.
+	/// 
+	/// TODO: These values will need to be adjusted during game balance testing.
+	/// Current values are placeholders with reasonable progression.
+	/// 
 	/// Quality Levels:
 	/// - START_OUTPOST (0): minimal values
 	/// - START_BARREN (1): low values
