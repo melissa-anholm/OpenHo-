@@ -51,6 +51,7 @@ public:
 	// Seed management
 	void setDeterministicSeed(uint64_t seed);
 	void setAISeed(uint64_t seed);
+	uint64_t getDeterministicSeed() const;
 	uint64_t getAISeed() const;
 	
 	// Bounded random numbers
@@ -99,6 +100,10 @@ private:
 	// Boost.Random engines (Mersenne Twister)
 	boost::random::mt19937_64 deterministicEngine;
 	boost::random::mt19937_64 aiEngine;
+	
+	// Stored seed values for retrieval (Boost engines don't provide seed getters)
+	uint64_t deterministicSeedValue;
+	uint64_t aiSeedValue;
 	
 	// Distributions
 	boost::random::uniform_int_distribution<int32_t> int32Dist;

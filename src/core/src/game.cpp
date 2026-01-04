@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstring>
 #include <iostream>
+#include <random>
 #include <stdexcept>
 
 // ============================================================================
@@ -14,14 +15,18 @@
 // ============================================================================
 
 GameState::GameState(const class GameSetup& setup)
-	: current_ai_rng_seed(0),
-	  galaxy_params(setup.get_galaxy_params()),
+	: galaxy_params(setup.get_galaxy_params()),
 	  player_setups(setup.get_player_setups())
 {
 	// Setup data has been copied and stored as members in initializer list
 	
-	// Initialize RNG with default seed
-	rng = std::make_unique<DeterministicRNG>(0, 0);
+	// Initialize RNG with random seeds from std::random_device
+	// This ensures each game has different random behavior
+	std::random_device rd;
+	uint64_t deterministicSeed = rd();
+	uint64_t aiSeed = deterministicSeed + 1;  // Use seed + 1 for AI RNG
+	current_ai_rng_seed = aiSeed;
+	rng = std::make_unique<DeterministicRNG>(deterministicSeed, aiSeed);
 	
 	// Load text assets
 	text_assets = std::make_unique<TextAssets>();

@@ -8,6 +8,8 @@
 DeterministicRNG::DeterministicRNG(uint64_t deterministicSeed, uint64_t aiSeed)
 	: deterministicEngine(deterministicSeed),
 	  aiEngine(aiSeed),
+	  deterministicSeedValue(deterministicSeed),
+	  aiSeedValue(aiSeed),
 	  int32Dist(std::numeric_limits<int32_t>::min(), std::numeric_limits<int32_t>::max()),
 	  uint32Dist(0, std::numeric_limits<uint32_t>::max()),
 	  int64Dist(std::numeric_limits<int64_t>::min(), std::numeric_limits<int64_t>::max()),
@@ -84,21 +86,24 @@ double DeterministicRNG::nextAIDouble()
 
 void DeterministicRNG::setDeterministicSeed(uint64_t seed)
 {
+	deterministicSeedValue = seed;
 	deterministicEngine.seed(seed);
 }
 
 void DeterministicRNG::setAISeed(uint64_t seed)
 {
+	aiSeedValue = seed;
 	aiEngine.seed(seed);
+}
+
+uint64_t DeterministicRNG::getDeterministicSeed() const
+{
+	return deterministicSeedValue;
 }
 
 uint64_t DeterministicRNG::getAISeed() const
 {
-	// Note: Boost's mt19937_64 doesn't provide a direct way to get the current seed.
-	// This is a limitation of the Boost library. In practice, we track the seed separately
-	// in the Galaxy structure or store it when set.
-	// For now, return 0 as a placeholder.
-	return 0;
+	return aiSeedValue;
 }
 
 // ============================================================================
