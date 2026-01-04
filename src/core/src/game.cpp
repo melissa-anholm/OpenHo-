@@ -35,11 +35,9 @@ GameState::GameState(const class GameSetup& setup)
 	// Initialize players with setup configuration
 	players = initialize_players(player_setups);
 	
-	// Initialize galaxy with provided parameters and get suitable home planets
-	std::vector<Planet*> suitable_planets = initialize_galaxy(galaxy_params);
-	
-	// Assign suitable planets to players based on their starting colony quality
-	assign_planets_random(suitable_planets);
+	// Initialize galaxy with provided parameters
+	// This also assigns planets to players internally
+	initialize_galaxy(galaxy_params);
 	
 	// Initialize the first turn
 	start_first_turn();
@@ -351,11 +349,11 @@ std::vector<Player> GameState::initialize_players(const std::vector<PlayerSetup>
 	return new_players;
 }
 
-std::vector<Planet*> GameState::initialize_galaxy(const GalaxyGenerationParams& params)
+void GameState::initialize_galaxy(const GalaxyGenerationParams& params)
 {
 	// Initialize galaxy with user-provided parameters
 	// Retry if we don't have enough suitable home planets for all players
-	// Returns the vector of suitable home planets for immediate assignment
+	// Assigns planets to players internally
 	
 	uint32_t attempt = 0;
 	bool success = false;
@@ -396,10 +394,11 @@ std::vector<Planet*> GameState::initialize_galaxy(const GalaxyGenerationParams& 
 		                         std::to_string(GameConstants::Galaxy_Gen_Retry_Count) + " attempts.");
 	}
 	
+	// Assign suitable planets to players
+	assign_planets_random(suitable_planets);
+	
 	// Build entity ID maps for quick lookup
 	build_entity_maps();
-	
-	return suitable_planets;
 }
 
 void GameState::build_entity_maps()

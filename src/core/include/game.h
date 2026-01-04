@@ -191,7 +191,7 @@ private:
 	
 	// Private helper methods
 	std::vector<Player> initialize_players(const std::vector<PlayerSetup>& player_setups);
-	std::vector<Planet*> initialize_galaxy(const GalaxyGenerationParams& params);
+	void initialize_galaxy(const GalaxyGenerationParams& params);
 	void build_entity_maps();
 	
 	// Starting planet assignment (for random galaxies)

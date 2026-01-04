@@ -44,6 +44,9 @@ struct GalaxyGenerationParams
 	}
 };
 
+// Coordinate pair for planet positions
+using PlanetCoord = std::pair<double, double>;  // (x, y)
+
 // Galaxy structure
 struct Galaxy
 {
@@ -56,6 +59,9 @@ struct Galaxy
 	
 	// Immutable planet list
 	std::vector<Planet> planets;
+	
+	// Home planet indices (indices into planets vector)
+	std::vector<size_t> home_planet_indices;
 	
 	// Constructor to initialize galaxy boundaries and planets
 	// Takes GameState reference for access to RNG and TextAssets
@@ -70,10 +76,52 @@ struct Galaxy
 	// 	class DeterministicRNG& rng);
 	static std::vector<std::string> generate_planet_names(uint32_t n_planets, class GameState* game_state);
 	
+	// Staged galaxy generation methods
+	// Phase 1: Generate all planet coordinates according to galaxy shape
+	std::vector<PlanetCoord> generate_planet_coordinates(
+		const GalaxyGenerationParams& params,
+		class GameState* game_state);
 	
-	// Shape-specific planet initialization methods
-	// Each method generates planet positions according to its shape pattern
-	// and creates Planet objects with the provided names
+	// Phase 2: Select home planet coordinates from all coordinates
+	std::vector<PlanetCoord> select_home_planet_coordinates(
+		const std::vector<PlanetCoord>& all_coords,
+		uint32_t n_home_planets,
+		class GameState* game_state);
+	
+	// Phase 3: Generate planet parameters for all coordinates
+	void generate_planet_parameters(
+		const std::vector<PlanetCoord>& all_coords,
+		const std::vector<PlanetCoord>& home_coords,
+		const std::vector<std::string>& planet_names,
+		class GameState* game_state);
+	
+	// Shape-specific coordinate generation methods
+	// Each method generates planet coordinates according to its shape pattern
+	std::vector<PlanetCoord> generate_coordinates_random(
+		const GalaxyGenerationParams& params,
+		class GameState* game_state);
+	
+	std::vector<PlanetCoord> generate_coordinates_spiral(
+		const GalaxyGenerationParams& params,
+		class GameState* game_state);
+	
+	std::vector<PlanetCoord> generate_coordinates_circle(
+		const GalaxyGenerationParams& params,
+		class GameState* game_state);
+	
+	std::vector<PlanetCoord> generate_coordinates_ring(
+		const GalaxyGenerationParams& params,
+		class GameState* game_state);
+	
+	std::vector<PlanetCoord> generate_coordinates_cluster(
+		const GalaxyGenerationParams& params,
+		class GameState* game_state);
+	
+	std::vector<PlanetCoord> generate_coordinates_grid(
+		const GalaxyGenerationParams& params,
+		class GameState* game_state);
+	
+	// Legacy planet initialization methods (deprecated, kept for reference)
 	void initialize_planets_random(
 		const GalaxyGenerationParams& params,
 		const std::vector<std::string>& planet_names,
