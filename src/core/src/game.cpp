@@ -401,7 +401,7 @@ std::unique_ptr<Galaxy> GameState::initialize_galaxy(const GalaxyGenerationParam
 	
 	uint32_t attempt = 0;
 	bool success = false;
-	std::vector<Planet*> suitable_planets;
+	std::vector<Planet*> home_planets;
 	std::unique_ptr<Galaxy> new_galaxy;
 	
 	while (attempt < GameConstants::Galaxy_Gen_Retry_Count && !success)
@@ -412,23 +412,22 @@ std::unique_ptr<Galaxy> GameState::initialize_galaxy(const GalaxyGenerationParam
 		
 		new_galaxy = std::make_unique<Galaxy>(attempt_params, this);
 		
-		// Check if we have enough suitable home planets
-		suitable_planets = find_suitable_home_planets();
-		
-		if (suitable_planets.size() >= players.size())
+		// Check if we have enough home planets selected by Galaxy
+		// Galaxy already ensures home planets have suitable gravity (0.7-1.4)
+		if (new_galaxy->home_planet_indices.size() >= players.size())
 		{
 			success = true;
 			if (attempt > 0)
 			{
-				std::cout << "Galaxy generated successfully on attempt " << (attempt + 1) 
-				          << " with " << suitable_planets.size() << " suitable home planets.\n";
+			std::cout << "Galaxy generated successfully on attempt " << (attempt + 1) 
+			          << " with " << new_galaxy->home_planet_indices.size() << " home planets.\n";
 			}
 		}
 		else
 		{
-			std::cerr << "Attempt " << (attempt + 1) << "/" << GameConstants::Galaxy_Gen_Retry_Count 
-			          << ": Only " << suitable_planets.size() << " suitable planets found, need " 
-			          << players.size() << ". Retrying...\n";
+		std::cerr << "Attempt " << (attempt + 1) << "/" << GameConstants::Galaxy_Gen_Retry_Count 
+		          << ": Only " << new_galaxy->home_planet_indices.size() << " home planets found, need " 
+		          << players.size() << ". Retrying...\n";
 			attempt++;
 		}
 	}
@@ -439,8 +438,14 @@ std::unique_ptr<Galaxy> GameState::initialize_galaxy(const GalaxyGenerationParam
 		                         std::to_string(GameConstants::Galaxy_Gen_Retry_Count) + " attempts.");
 	}
 	
-	// Assign suitable planets to players
-	assign_planets_random(suitable_planets);
+	// Convert home planet indices to Planet* pointers for assignment
+	for (size_t index : new_galaxy->home_planet_indices)
+	{
+		home_planets.push_back(&new_galaxy->planets[index]);
+	}
+	
+	// Assign home planets to players
+	assign_planets_random(home_planets);
 	
 	// Build entity ID maps for quick lookup
 	build_entity_maps();
