@@ -44,6 +44,7 @@ inline std::string get_ship_type_name(ShipType type)
 // Gender
 enum Gender
 {
+	GENDER_OTHER = 0,
 	GENDER_F = 1,
 	GENDER_M = 2
 };

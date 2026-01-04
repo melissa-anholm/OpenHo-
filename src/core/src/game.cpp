@@ -325,9 +325,44 @@ std::vector<Player> GameState::initialize_players(const std::vector<PlayerSetup>
 	{
 		Player player;
 		player.id = player_id++;
-		player.name = setup.name;
 		player.type = setup.type;
 		player.iq = setup.ai_iq;
+		
+		// Handle player name and gender
+		if (setup.type == PLAYER_COMPUTER && setup.name.empty())
+		{
+			// Computer player with placeholder name: assign gender and name from TextAssets
+			Gender selected_gender = (rng->nextInt32Range(0, 1) == 0) ? GENDER_F : GENDER_M;
+			player.gender = selected_gender;
+			
+			// Get gender-appropriate names from TextAssets and select one randomly
+			const std::vector<std::string>* names = nullptr;
+			if (selected_gender == GENDER_F)
+			{
+				names = &text_assets->get_female_player_names();
+			}
+			else
+			{
+				names = &text_assets->get_male_player_names();
+			}
+			
+			if (names && !names->empty())
+			{
+				uint32_t name_index = rng->nextUInt32Range(0, names->size() - 1);
+				player.name = (*names)[name_index];
+			}
+			else
+			{
+				// Fallback if no names available
+				player.name = (selected_gender == GENDER_F) ? "Computer_F" : "Computer_M";
+			}
+		}
+		else
+		{
+			// Human player: use name and gender from setup
+			player.name = setup.name;
+			player.gender = setup.player_gender;
+		}
 		
 		// Assign ideal_temperature from truncated Gaussian distribution
 		// Centered on best_perceived_temperature_K with sigma = ideal_temp_range

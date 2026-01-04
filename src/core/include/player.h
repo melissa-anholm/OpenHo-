@@ -59,6 +59,7 @@ class Player
 public:
 	uint32_t id;
 	std::string name;
+	Gender gender;  // Player's gender (for icons/graphics and pronouns in notifications)
 	PlayerType type;
 	int32_t iq;  // For computer players
 	

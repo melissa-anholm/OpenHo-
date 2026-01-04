@@ -119,32 +119,53 @@ PlayerSetup GameSetup::query_single_player(int player_number)
 	
 	std::cout << "\n--- Player " << player_number << " ---" << std::endl;
 	
-	// Query player name
-	std::cout << "Player name: ";
-	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-	std::getline(std::cin, player.name);
-	
-	// Query player gender
-	std::cout << "Player gender (1 = Female, 2 = Male): ";
-	int gender_input;
-	std::cin >> gender_input;
-	player.player_gender = static_cast<Gender>(gender_input);
-	
-	// Query player type
-	std::cout << "Player type (0 = Human, 1 = Computer): ";
+	// Query player type first (Human or Computer)
+	std::cout << "Is this player human or computer? (0 = Human, 1 = Computer): ";
 	int type_input;
 	std::cin >> type_input;
 	player.type = static_cast<PlayerType>(type_input);
 	
-	// Query AI IQ if computer player
-	if (player.type == PLAYER_COMPUTER)
+	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	
+	if (player.type == PLAYER_HUMAN)
 	{
-		std::cout << "AI IQ (0-100): ";
-		std::cin >> player.ai_iq;
+		// Human player: get name and gender, set IQ to 100
+		std::cout << "Player name: ";
+		std::getline(std::cin, player.name);
+		
+		std::cout << "Player gender (1 = Female, 2 = Male): ";
+		int gender_input;
+		std::cin >> gender_input;
+		player.player_gender = static_cast<Gender>(gender_input);
+		
+		player.ai_iq = 100;  // Human players always get IQ 100 (unused)
 	}
 	else
 	{
-		player.ai_iq = 0;
+		// Computer player: get IQ, set placeholder name, random gender
+		std::cout << "AI IQ (50-200): ";
+		int32_t iq_input;
+		std::cin >> iq_input;
+		
+		// Clamp IQ to valid range [50, 200]
+		if (iq_input < 50)
+		{
+			std::cout << "IQ " << iq_input << " is below minimum (50). Adjusting to 50." << std::endl;
+			player.ai_iq = 50;
+		}
+		else if (iq_input > 200)
+		{
+			std::cout << "IQ " << iq_input << " is above maximum (200). Adjusting to 200." << std::endl;
+			player.ai_iq = 200;
+		}
+		else
+		{
+			player.ai_iq = iq_input;
+		}
+		
+		// Set placeholder name and gender (will be assigned in GameState::initialize_players)
+		player.name = "";
+		player.player_gender = GENDER_OTHER;  // Placeholder, will be randomly selected in initialize_players()
 	}
 	
 	// For now, hardcode starting colony quality to Normal
