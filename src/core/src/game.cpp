@@ -240,8 +240,18 @@ const Player::MoneyAllocation& GameState::get_money_allocation(uint32_t player_i
 
 
 // ============================================================================
-// AI RNG Seed Accessors
+// RNG Seed Accessors
 // ============================================================================
+uint64_t GameState::get_deterministic_seed() const
+{
+	return rng->getDeterministicSeed();
+}
+
+void GameState::set_deterministic_seed(uint64_t seed)
+{
+	rng->setDeterministicSeed(seed);
+}
+
 uint64_t GameState::get_ai_rng_seed() const
 {
 	return rng->getAISeed();

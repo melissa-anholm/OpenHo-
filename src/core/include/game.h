@@ -135,7 +135,9 @@ public:
 	/// Check if a player can set planet allocation
 	[[nodiscard]] ErrorCode check_player_set_planet_allocation(uint32_t player_id, uint32_t planet_id, double mining_frac, double terraforming_frac) const;
 	
-	// AI RNG seed accessors (delegates to RNG)
+	// RNG seed accessors (delegates to RNG)
+	uint64_t get_deterministic_seed() const;
+	void set_deterministic_seed(uint64_t seed);
 	uint64_t get_ai_rng_seed() const;
 	void set_ai_rng_seed(uint64_t seed);
 	
