@@ -316,16 +316,32 @@ std::vector<Player> GameState::initialize_players(const std::vector<PlayerSetup>
 	// Initialize players based on setup configuration
 	std::vector<Player> new_players;
 	
-	// TODO: IMPORTANT - Player initialization is not yet implemented
-	// This function currently returns an empty vector.
-	// When implemented, it should:
-	// 1. Create a Player object for each PlayerSetup
-	// 2. Initialize player names, types (human vs AI), and AI difficulty
-	// 3. Set ideal_gravity based on starting colony quality
-	//    - For START_OUTPOST: randomize within +/-0.20 of homeworld
-	//    - For other qualities: set to homeworld values
-	// 4. ideal_temperature will be assigned after homeworld is determined
-	//    in assign_planets_random() after planets are distributed
+	uint32_t player_id = 1;  // Player IDs start at 1 (0 is reserved for NOT_OWNED)
+	
+	for (const auto& setup : player_setups)
+	{
+		Player player;
+		player.id = player_id++;
+		player.name = setup.name;
+		player.type = setup.type;
+		player.iq = setup.ai_iq;
+		
+		// Assign ideal_temperature from truncated Gaussian distribution
+		// Centered on best_perceived_temperature_K with sigma = ideal_temp_range
+		double min_ideal_temp = GameConstants::best_perceived_temperature_K - GameConstants::ideal_temp_range;
+		double max_ideal_temp = GameConstants::best_perceived_temperature_K + GameConstants::ideal_temp_range;
+		player.ideal_temperature = rng->nextNormalTruncated(
+			GameConstants::best_perceived_temperature_K,
+			GameConstants::ideal_temp_range,
+			min_ideal_temp,
+			max_ideal_temp
+		);
+		
+		// ideal_gravity will be assigned in assign_planets_random() after homeworld is determined
+		player.ideal_gravity = 0.0;  // Placeholder, will be set later
+		
+		new_players.push_back(player);
+	}
 	
 	return new_players;
 }
@@ -952,9 +968,12 @@ void GameState::assign_planets_random(const std::vector<Planet*>& suitable_plane
 			ideal_gravity = planet->true_gravity;
 		}
 		
-		player.ideal_gravity = ideal_gravity;
-		
-		// Create ColonizedPlanet entry for this player with quality-based values
+			player.ideal_gravity = ideal_gravity;
+			
+			// Adjust homeworld temperature to match player's ideal_temperature
+			planet->true_temperature = player.ideal_temperature;
+			
+			// Create ColonizedPlanet entry for this player with quality-based values
 		ColonizedPlanet colonized_planet(
 			planet,
 			&player,

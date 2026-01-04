@@ -242,13 +242,13 @@ double calculate_apparent_temperature(double ideal_temperature, double true_temp
 	// Formula: perceived = ideal + (true - ideal) * compression_factor
 	// Compression factor approaches 0 near absolute zero (0K)
 	
-	// ❌ INCOMPLETE - Formula violates monotonicity constraint
-	// Previous formula violated the requirement that perceived temperature must be monotonic with ideal temperature
-	// TODO: Design new formula that satisfies:
-	//   1. Perceived temp increases monotonically with ideal temp (for same true temp)
-	//   2. Still accounts for mismatch between ideal and true
-	//   3. Prevents perceived temp from going below absolute zero (0K)
-	// For now, return true temperature unchanged (placeholder)
+	// Linear temperature perception formula
+	// Line passes through (0, 0) and (ideal_temperature, best_perceived_temperature_K)
+	// Slope = best_perceived_temperature_K / ideal_temperature
+	// Formula: perceived = (best_perceived_temperature_K / ideal_temperature) * true_temperature
 	
-	return true_temperature;
+	const double slope = GameConstants::best_perceived_temperature_K / ideal_temperature;
+	double perceived_temp = slope * true_temperature;
+	
+	return perceived_temp;
 }

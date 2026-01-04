@@ -239,9 +239,9 @@ namespace GameFormulas
 	/// @return The apparent gravity value as perceived by the player
 	double calculate_apparent_gravity(double ideal_gravity, double true_gravity);
 
-	/// ❌ INCOMPLETE - Calculate how a player perceives a planet's temperature based on their ideal.
-	/// Previous formula violated monotonicity constraint (perceived temp not monotonic with ideal temp).
-	/// TODO: Design new formula that ensures perceived temperature increases monotonically with ideal temp.
+	/// Calculate how a player perceives a planet's temperature based on their ideal.
+	/// Uses a linear model where the perception line passes through (0, 0) and (ideal_temperature, best_perceived_temperature_K).
+	/// This ensures perceived temperature is monotonic with both true and ideal temperatures.
 	/// 
 	/// @param ideal_temperature The player's ideal temperature
 	/// @param true_temperature The planet's actual temperature

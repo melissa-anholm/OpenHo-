@@ -7,6 +7,7 @@
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_int_distribution.hpp>
 #include <boost/random/uniform_real_distribution.hpp>
+#include <boost/random/normal_distribution.hpp>
 
 // ============================================================================
 // DeterministicRNG Class
@@ -61,6 +62,22 @@ public:
 	int32_t nextAIInt32Range(int32_t min, int32_t max);  // [min, max]
 	uint32_t nextAIUInt32Range(uint32_t min, uint32_t max);  // [min, max]
 	double nextAIDoubleRange(double min, double max);  // [min, max]
+	
+	// Normal distribution (Gaussian)
+	/// Generate a random number from a normal distribution
+	/// @param mean The mean of the distribution
+	/// @param sigma The standard deviation of the distribution
+	/// @return A random value from N(mean, sigma)
+	double nextNormal(double mean, double sigma);
+	
+	/// Generate a random number from a truncated normal distribution
+	/// Values outside [min, max] are rejected and resampled
+	/// @param mean The mean of the distribution
+	/// @param sigma The standard deviation of the distribution
+	/// @param min The minimum allowed value (inclusive)
+	/// @param max The maximum allowed value (inclusive)
+	/// @return A random value from N(mean, sigma) truncated to [min, max]
+	double nextNormalTruncated(double mean, double sigma, double min, double max);
 	
 	// RNG state serialization for multiplayer host migration
 	/// Serialize the AI RNG state to a byte vector for network transmission

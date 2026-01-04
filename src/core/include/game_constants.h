@@ -19,6 +19,18 @@ namespace GameConstants
 	constexpr double min_temp = 40.0;   // Kelvin
 	constexpr double max_temp = 500.0;  // Kelvin
 	
+	/// Best perceived temperature for any player (approximately 72°F or 22°C)
+	/// Used in temperature perception formula: perceived = best_perceived_temp / ideal_temp * true_temp
+	/// This represents the "Goldilocks" temperature that all players perceive as ideal when
+	/// their ideal_temperature matches this value.
+	constexpr double best_perceived_temperature_K = 295.37223;  // Approximately 72°F
+	
+	/// One-sided range for ideal temperature assignment (in Kelvin)
+	/// Players' ideal_temperature values are selected from a truncated Gaussian distribution
+	/// centered on best_perceived_temperature_K with sigma = ideal_temp_range.
+	/// Valid range: [best_perceived_temperature_K - ideal_temp_range, best_perceived_temperature_K + ideal_temp_range]
+	constexpr double ideal_temp_range = 55.0;  // One-sided range in Kelvin
+	
 	constexpr int32_t min_metal = 0;
 	constexpr int32_t max_metal = 32000;
 	

@@ -208,3 +208,25 @@ void DeterministicRNG::deserialize_deterministic_rng_state(const std::vector<uin
 	std::istringstream iss(str);
 	iss >> deterministicEngine;
 }
+
+
+// ============================================================================
+// Normal Distribution Methods
+// ============================================================================
+
+double DeterministicRNG::nextNormal(double mean, double sigma)
+{
+	boost::random::normal_distribution<double> normalDist(mean, sigma);
+	return normalDist(deterministicEngine);
+}
+
+double DeterministicRNG::nextNormalTruncated(double mean, double sigma, double min, double max)
+{
+	// Rejection sampling: generate from normal distribution until value is in [min, max]
+	boost::random::normal_distribution<double> normalDist(mean, sigma);
+	double value;
+	do {
+		value = normalDist(deterministicEngine);
+	} while (value < min || value > max);
+	return value;
+}
