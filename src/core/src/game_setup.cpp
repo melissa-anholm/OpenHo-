@@ -8,7 +8,7 @@
 // ============================================================================
 
 GameSetup::GameSetup()
-	: galaxy_params(100, 0.5, GALAXY_RANDOM, 0)
+	: galaxy_params(100, 1, 0.5, GALAXY_RANDOM, 0)
 { }
 
 GameSetup::~GameSetup()
@@ -24,6 +24,9 @@ GameState* GameSetup::create_new_game()
 	
 	// Query user for player configuration
 	player_setups = query_player_configuration();
+	
+	// Update galaxy params with actual number of players
+	galaxy_params.n_players = player_setups.size();
 	
 	// TODO: Apply player configuration to the game
 	// For now, we'll just create the game with default players
@@ -53,6 +56,10 @@ GalaxyGenerationParams GameSetup::query_galaxy_parameters()
 	std::cout << "Number of planets (5-500): ";
 	std::cin >> n_planets;
 	
+	// Note: n_players will be set after player configuration is queried
+	// For now, use a placeholder value
+	uint32_t n_players = 1;
+	
 	double density;
 	std::cout << "Planet distribution density (0.25-4.0): ";
 	std::cin >> density;
@@ -79,7 +86,7 @@ GalaxyGenerationParams GameSetup::query_galaxy_parameters()
 	
 	std::cout << std::endl;
 	
-	return GalaxyGenerationParams(n_planets, density, shape, seed);
+	return GalaxyGenerationParams(n_planets, n_players, density, shape, seed);
 }
 
 // ============================================================================

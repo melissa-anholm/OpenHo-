@@ -14,8 +14,7 @@ Galaxy::Galaxy(const GalaxyGenerationParams& params, GameState* game_state)
 	std::vector<PlanetCoord> all_coords = generate_planet_coordinates(params, game_state);
 	
 	// Phase 2: Select home planet coordinates
-	uint32_t n_home_planets = game_state->get_players().size();
-	std::vector<PlanetCoord> home_coords = select_home_planet_coordinates(all_coords, n_home_planets, game_state);
+	std::vector<PlanetCoord> home_coords = select_home_planet_coordinates(all_coords, params.n_players, game_state);
 	
 	// Phase 3: Generate planet names
 	const std::vector<std::string> planet_names = generate_planet_names(all_coords.size(), game_state);
@@ -448,6 +447,13 @@ std::vector<PlanetCoord> Galaxy::select_home_planet_coordinates(
 {
 	DeterministicRNG& rng = game_state->get_rng();
 	
+	// Validate that we have enough coordinates for home planets
+	if (all_coords.size() < n_home_planets)
+	{
+		throw std::runtime_error("Insufficient planet coordinates (" + std::to_string(all_coords.size()) + 
+		                         ") for " + std::to_string(n_home_planets) + " home planets.");
+	}
+	
 	// Create a mutable copy for shuffling
 	std::vector<PlanetCoord> shuffled = all_coords;
 	
@@ -459,7 +465,7 @@ std::vector<PlanetCoord> Galaxy::select_home_planet_coordinates(
 	}
 	
 	// Take first n_home_planets as home planets
-	std::vector<PlanetCoord> home_coords(shuffled.begin(), shuffled.begin() + std::min((size_t)n_home_planets, shuffled.size()));
+	std::vector<PlanetCoord> home_coords(shuffled.begin(), shuffled.begin() + n_home_planets);
 	return home_coords;
 }
 
@@ -508,7 +514,7 @@ void Galaxy::generate_planet_parameters(
 		// Track home planet indices
 		if (is_home_planet)
 		{
-			home_planet_indices.push_back(planets.size() - 1);
+			home_planet_indices.push_back(i);
 		}
 	}
 }

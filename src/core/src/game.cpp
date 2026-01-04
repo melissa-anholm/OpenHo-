@@ -396,52 +396,23 @@ std::vector<Player> GameState::initialize_players(const std::vector<PlayerSetup>
 std::unique_ptr<Galaxy> GameState::initialize_galaxy(const GalaxyGenerationParams& params)
 {
 	// Initialize galaxy with user-provided parameters
-	// Retry if we don't have enough suitable home planets for all players
-	// Assigns planets to players internally
+	// Galaxy constructor handles home planet selection with proper gravity constraints
+	// Failures are caught immediately during coordinate generation
 	
-	uint32_t attempt = 0;
-	bool success = false;
 	std::vector<Planet*> home_planets;
-	std::unique_ptr<Galaxy> new_galaxy;
-	
-	while (attempt < GameConstants::Galaxy_Gen_Retry_Count && !success)
-	{
-		// Create galaxy with current parameters
-		GalaxyGenerationParams attempt_params = params;
-		attempt_params.seed = params.seed + attempt;
-		
-		new_galaxy = std::make_unique<Galaxy>(attempt_params, this);
-		
-		// Check if we have enough home planets selected by Galaxy
-		// Galaxy already ensures home planets have suitable gravity (0.7-1.4)
-		if (new_galaxy->home_planet_indices.size() >= players.size())
-		{
-			success = true;
-			if (attempt > 0)
-			{
-			std::cout << "Galaxy generated successfully on attempt " << (attempt + 1) 
-			          << " with " << new_galaxy->home_planet_indices.size() << " home planets.\n";
-			}
-		}
-		else
-		{
-		std::cerr << "Attempt " << (attempt + 1) << "/" << GameConstants::Galaxy_Gen_Retry_Count 
-		          << ": Only " << new_galaxy->home_planet_indices.size() << " home planets found, need " 
-		          << players.size() << ". Retrying...\n";
-			attempt++;
-		}
-	}
-	
-	if (!success)
-	{
-		throw std::runtime_error("Failed to generate galaxy with sufficient home planets after " + 
-		                         std::to_string(GameConstants::Galaxy_Gen_Retry_Count) + " attempts.");
-	}
+	std::unique_ptr<Galaxy> new_galaxy = std::make_unique<Galaxy>(params, this);
 	
 	// Convert home planet indices to Planet* pointers for assignment
 	for (size_t index : new_galaxy->home_planet_indices)
 	{
 		home_planets.push_back(&new_galaxy->planets[index]);
+	}
+	
+	// Verify we have enough home planets (should always be true if Galaxy constructor succeeded)
+	if (home_planets.size() < players.size())
+	{
+		throw std::runtime_error("Galaxy has insufficient home planets (" + std::to_string(home_planets.size()) + 
+		                         ") for " + std::to_string(players.size()) + " players.");
 	}
 	
 	// Assign home planets to players

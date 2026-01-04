@@ -18,6 +18,7 @@ struct GalaxyGenerationParams
 {
 //	uint32_t gal_size;   // Calculated galaxy size (radius) - determines boundaries
 	uint32_t n_planets;  // Number of planets to generate (5-500)
+	uint32_t n_players;  // Number of players (determines home planet count)
 	double density;      // Planet distribution density (0.0-1.0, TBD)
 	GalaxyShape shape;   // Distribution pattern (random, spiral, circle, ring, cluster, grid)
 	uint64_t seed;       // Random seed for generation
@@ -29,17 +30,19 @@ struct GalaxyGenerationParams
 		
 		shape = GALAXY_RANDOM;
 		n_planets = 100;
+		n_players = 1;
 		density = 0.5;
 	//	gal_size = 100;
 	}
 	
 	// Constructor
-	GalaxyGenerationParams(uint32_t planets, double dens, GalaxyShape gal_shape, uint64_t rng_seed)
+	GalaxyGenerationParams(uint32_t planets, uint32_t players, double dens, GalaxyShape gal_shape, uint64_t rng_seed)
 	{
 		seed = rng_seed;
 		
 		shape = gal_shape;
 		n_planets = planets;
+		n_players = players;
 		density = dens;
 	}
 };
