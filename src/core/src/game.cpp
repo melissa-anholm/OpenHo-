@@ -25,7 +25,6 @@ GameState::GameState(const class GameSetup& setup)
 	std::random_device rd;
 	uint64_t deterministicSeed = rd();
 	uint64_t aiSeed = deterministicSeed + 1;  // Use seed + 1 for AI RNG
-	current_ai_rng_seed = aiSeed;
 	rng = std::make_unique<DeterministicRNG>(deterministicSeed, aiSeed);
 	
 	// Load text assets
@@ -239,17 +238,17 @@ const Player::MoneyAllocation& GameState::get_money_allocation(uint32_t player_i
 	return player->allocation;
 }
 
+
 // ============================================================================
-// AI RNG Seed Management
+// AI RNG Seed Accessors
 // ============================================================================
 uint64_t GameState::get_ai_rng_seed() const
 {
-	return current_ai_rng_seed;
+	return rng->getAISeed();
 }
 
 void GameState::set_ai_rng_seed(uint64_t seed)
 {
-	current_ai_rng_seed = seed;
 	rng->setAISeed(seed);
 }
 

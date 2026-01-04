@@ -135,7 +135,7 @@ public:
 	/// Check if a player can set planet allocation
 	[[nodiscard]] ErrorCode check_player_set_planet_allocation(uint32_t player_id, uint32_t planet_id, double mining_frac, double terraforming_frac) const;
 	
-	// AI RNG seed management
+	// AI RNG seed accessors (delegates to RNG)
 	uint64_t get_ai_rng_seed() const;
 	void set_ai_rng_seed(uint64_t seed);
 	
@@ -177,8 +177,7 @@ private:
 	// Player public information history: player_id -> vector of PlayerPublicInfo (one per turn)
 	std::unordered_map<uint32_t, std::vector<PlayerPublicInfo>> player_info_history;
 	
-	// Current AI RNG seed (tracked separately since Boost doesn't expose it)
-	uint64_t current_ai_rng_seed;
+
 	
 	// Current game turn
 	uint32_t current_turn = 0;

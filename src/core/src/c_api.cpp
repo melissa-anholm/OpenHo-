@@ -256,7 +256,7 @@ void game_get_money_allocation(void* game, uint32_t player_id, Player::MoneyAllo
 // ============================================================================
 // AI RNG Seed Management
 // ============================================================================
-uint64_t game_get_ai_rng_seed(void* game)
+	uint64_t game_get_ai_rng_seed(void* game)
 {
 	if (!game) 
 		{ return 0; }
