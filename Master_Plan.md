@@ -62,7 +62,7 @@ The project uses a command-line build system (no Xcode dependency) with CMake fo
 - ✅ ColonizedPlanet refactored to pointer-based composition
 - ✅ PlanetSnapshot struct with factory methods (partial_info, full_info)
 - ✅ Sentinel value constants for unknown/unowned states
-- ✅ Game formulas for apparent gravity (complete) and temperature (complete - linear formula with monotonicity guarantee)
+- ✅ Game formulas for apparent gravity and temperature (both complete - linear formulas with monotonicity guarantee)
 - ✅ Name-based planet lookup system in GameState
 - ✅ Player ideal_gravity and ideal_temperature accessors
 

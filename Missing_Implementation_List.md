@@ -355,8 +355,8 @@ These have clear logic but need implementation. No reverse-engineering needed.
 - `calculate_apparent_gravity()` - Convert true gravity to perceived gravity
   - Depends on: ideal_gravity, true_gravity
   - Notes: Used for planet desirability calculations
-  - Current: Returns true_gravity unchanged
-  - **Key Design Question:** How do we convert from true gravity to perceived gravity for a given player? Linear, or something else?
+  - Current: ✅ IMPLEMENTED - Linear formula: perceived = (best_perceived_gravity / ideal_gravity) * true_gravity
+  - Formula: Both measurements agree at zero gravity (0g → 0g); perceived gravity is monotonic with both true_gravity and ideal_gravity
   
 - `calculate_apparent_temperature()` - Convert true temperature to perceived temperature
   - Depends on: ideal_temperature, true_temperature

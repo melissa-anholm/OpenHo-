@@ -229,10 +229,15 @@ namespace GameFormulas
 // ============================================================================
 double calculate_apparent_gravity(double ideal_gravity, double true_gravity)
 {
-	// For now, apparent gravity equals true gravity
-	// Gravity does not have the same absolute zero constraint as temperature
-	// Future enhancements could add perception effects based on research or other factors
-	return true_gravity;
+	// Linear gravity perception formula
+	// Line passes through (0, 0) and (ideal_gravity, best_perceived_gravity)
+	// Slope = best_perceived_gravity / ideal_gravity
+	// Formula: perceived = (best_perceived_gravity / ideal_gravity) * true_gravity
+	
+	const double slope = GameConstants::best_perceived_gravity / ideal_gravity;
+	double perceived_grav = slope * true_gravity;
+	
+	return perceived_grav;
 }
 
 double calculate_apparent_temperature(double ideal_temperature, double true_temperature)

@@ -231,8 +231,9 @@ namespace GameFormulas
 	// ========================================================================
 
 	/// Calculate how a player perceives a planet's gravity based on their ideal.
-	/// The apparent gravity reflects how suitable the planet is for the player,
-	/// based on the difference between true gravity and ideal gravity.
+	/// Uses a linear model where the perception line passes through (0, 0) and (ideal_gravity, best_perceived_gravity).
+	/// This ensures perceived gravity is monotonic with both true and ideal gravities.
+	/// Formula: perceived = (best_perceived_gravity / ideal_gravity) * true_gravity
 	/// 
 	/// @param ideal_gravity The player's ideal gravity
 	/// @param true_gravity The planet's actual gravity

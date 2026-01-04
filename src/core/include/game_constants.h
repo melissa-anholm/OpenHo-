@@ -14,6 +14,12 @@ namespace GameConstants
 	constexpr double min_gravity = 0.3;
 	constexpr double max_gravity = 4.5;
 	
+	/// Best perceived gravity for any player (1.0g = Earth gravity)
+	/// Used in gravity perception formula: perceived = best_perceived_gravity / ideal_gravity * true_gravity
+	/// This represents the "Goldilocks" gravity that all players perceive as ideal when
+	/// their ideal_gravity matches this value.
+	constexpr double best_perceived_gravity = 1.0;  // Earth gravity
+	
 	// Temperature constants in Kelvin
 	// Range: 40K to 500K (approximately -233°C to 227°C, or -388°F to 440°F)
 	constexpr double min_temp = 40.0;   // Kelvin
@@ -99,8 +105,8 @@ namespace GameConstants
 	/// Suitable gravity range for starting planets [min, max]
 	/// Players' ideal_gravity will be set to their starting planet's true_gravity
 	/// This range ensures starting planets have reasonable gravity values
-	constexpr double Starting_Planet_Min_Gravity = 0.5;
-	constexpr double Starting_Planet_Max_Gravity = 2.0;
+	constexpr double Starting_Planet_Min_Gravity = 0.7;
+	constexpr double Starting_Planet_Max_Gravity = 1.4;
 	
 	/// Starting colony initial values indexed by StartingColonyQuality
 	/// Access: Starting_Colony_Population[START_NORMAL], etc.
