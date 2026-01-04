@@ -36,7 +36,7 @@ GameState::GameState(const class GameSetup& setup)
 	
 	// Initialize galaxy with provided parameters
 	// This also assigns planets to players internally
-	initialize_galaxy(galaxy_params);
+	galaxy = initialize_galaxy(galaxy_params);
 	
 	// Initialize the first turn
 	start_first_turn();
@@ -393,7 +393,7 @@ std::vector<Player> GameState::initialize_players(const std::vector<PlayerSetup>
 	return new_players;
 }
 
-void GameState::initialize_galaxy(const GalaxyGenerationParams& params)
+std::unique_ptr<Galaxy> GameState::initialize_galaxy(const GalaxyGenerationParams& params)
 {
 	// Initialize galaxy with user-provided parameters
 	// Retry if we don't have enough suitable home planets for all players
@@ -402,6 +402,7 @@ void GameState::initialize_galaxy(const GalaxyGenerationParams& params)
 	uint32_t attempt = 0;
 	bool success = false;
 	std::vector<Planet*> suitable_planets;
+	std::unique_ptr<Galaxy> new_galaxy;
 	
 	while (attempt < GameConstants::Galaxy_Gen_Retry_Count && !success)
 	{
@@ -409,7 +410,7 @@ void GameState::initialize_galaxy(const GalaxyGenerationParams& params)
 		GalaxyGenerationParams attempt_params = params;
 		attempt_params.seed = params.seed + attempt;
 		
-		galaxy = std::make_unique<Galaxy>(attempt_params, this);
+		new_galaxy = std::make_unique<Galaxy>(attempt_params, this);
 		
 		// Check if we have enough suitable home planets
 		suitable_planets = find_suitable_home_planets();
@@ -443,6 +444,8 @@ void GameState::initialize_galaxy(const GalaxyGenerationParams& params)
 	
 	// Build entity ID maps for quick lookup
 	build_entity_maps();
+	
+	return new_galaxy;
 }
 
 void GameState::build_entity_maps()
