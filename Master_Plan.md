@@ -1,6 +1,6 @@
 # OpenHo Master Plan
 
-**Last Updated:** January 3, 2026 (Session 5 - Extended)  
+**Last Updated:** January 3, 2026 (Session 5 - Extended - Continued)  
 **Project Status:** Phase 2 - C++ Core Implementation & UI Architecture Planning (In Progress)
 
 ---
@@ -33,7 +33,7 @@ The project uses a command-line build system (no Xcode dependency) with CMake fo
 
 ### Phase 2: C++ Core Implementation (Current)
 
-**Overall Status:** Foundation layer complete, galaxy generation substantially complete, starting planet assignment complete, C API validation layer implemented
+**Overall Status:** Foundation layer complete, galaxy generation substantially complete, starting planet assignment complete, player perception formulas complete, C API validation layer implemented
 
 **Deliverable:** Static library `libOpenHoCore.a` with deterministic game engine
 
@@ -98,7 +98,6 @@ The project uses a command-line build system (no Xcode dependency) with CMake fo
 ---
 
 #### Phase 2b-Extended: GameState Architecture Refactoring & Text Assets
-
 **Status:** ✅ COMPLETE (Session: Jan 1, 2026)
 
 **Objective:** Improve GameState architecture for better separation of concerns; implement text asset management system
@@ -127,11 +126,34 @@ The project uses a command-line build system (no Xcode dependency) with CMake fo
 
 #### Phase 2c: Galaxy Initialization & Random Galaxy Generation
 
-**Status:** ✅ SUBSTANTIALLY COMPLETE (Session: Jan 2, 2026)
+**Status:** ✅ SUBSTANTIALLY COMPLETE (Session: Jan 2-3, 2026)
 
 **Objective:** Generate and populate galaxy with planets; implement robust random galaxy generation with dynamic expansion
 
-**Completed (This Session - Jan 2, 2026):**
+**Completed (Session: Jan 3, 2026 - Galaxy Refactoring):**
+- ✅ Refactored galaxy generation to use staged coordinate/parameter approach
+- ✅ New architecture: generate coordinates → select homes → generate parameters
+- ✅ Implemented `generate_planet_coordinates()` dispatcher method
+- ✅ Implemented `generate_coordinates_random()` with full expansion logic
+- ✅ Implemented `generate_coordinates_grid()` with deterministic spacing
+- ✅ Implemented `select_home_planet_coordinates()` with Fisher-Yates shuffle
+- ✅ Implemented `generate_planet_parameters()` with home planet special handling
+- ✅ Updated Galaxy constructor to use new staged flow
+- ✅ Changed `initialize_galaxy()` to return void (was returning vector)
+- ✅ Moved `assign_planets_random()` call inside `initialize_galaxy()`
+- ✅ Simplified GameState constructor initialization flow
+- ✅ All planets now owned by GameState through Galaxy
+- ✅ Home planets pre-selected during coordinate generation (not discovered after)
+- ✅ Stubbed remaining coordinate methods (spiral, circle, ring, cluster) with TODOs
+
+**Benefits of New Architecture:**
+- Clearer separation of concerns (coordinates → selection → parameters)
+- Home planets known from start, not discovered after generation
+- Easier to add new galaxy shapes
+- No throwaway vectors between functions
+- More maintainable and testable code
+
+**Completed (Session: Jan 2, 2026 - Previous):**
 - ✅ Improved gal_size formula: `sqrt(n_planets) * (5.0 + 6.4 / density)`
 - ✅ Galaxy-centered coordinate system (centered at 0,0 instead of corner)
 - ✅ Dynamic galaxy expansion algorithm:
@@ -196,7 +218,6 @@ The project uses a command-line build system (no Xcode dependency) with CMake fo
 ---
 
 #### Phase 2d: Starting Planet Assignment & Colony Initialization
-
 **Status:** ✅ COMPLETE (Session: Jan 2, 2026)
 
 **Objective:** Assign starting planets to players; initialize colony values based on quality levels
@@ -224,220 +245,60 @@ The project uses a command-line build system (no Xcode dependency) with CMake fo
   - Creates ColonizedPlanet with quality-based values
   - Updates player_planets mapping
   - Logs assignment details
-- ✅ Quality progression (0.5× to 2.0× baseline):
-  - START_OUTPOST: Minimal (0.5×)
-  - START_BARREN: Low (0.75×)
-  - START_BACKWARD: Below normal (0.875×)
-  - START_NORMAL: Baseline (1.0×)
-  - START_ADVANCED: Above normal (1.25×)
-  - START_THRIVING: High (1.5×)
-  - START_ABUNDANT: Very high (2.0×)
-- ✅ TODO marker for future value adjustments during balance testing
-
-**Architecture Decisions:**
-- Player's ideal_gravity set to starting planet's true_gravity (eliminates immutability issues)
-- Suitable planet filtering ensures reasonable starting conditions
-- Quality-indexed arrays enable easy tuning of starting values
-- Deterministic RNG ensures reproducible planet assignment
-
-**Remaining (Next Session):**
-- [ ] Implement gravity mismatch for START_OUTPOST (gravity doesn't match ideal)
-- [ ] Implement error handling for insufficient suitable planets
-- [ ] Differentiate colony values by quality level (currently uniform)
-- [ ] Implement metal field in ColonizedPlanet if needed
 
 ---
 
-## Implementation Notes
+#### Phase 2e: Player Ideal Temperature & Gravity Perception
+**Status:** ✅ COMPLETE (Session: Jan 3, 2026)
 
-### Key Design Decisions (Updated)
+**Objective:** Implement linear perception formulas for temperature and gravity; assign ideal values to players
 
-1. **Dual RNG Engines:**
-   - `deterministicRNG`: Shared game mechanics (reproducible across all players)
-   - `aiRNG`: AI decisions (seeded each turn by host, allows variation)
+**Completed (This Session):**
+- ✅ Implemented linear temperature perception formula:
+  - `perceived_temperature = (best_perceived_temperature_K / ideal_temperature) × true_temperature`
+  - Passes through absolute zero (0K → 0K)
+  - Monotonic with both true_temperature and ideal_temperature
+  - Added constant `best_perceived_temperature_K = 295.37223` (approximately 72°F)
+  - Added constant `ideal_temp_range = 55.0` (one-sided range in Kelvin)
 
-2. **Galaxy Coordinate System:**
-   - Centered at (0, 0) for symmetrical expansion
-   - Initial bounds: `[-gal_size/2, gal_size/2]` for both x and y
-   - Expands dynamically around center as needed
+- ✅ Implemented linear gravity perception formula:
+  - `perceived_gravity = (best_perceived_gravity / ideal_gravity) × true_gravity`
+  - Passes through zero gravity (0g → 0g)
+  - Monotonic with both true_gravity and ideal_gravity
+  - Added constant `best_perceived_gravity = 1.0` (Earth gravity)
 
-3. **Starting Planet Assignment:**
-   - Gravity range [0.5, 2.0] ensures reasonable starting conditions
-   - Player's ideal_gravity set to starting planet's true_gravity
-   - Eliminates need to modify immutable true_gravity
-   - Ensures apparent_gravity = true_gravity initially (no penalty)
+- ✅ Implemented player ideal temperature assignment:
+  - Truncated Gaussian distribution centered on `best_perceived_temperature_K`
+  - σ = `ideal_temp_range` (55K)
+  - Range: [240.37K, 350.37K]
+  - Assigned during `initialize_players()`
 
-4. **Quality-Indexed Arrays:**
-   - All starting colony values indexed by StartingColonyQuality enum
-   - Enables easy tuning and differentiation by quality level
-   - TODO markers remind to adjust values during balance testing
+- ✅ Implemented player ideal gravity assignment:
+  - Already done in `assign_planets_random()` (set to starting planet's true_gravity)
+  - Now also supports gravity range constants for home planets
+  - Updated `Starting_Planet_Min_Gravity = 0.7` and `Starting_Planet_Max_Gravity = 1.4`
 
-### Recent Commits (Session 4 - Jan 3, 2026)
+- ✅ Updated homeworld temperature assignment:
+  - Homeworld temperature set to match player's ideal_temperature
+  - Ensures players start on planets perfectly suited to their preferences
 
-1. `6f54cca` - Implement galaxy generation validation and retry logic
-2. `0c08966` - Add TODO reminders for cluster and spiral galaxies
-3. `cffb6dd` - Implement per-player ideal_gravity assignment with START_OUTPOST randomization
+- ✅ Added RNG normal distribution support:
+  - Added `nextNormal(mean, sigma)` method to RNG class
+  - Added `nextNormalTruncated(mean, sigma, min, max)` with rejection sampling
 
-### Previous Commits (Session 3 - Jan 2, 2026)
+- ✅ Improved RNG seed management:
+  - Added `getDeterministicSeed()` getter method
+  - Fixed `getAISeed()` to return stored value (not placeholder 0)
+  - Added seed storage member variables
+  - Updated GameState to use `std::random_device` for non-deterministic seeding
+  - Eliminated hardcoded 0 seed values
 
-1. `8ed7cda` - Implement spatial grid for planet collision detection
-2. `b184f0c` - Implement improved galaxy size formula for random shape
-3. `abeaa9e` - Update gal_size calculation in initialize_planets_random
-4. `3ef8118` - Implement galaxy expansion algorithm with dynamic boundaries
-5. `d2eb995` - Implement starting planet assignment for random galaxies
-6. `9307af8` - Add quality-indexed arrays for starting colony values
-7. `c9a05f6` - Add TODO reminder for starting colony value adjustments
-
----
-
-## C API Architecture & UI Integration (Session 5 Planning)
-
-### Design Principles
-
-**C API serves as the bridge between UI and C++ core:**
-- UI accesses Player data and actions through Player C API
-- UI accesses GameState for turn management and game-level queries
-- All player-specific actions (spending, ship design, fleet building) go through Player API
-- All validation happens in GameState (centralized, auditable)
-
-### API Structure
-
-**GameState C API (existing + new):**
-- Turn management: `game_process_turn()`, `game_mark_player_turn_ready()`
-- Turn queries: `game_get_turn_status()`, `game_get_current_year()`, `game_get_current_turn()`
-- Entity access: `game_get_player()`, `game_get_planet()`, `game_get_fleet()`
-- Validation & Actions: `game_can_player_build_fleet()`, `game_player_build_fleet()`, etc.
-
-**Player C API (new):**
-- Spending allocation: `player_set_spending_allocation()`, `player_get_spending_allocation()`
-- Ship design: `player_design_ship()`, `player_get_ship_designs()`, `player_delete_ship_design()`
-- Fleet building: `player_build_fleet()`, `player_get_fleets()`, `player_move_fleet()`, `player_delete_fleet()`
-- Planet management: `player_get_colonized_planets()`, `player_set_planet_allocation()`
-- Read-only access: `player_get_ideal_gravity()`, `player_get_ideal_temperature()`, `player_get_money()`, etc.
-
-### Validation Strategy
-
-**Three layers of validation:**
-1. **UI-side (preventive):** Don't show invalid options (e.g., unavailable tech levels)
-2. **GameState-side (defensive):** Validate all player actions before execution
-3. **Player-side (internal):** Maintain state consistency
-
-**Validation pattern:**
-- `game_can_player_build_fleet(player_id, design_id, ship_count, planet_id)` → error_code
-- `game_player_build_fleet(player_id, design_id, ship_count, planet_id)` → error_code
-- Error codes map to specific failure reasons (insufficient funds, invalid tech, planet not owned, etc.)
-
-### Key Architectural Decisions
-
-- **Player holds GameState pointer:** For internal fleet ID allocation and validation
-- **GameState owns all validation:** Centralized, easier to audit and maintain
-- **Error codes instead of exceptions:** Better for C API, easier to map to UI feedback
-- **Immediate execution:** Player actions take effect immediately (not queued)
-- **Turn processing is game-level:** UI calls `game_process_turn()` when all players are ready
+**Formulas Verified:**
+- Both formulas create straight lines through origin and (ideal_value, best_perceived_value)
+- Tested with ideal values [0.7, 1.0, 1.3] for gravity and [270, 290, 310] for temperature
+- All plots confirmed monotonicity and correct behavior
 
 ---
-
-## Next Steps
-
-**Immediate (Phase 2d continuation - Session 4 Complete):**
-- ✅ Implement galaxy generation validation and retry logic (up to 5 attempts)
-- ✅ Implement per-player ideal_gravity assignment
-- ✅ Implement START_OUTPOST randomization (±0.20, constrained, rounded to 2 decimals)
-- ✅ Fix initialization flow and eliminate inefficiency
-- [ ] Test starting planet assignment with various configurations
-- [ ] Validate START_OUTPOST gravity randomization
-
-**Next (Phase 2d continuation):**
-- [ ] Implement gravity mismatch penalty for START_OUTPOST
-- [ ] Add validation for edge cases
-- [ ] Test with multiple player configurations
-
----
-
-## UI Architecture & C API Strategy (Session 5)
-
-**Decision:** Player-centric C API design with GameState validation layer
-
-**Architecture:**
-```
-UI ↔ C API (thin wrapper) ↔ GameState (validation) ↔ Player (actions)
-```
-
-**Key Principles:**
-1. **Player C API:** Direct access to Player class methods for frequent UI operations
-2. **GameState Validation:** All validation logic centralized in GameState with `check_*` methods
-3. **Separation of Concerns:** C API is a thin bridge; business logic stays in C++ core
-4. **Error Codes:** Comprehensive enum for UI error handling and feedback
-
-**Implemented (Session 5):**
-- ✅ Error code system (23 consolidated codes)
-- ✅ Player getter methods (money, metal, income, tech levels, allocation)
-- ✅ GameState validation methods:
-  - `check_player_build_fleet()` - resource and ownership validation
-  - `check_player_design_ship()` - design constraints validation
-  - `check_player_set_spending_allocation()` - allocation fraction validation
-  - `check_player_move_fleet()` - fleet state validation
-  - `check_player_set_planet_allocation()` - planet allocation validation
-- ✅ C API wrappers with validation-then-delegate pattern
-
-**TODO (Reminders from earlier sessions):**
-- Min planets and homeworld assignment strategy needs rework for cluster/spiral galaxies
-- Integrate into planet initialization routines for each shape
-
-**Short-term (Phase 2c continuation):**
-- Implement spiral, circle, ring, and cluster galaxy distribution algorithms
-- Consider Poisson disk sampling for circle/ring/cluster shapes
-- Test all galaxy shapes with various parameters
-- Rework min planets/homeworld assignment for cluster and spiral shapes
-
-**Medium-term (Phase 2e - Game Mechanics):**
-- Implement turn processing with income/interest calculations
-- Implement production and construction systems
-- Implement fleet movement and combat mechanics
-- Implement technology research system
-
-**Long-term (Phase 3 - UI):**
-- Objective-C++ bridging layer
-- SwiftUI user interface
-- macOS application packaging
-
----
-
----
-## Session 5 Summary: UI Architecture & Implementation Foundations
-
-### Major Accomplishments
-
-**1. UI Architecture Design (Approved)**
-- Established Player-centric C API design
-- Centralized validation in GameState
-- Thin wrapper pattern for C API
-- Per-player starting colony quality support
-- Clear separation of concerns
-
-**2. Error Code System**
-- Created comprehensive error code enum (23 codes)
-- Consolidated duplicates (removed 7 redundant codes)
-- Covers all validation scenarios
-- Ready for UI error handling
-
-**3. C API Validation Layer**
-- Added validation methods to GameState (check_player_*)
-- Added getter methods to Player class
-- Implemented check/action pattern for all player operations
-- Updated C API wrappers to delegate to core methods
-
-**4. Planet Desirability Rating**
-- Implemented placeholder (all planets get desirability 3)
-- Integrated into turn processing
-- Infrastructure ready for real formula
-- Stored with ColonizedPlanet, recalculated each turn
-
-**5. Documentation**
-- Created Missing_Implementation_List.md (20 items)
-- Categorized by data-driven vs non-data-driven
-- Added design questions for each category
-- Provided reverse-engineering approaches
 
 ### Key Design Decisions
 
@@ -457,17 +318,25 @@ UI ↔ C API (thin wrapper) ↔ GameState (validation) ↔ Player (actions)
 - Recalculated at start of turn processing
 - Placeholder: all planets maximally desirable
 
-### Recent Commits (Session 5 Extended)
+**Player Perception Model:**
+- Linear formulas for temperature and gravity perception
+- Both pass through zero/origin point
+- Monotonic with true values
+- Ensures consistent player experience across different ideal values
 
-1. `cffb6dd` - Implement per-player ideal_gravity assignment with START_OUTPOST randomization
-2. `69b8b8b` - Rename MASTER_PLAN.md to Master_Plan.md and update with Session 4 progress
-3. `586c644` - Implement Player C API wrapper and GameState validation layer
-4. `88d01a9` - Consolidate duplicate error codes
-5. `d4231f9` - Add validation methods to GameState and getter methods to Player
-6. `c5a14ae` - Update Missing_Implementation_List.md with corrected categorizations
-7. `ab582bc` - Add galaxy shape distribution algorithms to Missing_Implementation_List.md
-8. `b8b90cf` - Add planet desirability rating to Missing_Implementation_List.md
-9. `5507477` - Implement placeholder planet desirability rating (1-3 scale)
+---
+
+### Recent Commits (Session 5 Extended - Continued)
+
+1. `e6710c6` - Refactor galaxy generation to use staged coordinate/parameter approach
+2. `bd27e5a` - Implement gravity perception formula and update gravity constants
+3. `fe7287b` - Implement player ideal temperature assignment and temperature perception formula
+4. `cffb6dd` - Implement per-player ideal_gravity assignment with START_OUTPOST randomization
+5. `69b8b8b` - Rename MASTER_PLAN.md to Master_Plan.md and update with Session 4 progress
+6. `586c644` - Implement Player C API wrapper and GameState validation layer
+7. `88d01a9` - Consolidate duplicate error codes
+8. `d4231f9` - Add validation methods to GameState and getter methods to Player
+9. `c5a14ae` - Update Missing_Implementation_List.md with corrected categorizations
 
 ---
 
