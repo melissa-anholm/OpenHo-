@@ -34,13 +34,12 @@ struct PlayerPublicInfo
 	int32_t tech_mini;
 	
 	// Resources
-		int64_t money_income;
-		int64_t money_savings;
-		int64_t metal_savings;
+	int64_t money_income;
+	int64_t money_savings;
+	int64_t metal_savings;
 		
 	// Territory
-		uint32_t planets_owned;
-
+	uint32_t planets_owned;
 	
 	// Calculated metrics
 	int64_t ship_power;

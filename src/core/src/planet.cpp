@@ -13,7 +13,7 @@ Planet::Planet(
 	double p_true_gravity,
 	double p_true_temperature,
 	int32_t p_metal,
-	PlayerID p_owner)
+	PlayerID p_owner )
 	: id(p_id),
 	  name(p_name),
 	  x(p_x),
@@ -23,8 +23,7 @@ Planet::Planet(
 	  metal(p_metal),
 	  owner(p_owner),
 	  nova_state(PLANET_NORMAL)
-{
-}
+{ }
 
 // ============================================================================
 // ColonizedPlanet Implementation
@@ -62,7 +61,6 @@ void ColonizedPlanet::update_desirability()
 // ============================================================================
 // PlanetSnapshot Implementation
 // ============================================================================
-
 PlanetSnapshot PlanetSnapshot::partial_info(const Planet& planet, PlayerID player_id)
 {
 	PlanetSnapshot snapshot;

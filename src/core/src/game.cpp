@@ -45,32 +45,12 @@ GameState::GameState(const class GameSetup& setup)
 // ============================================================================
 // GameState Destructor
 // ============================================================================
-
 GameState::~GameState()
 { }
 
 // ============================================================================
-// Accessors
+// Player Accessors
 // ============================================================================
-
-Galaxy& GameState::get_galaxy()
-{
-	return *galaxy;
-}
-const Galaxy& GameState::get_galaxy() const
-{
-	return *galaxy;
-}
-
-DeterministicRNG& GameState::get_rng()
-{
-	return *rng;
-}
-const DeterministicRNG& GameState::get_rng() const
-{
-	return *rng;
-}
-
 Player* GameState::get_player(uint32_t player_id)
 {
 	auto it = player_id_to_index.find(player_id);
@@ -178,48 +158,9 @@ const std::vector<size_t>& GameState::get_player_planets(uint32_t player_id) con
 	return it->second;
 }
 
-uint32_t GameState::get_num_players() const
-{
-	return static_cast<uint32_t>(players.size());
-}
-
-const std::vector<Player>& GameState::get_players() const
-{
-	return players;
-}
-
-std::vector<Player>& GameState::get_players()
-{
-	return players;
-}
-
-void GameState::increment_year()
-{
-	current_year += 10;
-}
-void GameState::increment_turn()
-{
-	current_turn++;
-}
-
-uint32_t GameState::get_current_year() const
-{
-	return current_year;
-}
-uint32_t GameState::get_current_turn() const
-{
-	return current_turn;
-}
-
-uint32_t GameState::allocate_fleet_id()
-{
-	return next_fleet_id++;
-}
-
 // ============================================================================
 // Money Allocation
 // ============================================================================
-
 void GameState::set_money_allocation(uint32_t player_id, const Player::MoneyAllocation& money_alloc)
 {
 	Player* player = get_player(player_id);
@@ -236,30 +177,6 @@ const Player::MoneyAllocation& GameState::get_money_allocation(uint32_t player_i
 		throw std::runtime_error("Player not found");
 	
 	return player->allocation;
-}
-
-
-// ============================================================================
-// RNG Seed Accessors
-// ============================================================================
-uint64_t GameState::get_deterministic_seed() const
-{
-	return rng->getDeterministicSeed();
-}
-
-void GameState::set_deterministic_seed(uint64_t seed)
-{
-	rng->setDeterministicSeed(seed);
-}
-
-uint64_t GameState::get_ai_rng_seed() const
-{
-	return rng->getAISeed();
-}
-
-void GameState::set_ai_rng_seed(uint64_t seed)
-{
-	rng->setAISeed(seed);
 }
 
 // ============================================================================
@@ -303,7 +220,6 @@ void GameState::process_turn()
 // ============================================================================
 // Serialization
 // ============================================================================
-
 std::vector<uint8_t> GameState::serialize_state() const
 {
 	// Placeholder for serialization
@@ -322,7 +238,6 @@ bool GameState::deserialize_state(const std::vector<uint8_t>& data)
 // ============================================================================
 // Private Helper Methods
 // ============================================================================
-
 std::vector<Player> GameState::initialize_players(const std::vector<PlayerSetup>& player_setups)
 {
 	// Initialize players based on setup configuration
@@ -412,7 +327,7 @@ std::unique_ptr<Galaxy> GameState::initialize_galaxy(const GalaxyGenerationParam
 	if (home_planets.size() < players.size())
 	{
 		throw std::runtime_error("Galaxy has insufficient home planets (" + std::to_string(home_planets.size()) + 
-		                         ") for " + std::to_string(players.size()) + " players.");
+		     ") for " + std::to_string(players.size()) + " players.");
 	}
 	
 	// Assign home planets to players
@@ -904,49 +819,8 @@ void GameState::refuel_fleet(uint32_t player_id, uint32_t fleet_id)
 	fleet->refuel();
 }
 
-
-
-// ============================================================================
-// Starting Planet Assignment (for random galaxies)
-// ============================================================================
-
-std::vector<Planet*> GameState::find_suitable_home_planets() const
-{
-	std::vector<Planet*> suitable_planets;
-	
-	// Filter planets by gravity range
-	for (Planet& planet : galaxy->planets)
-	{
-		// Check if gravity is within suitable range
-		if (planet.true_gravity >= GameConstants::Starting_Planet_Min_Gravity &&
-		    planet.true_gravity <= GameConstants::Starting_Planet_Max_Gravity)
-		{
-			// Check if planet is not already owned
-			if (planet.owner == NOT_OWNED)
-			{
-				suitable_planets.push_back(&planet);
-			}
-		}
-	}
-	
-	return suitable_planets;
-}
-
-
 void GameState::assign_planets_random(const std::vector<Planet*>& suitable_planets)
 {
-	// Assign suitable planets to players based on their starting colony quality
-	// suitable_planets vector is passed in to avoid recalculating it
-	
-	// Validate that we have enough suitable planets
-	if (suitable_planets.size() < players.size())
-	{
-		std::cerr << "ERROR: Not enough suitable home planets (" << suitable_planets.size() 
-		          << ") for " << players.size() << " players.\n";
-		// TODO: Implement error handling strategy
-		return;
-	}
-	
 	// Create a mutable copy of suitable_planets for shuffling
 	std::vector<Planet*> shuffled_planets = suitable_planets;
 	
@@ -973,14 +847,10 @@ void GameState::assign_planets_random(const std::vector<Planet*>& suitable_plane
 		{
 			// For START_OUTPOST, randomize ideal_gravity within +/-0.20 of true_gravity
 			// But constrain to [Starting_Planet_Min_Gravity, Starting_Planet_Max_Gravity]
-			double min_ideal = std::max(
-				planet->true_gravity - 0.20,
-				GameConstants::Starting_Planet_Min_Gravity
-			);
-			double max_ideal = std::min(
-				planet->true_gravity + 0.20,
-				GameConstants::Starting_Planet_Max_Gravity
-			);
+			double min_ideal = std::max( planet->true_gravity - 0.20,
+				GameConstants::Starting_Planet_Min_Gravity );
+			double max_ideal = std::min( planet->true_gravity + 0.20,
+				GameConstants::Starting_Planet_Max_Gravity );
 			
 			// Generate random value in range [min_ideal, max_ideal]
 			double random_offset = rng->nextDouble() * (max_ideal - min_ideal);
@@ -995,18 +865,16 @@ void GameState::assign_planets_random(const std::vector<Planet*>& suitable_plane
 			ideal_gravity = planet->true_gravity;
 		}
 		
-			player.ideal_gravity = ideal_gravity;
-			
-			// Adjust homeworld temperature to match player's ideal_temperature
-			planet->true_temperature = player.ideal_temperature;
-			
-			// Create ColonizedPlanet entry for this player with quality-based values
+		player.ideal_gravity = ideal_gravity;
+		
+		// Adjust homeworld temperature to match player's ideal_temperature
+		planet->true_temperature = player.ideal_temperature;
+		
+		// Create ColonizedPlanet entry for this player with quality-based values
 		ColonizedPlanet colonized_planet(
-			planet,
-			&player,
-			GameConstants::Starting_Colony_Population[setup.starting_colony_quality],
-			GameConstants::Starting_Colony_Income[setup.starting_colony_quality]
-		);
+		planet, &player,
+		GameConstants::Starting_Colony_Population[setup.starting_colony_quality],
+		GameConstants::Starting_Colony_Income[setup.starting_colony_quality] );
 		
 		// TODO: Set metal based on quality (add to ColonizedPlanet if needed)
 		
@@ -1033,23 +901,22 @@ void GameState::assign_planets_random(const std::vector<Planet*>& suitable_plane
 // ============================================================================
 // Validation Methods (check_* pattern)
 // ============================================================================
-
 ErrorCode GameState::check_player_build_fleet(uint32_t player_id, uint32_t design_id, uint32_t ship_count, uint32_t planet_id) const
 {
 	// Check player exists
 	const Player* player = get_player(player_id);
 	if (!player)
-		return ErrorCode::INVALID_PLAYER_ID;
+		{ return ErrorCode::INVALID_PLAYER_ID; }
 	
 	// Check design exists and belongs to player
 	const ShipDesign* design = get_ship_design(player_id, design_id);
 	if (!design)
-		return ErrorCode::SHIP_DESIGN_NOT_FOUND;
+		{ return ErrorCode::SHIP_DESIGN_NOT_FOUND; }
 	
 	// Check planet exists
 	const Planet* planet = get_planet(planet_id);
 	if (!planet)
-		return ErrorCode::INVALID_PLANET_ID;
+		{ return ErrorCode::INVALID_PLANET_ID; }
 	
 	// Check player owns the planet
 	bool owns_planet = false;
@@ -1062,16 +929,16 @@ ErrorCode GameState::check_player_build_fleet(uint32_t player_id, uint32_t desig
 		}
 	}
 	if (!owns_planet)
-		return ErrorCode::PLANET_NOT_OWNED;
+		{ return ErrorCode::PLANET_NOT_OWNED; }
 	
 	// Check ship count is valid
 	if (ship_count == 0)
-		return ErrorCode::INVALID_FLEET_SIZE;
+		{ return ErrorCode::INVALID_FLEET_SIZE; } 
 	
 	// Check player has sufficient money/metal for fleet construction
 	int64_t total_cost = design->metal_cost * ship_count;
 	if (player->get_metal() < total_cost)
-		return ErrorCode::INSUFFICIENT_METAL;
+		{ return ErrorCode::INSUFFICIENT_METAL; }
 	
 	return ErrorCode::SUCCESS;
 }
@@ -1081,17 +948,17 @@ ErrorCode GameState::check_player_design_ship(uint32_t player_id, const std::str
 	// Check player exists
 	const Player* player = get_player(player_id);
 	if (!player)
-		return ErrorCode::INVALID_PLAYER_ID;
+		{ return ErrorCode::INVALID_PLAYER_ID; }
 	
 	// Check design name is not empty
 	if (name.empty())
-		return ErrorCode::INVALID_PARAMETER;
+		{ return ErrorCode::INVALID_PARAMETER; } 
 	
 	// Check design name is not duplicate
 	for (const auto& design : player->get_ship_designs())
 	{
 		if (design.name == name)
-			return ErrorCode::DESIGN_NAME_DUPLICATE;
+			{ return ErrorCode::DESIGN_NAME_DUPLICATE; }
 	}
 	
 	// Check design limit not reached (max 100)
@@ -1100,28 +967,18 @@ ErrorCode GameState::check_player_design_ship(uint32_t player_id, const std::str
 	
 	// Check tech levels are available to player
 	const auto& tech = player->get_tech_levels();
-	if (tech_range > tech.range)
+	if (type==SHIP_SATELLITE && tech_range != 0)
 		return ErrorCode::TECH_LEVEL_NOT_AVAILABLE;
-	if (tech_speed > tech.speed)
+	if (tech_range > tech.range || (tech_range < 1 && type!=SHIP_SATELLITE) )
 		return ErrorCode::TECH_LEVEL_NOT_AVAILABLE;
-	if (tech_weapons > tech.weapons)
+	if (tech_speed > tech.speed || tech_speed < 2)
 		return ErrorCode::TECH_LEVEL_NOT_AVAILABLE;
-	if (tech_shields > tech.shields)
+	if (tech_weapons > tech.weapons || tech_weapons < 1)
 		return ErrorCode::TECH_LEVEL_NOT_AVAILABLE;
-	if (tech_mini > tech.mini)
+	if (tech_shields > tech.shields || tech_shields < 1)
 		return ErrorCode::TECH_LEVEL_NOT_AVAILABLE;
-	
-	// Check tech levels are in valid range (0-10)
-	if (tech_range < 0 || tech_range > 10)
-		return ErrorCode::INVALID_PARAMETER;
-	if (tech_speed < 0 || tech_speed > 10)
-		return ErrorCode::INVALID_PARAMETER;
-	if (tech_weapons < 0 || tech_weapons > 10)
-		return ErrorCode::INVALID_PARAMETER;
-	if (tech_shields < 0 || tech_shields > 10)
-		return ErrorCode::INVALID_PARAMETER;
-	if (tech_mini < 0 || tech_mini > 10)
-		return ErrorCode::INVALID_PARAMETER;
+	if (tech_mini > tech.mini || tech_mini < 0)
+		return ErrorCode::TECH_LEVEL_NOT_AVAILABLE;
 	
 	return ErrorCode::SUCCESS;
 }

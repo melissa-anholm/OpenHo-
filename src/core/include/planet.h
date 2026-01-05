@@ -90,8 +90,7 @@ public:
 			normalize();
 		}
 		PlanetaryBudgetSplit(double input_mining = 0.3, double input_terra = 0.7)
-			: mining_fraction(input_mining)
-			, terraforming_fraction(input_terra)
+			: mining_fraction(input_mining), terraforming_fraction(input_terra)
 		{
 			positive_normalize();
 		}

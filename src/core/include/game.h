@@ -31,13 +31,31 @@ public:
 	~GameState();
 	
 	// Game state access
-	Galaxy& get_galaxy();
-	const Galaxy& get_galaxy() const;
-	
+	Galaxy& get_galaxy()
+		{ return *galaxy; }
+	const Galaxy& get_galaxy() const
+		{ return *galaxy; }
+
 	// RNG access
-	DeterministicRNG& get_rng();
-	const DeterministicRNG& get_rng() const;
+	DeterministicRNG& get_rng()
+		{ return *rng; }
+	const DeterministicRNG& get_rng() const
+		{ return *rng; }
 	
+	//
+	uint32_t get_num_players() const
+		{ return static_cast<uint32_t>(players.size()); }
+	uint32_t get_current_turn() const
+		{ return current_turn; }
+	uint32_t get_current_year() const
+		{ return current_year; }
+	
+	// Get all players (for iteration)
+	const std::vector<Player>& get_players() const
+		{ return players; }
+	std::vector<Player>& get_players()
+		{ return players; }
+
 	// Player access
 	[[nodiscard]] Player* get_player(uint32_t player_id);
 	[[nodiscard]] const Player* get_player(uint32_t player_id) const;
@@ -52,29 +70,20 @@ public:
 	
 	// Get all planets owned by a player (O(1) lookup)
 	const std::vector<size_t>& get_player_planets(uint32_t player_id) const;
-	
-	// Get number of players
-	uint32_t get_num_players() const;
-	
-	// Get current turn
-	uint32_t get_current_turn() const;
-	
-	// Get current year
-	uint32_t get_current_year() const;
-	
+		
 	// Allocate a globally unique fleet ID
 	[[nodiscard]] uint32_t allocate_fleet_id();
+		{ return next_fleet_id++; }
 	
-	// Get all players (for iteration)
-	const std::vector<Player>& get_players() const;
-	std::vector<Player>& get_players();
 	
 	// Initialize the first turn (called during game initialization)
 	void start_first_turn();
 	
 	// Increment turn and year (called at end of process_turn)
-	void increment_turn();
-	void increment_year();
+	void increment_turn()
+		{ current_turn++; }
+	void increment_year()
+		{ current_year += 10; }
 	
 	
 	// Player property accessors (for C API and internal use)
@@ -136,16 +145,29 @@ public:
 	[[nodiscard]] ErrorCode check_player_set_planet_allocation(uint32_t player_id, uint32_t planet_id, double mining_frac, double terraforming_frac) const;
 	
 	// RNG seed accessors (delegates to RNG)
-	uint64_t get_deterministic_seed() const;
-	void set_deterministic_seed(uint64_t seed);
-	uint64_t get_ai_rng_seed() const;
-	void set_ai_rng_seed(uint64_t seed);
+	uint64_t get_deterministic_seed() const
+		{ return rng->getDeterministicSeed(); }
+	void set_deterministic_seed(uint64_t seed)
+		{ rng->setDeterministicSeed(seed); }
+	uint64_t get_ai_rng_seed() const
+		{ return rng->getAISeed(); }
+	void set_ai_rng_seed(uint64_t seed)
+		{ rng->setAISeed(seed); }
+	
 	
 	// Serialization
 	[[nodiscard]] std::vector<uint8_t> serialize_state() const;
 	[[nodiscard]] bool deserialize_state(const std::vector<uint8_t>& data);
 	
 private:
+	// Current game turn
+	uint32_t current_turn = 0;
+	// Current game year (starts at 2000, increments by 10 per turn)
+	uint32_t current_year = 2000;
+	// Fleet ID allocation (globally unique across all players)
+	uint32_t next_fleet_id = 1;
+	
+	
 	// Game state
 	std::unique_ptr<Galaxy> galaxy;  // Initialized in constructor with params
 	std::vector<Player> players;  // All players in the game
@@ -179,24 +201,12 @@ private:
 	// Player public information history: player_id -> vector of PlayerPublicInfo (one per turn)
 	std::unordered_map<uint32_t, std::vector<PlayerPublicInfo>> player_info_history;
 	
-
-	
-	// Current game turn
-	uint32_t current_turn = 0;
-	
-	// Current game year (starts at 2000, increments by 10 per turn)
-	uint32_t current_year = 2000;
-	
-	// Fleet ID allocation (globally unique across all players)
-	uint32_t next_fleet_id = 1;
 	
 	// Private helper methods
 	std::vector<Player> initialize_players(const std::vector<PlayerSetup>& player_setups);
 	std::unique_ptr<Galaxy> initialize_galaxy(const GalaxyGenerationParams& params);
 	void build_entity_maps();
 	
-	// Starting planet assignment (for random galaxies)
-	std::vector<Planet*> find_suitable_home_planets() const;
 	// Assign suitable planets to players based on their starting colony quality
 	// Takes the suitable planets vector to avoid recalculating it
 	void assign_planets_random(const std::vector<Planet*>& suitable_planets);
