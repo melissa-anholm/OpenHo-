@@ -4,10 +4,10 @@
 #include "game_formulas.h"
 
 // ============================================================================
-// PlanetSnapshot Implementation
+// KnowledgePlanet Implementation
 // ============================================================================
 
-PlanetSnapshot::PlanetSnapshot(const Planet& planet, PlayerID player_id)
+KnowledgePlanet::KnowledgePlanet(const Planet& planet, PlayerID player_id)
 	: id(planet.id),
 	  name(planet.name),
 	  x(planet.x),
@@ -27,7 +27,7 @@ PlanetSnapshot::PlanetSnapshot(const Planet& planet, PlayerID player_id)
 	perceived_value = PERCEIVED_VALUE_UNKNOWN;
 }
 
-void PlanetSnapshot::observe_planet(const Planet& planet, const Player* observer, int32_t current_year)
+void KnowledgePlanet::observe_planet(const Planet& planet, const Player* observer, int32_t current_year)
 {
 	// Update observable fields based on current planet state
 	// Note: nova_state is NOT updated by this method
@@ -50,9 +50,9 @@ void PlanetSnapshot::observe_planet(const Planet& planet, const Player* observer
 	perceived_value = PERCEIVED_VALUE_UNKNOWN;
 }
 
-PlanetSnapshot PlanetSnapshot::full_info(const Planet& planet, PlayerID player_id, const Player* observer)
+KnowledgePlanet KnowledgePlanet::full_info(const Planet& planet, PlayerID player_id, const Player* observer)
 {
-	PlanetSnapshot snapshot(planet, player_id);
+	KnowledgePlanet snapshot(planet, player_id);
 	snapshot.observe_planet(planet, observer, 0);  // Year 0 for initial observation
 	return snapshot;
 }

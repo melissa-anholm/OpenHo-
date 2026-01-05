@@ -141,7 +141,7 @@ constexpr int64_t INCOME_UNKNOWN = INT32_MIN;
 constexpr uint32_t NOT_OWNED = 0;
 constexpr uint32_t OWNER_UNKNOWN = UINT32_MAX;
 
-// Sentinel values for PlanetSnapshot unknown states
+// Sentinel values for KnowledgePlanet unknown states
 constexpr int32_t OBSERVATION_YEAR_UNKNOWN = -1;
 constexpr int32_t PROFITABILITY_UNKNOWN = -1;
 constexpr int32_t PERCEIVED_VALUE_UNKNOWN = -1;

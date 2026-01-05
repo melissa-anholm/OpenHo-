@@ -17,12 +17,11 @@ typedef double GalaxyCoord;
 class Player;
 
 // ============================================================================
-// PlanetSnapshot Class (Foundation for KnowledgePlanet)
+// KnowledgePlanet Class
 // ============================================================================
 
 // Planet information snapshot (what a player knows about a planet)
-// This will eventually become the KnowledgePlanet class
-class PlanetSnapshot
+class KnowledgePlanet
 {
 public:
 	// Core planet identity - set at construction, should not be modified
@@ -48,14 +47,14 @@ public:
 	PlanetNovaState nova_state;
 	
 	// Default constructor - initializes with partial info (id, name, coordinates only)
-	PlanetSnapshot(const Planet& planet, PlayerID player_id);
+	KnowledgePlanet(const Planet& planet, PlayerID player_id);
 	
 	// Update snapshot with current observation of the planet
 	void observe_planet(const Planet& planet, const Player* observer, int32_t current_year);
 	
 	// Factory method to create full info snapshot
 	// full_info: all available fields are copied with apparent values calculated
-	static PlanetSnapshot full_info(const Planet& planet, PlayerID player_id, const Player* observer);
+	static KnowledgePlanet full_info(const Planet& planet, PlayerID player_id, const Player* observer);
 };
 
 #endif // OPENHO_KNOWLEDGE_PLANET_H

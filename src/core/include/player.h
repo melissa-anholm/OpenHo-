@@ -230,7 +230,7 @@ class Player
 	std::vector<ColonizedPlanet> colonized_planets;
 	
 	// Fog of war: player's knowledge of planets
-	std::vector<PlanetSnapshot> planetKnowledge;
+	std::vector<KnowledgePlanet> planetKnowledge;
 	
 	// Ship designs
 	std::vector<ShipDesign> ship_designs;      // All designs, ordered by creation (max 100)
