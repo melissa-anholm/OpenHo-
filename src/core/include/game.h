@@ -213,6 +213,7 @@ private:
 	
 	std::vector<Player> initialize_players(const std::vector<PlayerSetup>& player_setups);
 	std::unique_ptr<Galaxy> initialize_galaxy(const GalaxyGenerationParams& params);
+	void initialize_player_knowledge();
 	void build_entity_maps();
 	
 	// Assign suitable planets to players based on their starting colony quality

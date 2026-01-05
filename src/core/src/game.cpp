@@ -38,6 +38,9 @@ GameState::GameState(const class GameSetup& setup)
 	// This also assigns planets to players internally
 	galaxy = initialize_galaxy(galaxy_params);
 	
+	// Initialize KnowledgeGalaxy for each player
+	initialize_player_knowledge();
+	
 	// Initialize research cost caches
 	initialize_research_cost_caches();
 	
@@ -1158,4 +1161,49 @@ ErrorCode GameState::check_player_set_planet_allocation(uint32_t player_id, uint
 		return ErrorCode::INVALID_ALLOCATION;
 	
 	return ErrorCode::SUCCESS;
+}
+
+
+// ============================================================================
+// Player Knowledge Initialization
+// ============================================================================
+void GameState::initialize_player_knowledge()
+{
+	// Initialize KnowledgeGalaxy for each player
+	for (auto& player : players)
+	{
+		// Create KnowledgeGalaxy for this player
+		player.knowledge_galaxy = new KnowledgeGalaxy(*galaxy, player.id);
+		
+		// Find this player's homeworld
+		// The homeworld is the first (and only) colonized planet at game start
+		if (!player.colonized_planets.empty())
+		{
+			const ColonizedPlanet& homeworld_colonized = player.colonized_planets[0];
+			Planet* homeworld = get_planet(homeworld_colonized.get_id());
+			
+			// Observe the homeworld to populate full knowledge
+			// This updates all observable fields in the KnowledgePlanet
+			player.knowledge_galaxy->observe_planet(homeworld->id, *homeworld, &player, current_year);
+			
+			// Get the KnowledgePlanet for the homeworld
+			if (homeworld)
+			{
+				KnowledgePlanet* homeworld_knowledge = player.knowledge_galaxy->get_planet(homeworld->id);
+				if (homeworld_knowledge)
+				{
+					// Create a ColonizedPlanet in the KnowledgePlanet
+					// This represents the player's knowledge of their own colonized homeworld
+					homeworld_knowledge->colonization = std::make_unique<ColonizedPlanet>(
+						homeworld,
+						&player,
+						homeworld_colonized.get_population(),
+						homeworld_colonized.get_income()
+					);
+				}
+			}
+		}
+	}
+	
+	std::cout << "Successfully initialized KnowledgeGalaxy for all " << players.size() << " players.\n";
 }

@@ -2,6 +2,7 @@
 #define OPENHO_KNOWLEDGE_PLANET_H
 
 #include <cstdint>
+#include <memory>
 #include <string>
 #include "enums.h"
 #include "planet.h"
@@ -45,6 +46,10 @@ public:
 	
 	// Nova state - can be updated independently, not by observe_planet()
 	PlanetNovaState nova_state;
+	
+	// Colonization info - if this player has colonized this planet
+	// nullptr if not colonized, otherwise contains colonization-specific data
+	std::unique_ptr<class ColonizedPlanet> colonization;
 	
 	// Default constructor - initializes with partial info (id, name, coordinates only)
 	KnowledgePlanet(const Planet& planet, PlayerID player_id);
