@@ -421,6 +421,105 @@ The project uses a command-line build system (no Xcode dependency) with CMake fo
 - **Immediate:** Simple Planet getters for fleet queries (safe, minimal complexity)
 - **Future:** Player Knowledge Map system (solves fleet lookup + fog of war + UI alignment)
 
+#### 5. Player Knowledge Map Architecture Design (Detailed) ✅
+
+**Game Mechanics Context:**
+- Players always have some information about all planets
+- Initial knowledge (game start): name, position, planet_id
+- Homeworld starts with full knowledge
+- Knowledge expands through exploration and colonization
+- All KnowledgePlanets initialized at game start (no gaps in vector)
+
+**Data Structure:**
+```cpp
+class KnowledgePlanet {
+    uint32_t real_planet_id;
+    Planet* real_planet;  // Points to GameState's Planet (set at init, never changes)
+    
+    // Known information (initially limited, expands over time)
+    std::string name;           // Always known
+    double x, y;                // Position - always known
+    double known_temperature;   // UNKNOWN initially, updated when explored
+    double known_gravity;       // UNKNOWN initially, updated when explored
+    int32_t known_metal;        // UNKNOWN initially, updated when explored
+    // ... other properties
+    
+    // Fleet information
+    std::vector<uint32_t> my_fleet_ids;           // Player's own fleets at this planet
+    std::vector<FleetVisibleInfo> enemy_fleets;   // Enemy fleets (updated each turn)
+    
+    // Colonization (optional)
+    std::unique_ptr<ColonizedPlanet> colonization;  // Non-null if player colonized this
+};
+
+class Player {
+private:
+    std::vector<KnowledgePlanet> knowledge_map;  // One per planet, indexed by planet_id
+    
+public:
+    // Access knowledge planets
+    KnowledgePlanet* get_knowledge_planet(uint32_t planet_id);
+    const KnowledgePlanet* get_knowledge_planet(uint32_t planet_id) const;
+    
+    // Get colonized planets (filtered from knowledge map)
+    std::vector<ColonizedPlanet*> get_colonized_planets();
+    std::vector<const ColonizedPlanet*> get_colonized_planets() const;
+    
+    // Get specific colonized planet
+    ColonizedPlanet* get_colonized_planet(uint32_t planet_id);
+    
+    // Fleet queries
+    std::vector<Fleet*> get_colonized_planet_fleets(uint32_t planet_id, GameState* game_state);
+    std::vector<Fleet*> get_all_fleets(GameState* game_state);
+};
+```
+
+**Ownership Structure:**
+```
+GameState
+  └─ Galaxy
+      └─ std::vector<Planet>  (all planets in the galaxy)
+
+Player
+  └─ std::vector<KnowledgePlanet>  (player's knowledge of all planets)
+      ├─ Planet* real_planet  (points to GameState's Planet)
+      └─ std::unique_ptr<ColonizedPlanet>  (if colonized)
+```
+
+**Key Design Decisions:**
+1. **Vector storage** - Direct indexing by planet_id, no unordered_map complexity
+2. **Planet pointer** - Safe because planets are never destroyed mid-game
+3. **Option 2 composition** - KnowledgePlanet contains optional ColonizedPlanet (not inheritance)
+4. **Single source of truth** - All player knowledge in one structure
+5. **No inheritance** - ColonizedPlanet is separate from Planet, not derived
+
+**Initialization (at game start):**
+- Create KnowledgePlanet for every planet in galaxy
+- Set real_planet pointer, name, position
+- Set initial knowledge to UNKNOWN for all properties except position
+- For homeworld: call `update_knowledge_from_planet()` to populate full knowledge
+- Create ColonizedPlanet for homeworld
+
+**Knowledge Updates:**
+- When exploring a planet: call `kp.update_knowledge_from_planet()`
+- When colonizing: create ColonizedPlanet in the KnowledgePlanet
+- Each turn: update enemy fleet visibility info
+
+**Benefits:**
+- ✅ Single source of truth for all player knowledge
+- ✅ Natural representation: colonized planets are KnowledgePlanets with extra data
+- ✅ UI-aligned: queries return exactly what UI needs
+- ✅ Fog of war ready: knowledge structure supports incomplete information
+- ✅ Fleet lookup: fast queries by planet
+- ✅ No dangling pointers: Planet pointers are safe
+- ✅ Clean iteration: simple vector iteration, no structured bindings needed
+
+**Future Implementation Notes:**
+- Migrate from current `std::vector<ColonizedPlanet>` storage
+- Update all code that iterates colonized planets
+- Add helper methods for common queries
+- Implement fog of war rules during knowledge updates
+
 **Recent Commits (Session 6):**
 1. `e87708c` - Fix syntax error in allocate_fleet_id() function declaration
 2. `f4d1a07` - Refactor fleet creation: Player now owns the process
