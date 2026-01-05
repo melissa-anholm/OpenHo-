@@ -144,13 +144,13 @@ public:
 	[[nodiscard]] ErrorCode check_player_set_planet_allocation(uint32_t player_id, uint32_t planet_id, double mining_frac, double terraforming_frac) const;
 	
 	// RNG seed accessors (delegates to RNG)
-	uint64_t get_deterministic_seed() const
+	uint64_t get_det_seed() const
 		{ return rng->getDeterministicSeed(); }
-	void set_deterministic_seed(uint64_t seed)
+	void set_det_seed(uint64_t seed)
 		{ rng->setDeterministicSeed(seed); }
-	uint64_t get_ai_rng_seed() const
+	uint64_t get_ai_seed() const
 		{ return rng->getAISeed(); }
-	void set_ai_rng_seed(uint64_t seed)
+	void set_ai_seed(uint64_t seed)
 		{ rng->setAISeed(seed); }
 	
 	

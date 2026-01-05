@@ -29,7 +29,7 @@ class DeterministicRNG
 {
 public:
 	// Constructor
-	DeterministicRNG(uint64_t deterministicSeed, uint64_t aiSeed);
+	DeterministicRNG(uint64_t det_seed, uint64_t ai_seed);
 	
 	// Destructor
 	~DeterministicRNG();
@@ -102,8 +102,8 @@ private:
 	boost::random::mt19937_64 aiEngine;
 	
 	// Stored seed values for retrieval (Boost engines don't provide seed getters)
-	uint64_t deterministicSeedValue;
-	uint64_t aiSeedValue;
+	uint64_t det_seed_value;
+	uint64_t ai_seed_value;
 	
 	// Distributions
 	boost::random::uniform_int_distribution<int32_t> int32Dist;

@@ -5,11 +5,11 @@
 // DeterministicRNG Implementation
 // ============================================================================
 
-DeterministicRNG::DeterministicRNG(uint64_t deterministicSeed, uint64_t aiSeed)
-	: deterministicEngine(deterministicSeed),
-	  aiEngine(aiSeed),
-	  deterministicSeedValue(deterministicSeed),
-	  aiSeedValue(aiSeed),
+DeterministicRNG::DeterministicRNG(uint64_t det_seed, uint64_t ai_seed)
+	: deterministicEngine(det_seed),
+	  aiEngine(ai_seed),
+	  det_seed_value(det_seed),
+	  ai_seed_value(ai_seed),
 	  int32Dist(std::numeric_limits<int32_t>::min(), std::numeric_limits<int32_t>::max()),
 	  uint32Dist(0, std::numeric_limits<uint32_t>::max()),
 	  int64Dist(std::numeric_limits<int64_t>::min(), std::numeric_limits<int64_t>::max()),
@@ -86,24 +86,24 @@ double DeterministicRNG::nextAIDouble()
 
 void DeterministicRNG::setDeterministicSeed(uint64_t seed)
 {
-	deterministicSeedValue = seed;
+	det_seed_value = seed;
 	deterministicEngine.seed(seed);
 }
 
 void DeterministicRNG::setAISeed(uint64_t seed)
 {
-	aiSeedValue = seed;
+	ai_seed_value = seed;
 	aiEngine.seed(seed);
 }
 
 uint64_t DeterministicRNG::getDeterministicSeed() const
 {
-	return deterministicSeedValue;
+	return det_seed_value;
 }
 
 uint64_t DeterministicRNG::getAISeed() const
 {
-	return aiSeedValue;
+	return ai_seed_value;
 }
 
 // ============================================================================

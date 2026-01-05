@@ -75,9 +75,9 @@ void game_build_ship_from_design(void* game, uint32_t player_id, uint32_t design
 void game_set_money_allocation(void* game, uint32_t player_id, const Player::MoneyAllocation* alloc);
 void game_get_money_allocation(void* game, uint32_t player_id, Player::MoneyAllocation* out);
 
-// AI RNG seed management
-[[nodiscard]] uint64_t game_get_ai_rng_seed(void* game);
-void game_set_ai_rng_seed(void* game, uint64_t seed);
+	// AI RNG seed management
+	[[nodiscard]] uint64_t game_get_ai_seed(void* game);
+	void game_set_ai_seed(void* game, uint64_t seed);
 
 // Turn processing
 void game_process_turn(void* game);

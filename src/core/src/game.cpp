@@ -23,9 +23,9 @@ GameState::GameState(const class GameSetup& setup)
 	// Initialize RNG with random seeds from std::random_device
 	// This ensures each game has different random behavior
 	std::random_device rd;
-	uint64_t deterministicSeed = rd();
-	uint64_t aiSeed = deterministicSeed + 1;  // Use seed + 1 for AI RNG
-	rng = std::make_unique<DeterministicRNG>(deterministicSeed, aiSeed);
+	uint64_t det_seed = rd();
+	uint64_t ai_seed = det_seed + 1;  // Use seed + 1 for AI RNG
+	rng = std::make_unique<DeterministicRNG>(det_seed, ai_seed);
 	
 	// Load text assets
 	text_assets = std::make_unique<TextAssets>();

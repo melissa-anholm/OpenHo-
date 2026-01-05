@@ -256,22 +256,22 @@ void game_get_money_allocation(void* game, uint32_t player_id, Player::MoneyAllo
 // ============================================================================
 // AI RNG Seed Management
 // ============================================================================
-	uint64_t game_get_ai_rng_seed(void* game)
+uint64_t game_get_ai_seed(void* game)
 {
 	if (!game) 
 		{ return 0; }
 	
 	GameState* gameState = static_cast<GameState*>(game);
-	return gameState->get_ai_rng_seed();
+	return gameState->get_ai_seed();
 }
 
-void game_set_ai_rng_seed(void* game, uint64_t seed)
+void game_set_ai_seed(void* game, uint64_t seed)
 {
 	if (!game)
 		{ return; }
 	
 	GameState* gameState = static_cast<GameState*>(game);
-	gameState->set_ai_rng_seed(seed);
+	gameState->set_ai_seed(seed);
 }
 
 // ============================================================================
