@@ -341,3 +341,91 @@ The project uses a command-line build system (no Xcode dependency) with CMake fo
 ---
 
 **This document is the single source of truth for the OpenHo project. It should be updated after each significant session to reflect progress and maintain accuracy for future sessions.**
+
+
+---
+
+### Session 6: Fleet Architecture Refactoring & Research Optimization (Jan 4, 2026)
+
+**Status:** ✅ COMPLETE
+
+**Objective:** Refactor fleet creation architecture for cleaner ownership semantics; optimize research processing with cost caching; plan fleet/knowledge map system
+
+**Completed:**
+
+#### 1. Fleet Creation Architecture Refactoring ✅
+- ✅ Eliminated redundant `GameState::find_suitable_home_planets()` function
+- ✅ Removed `GameState::create_fleet()` - Player now owns the entire creation process
+- ✅ Added `GameState* game_state` member to Player class
+- ✅ Split `Player::create_fleet()` into three methods:
+  - `validate_fleet()`: Validates design_id, ship_count, planet_id
+  - `build_fleet()`: Creates Fleet after validation and fleet_id allocation
+  - `create_fleet()`: Orchestrates both steps, requests fleet_id from GameState
+- ✅ Updated `GameState::initialize_players()` to pass `this` to Player constructor
+- ✅ Updated C API wrapper `game_player_build_fleet()` to call `Player::create_fleet()` directly
+- ✅ Cleaner architecture: Player initiates and owns fleet creation, GameState provides services (fleet_id allocation, planet lookup)
+
+**Benefits:**
+- Single source of truth for fleet creation logic
+- Clear ownership: Player owns Fleet objects and creation process
+- Straightforward call flow: no back-and-forth between Player and GameState
+- Easier to maintain and extend
+
+#### 2. RNG Seed Naming Refactoring ✅
+- ✅ Renamed `deterministicSeed` → `det_seed` (local variable)
+- ✅ Renamed `aiSeed` → `ai_seed` (local variable)
+- ✅ Renamed `get_deterministic_seed()` → `get_det_seed()`
+- ✅ Renamed `set_deterministic_seed()` → `set_det_seed()`
+- ✅ Renamed `get_ai_rng_seed()` → `get_ai_seed()`
+- ✅ Renamed `set_ai_rng_seed()` → `set_ai_seed()`
+- ✅ Updated C API function names accordingly
+- ✅ More consistent snake_case naming throughout
+
+#### 3. Research Cost Caching Optimization ✅
+- ✅ Added six `std::vector<int64_t>` cache vectors to GameState (one per tech stream)
+- ✅ Cache indexed directly by tech level: `research_cost_range[i]` = cost to reach level i
+- ✅ Implemented `initialize_research_cost_caches()`:
+  - Initializes with zeroes for starting levels (0 and 1)
+  - Pre-calculates costs for levels 2-21 (20 levels ahead)
+  - Reduces startup overhead
+- ✅ Implemented `ensure_research_costs_available(max_tech_level)`:
+  - Extends cache dynamically as players advance
+  - Extends by 20 levels at a time
+  - Prevents repeated calculations for high-level techs
+- ✅ Updated `process_research_stream()`:
+  - Removed repeated calls to `calculate_tech_*_advancement_cost()`
+  - Now looks up costs directly from cache vectors
+  - Calls `ensure_research_costs_available()` before advancement loop
+  - Checks cache bounds and extends if needed within loop
+
+**Benefits:**
+- O(1) lookup replaces function call overhead
+- Self-documenting: vector length shows max available tech level
+- Automatically scales as tech levels increase
+- Significant performance improvement for research-heavy turns
+
+#### 4. Fleet/Knowledge Map Architecture Planning ✅
+- ✅ Analyzed fleet storage options and their tradeoffs
+- ✅ Decided against storing Fleet pointers in Planet (dangling pointer risk)
+- ✅ Planned hybrid approach: Fleet IDs in Planet with safe getters
+- ✅ Designed future Player Knowledge Map system:
+  - Player maintains KnowledgePlanet structure for each real planet
+  - Stores player's known info about that planet
+  - Organizes player's own fleets by this knowledge structure
+  - Stores enemy fleet visibility info (updated each turn)
+  - Provides fast, UI-aligned queries
+- ✅ Identified this as future refactoring (not immediate)
+- ✅ Documented design for future implementation
+
+**Architecture Decision:**
+- **Immediate:** Simple Planet getters for fleet queries (safe, minimal complexity)
+- **Future:** Player Knowledge Map system (solves fleet lookup + fog of war + UI alignment)
+
+**Recent Commits (Session 6):**
+1. `e87708c` - Fix syntax error in allocate_fleet_id() function declaration
+2. `f4d1a07` - Refactor fleet creation: Player now owns the process
+3. `576c5bd` - Implement research cost caching to eliminate repeated calculations
+
+---
+
+**This document is the single source of truth for the OpenHo project. It should be updated after each significant session to reflect progress and maintain accuracy for future sessions.**
