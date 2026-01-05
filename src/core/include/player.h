@@ -4,6 +4,7 @@
 #include "planet.h"
 #include "colonized_planet.h"
 #include "knowledge_planet.h"
+#include "knowledge_galaxy.h"
 #include "ship_design.h"
 #include "fleet.h"
 #include <cstdint>
@@ -229,8 +230,8 @@ class Player
 	// Colonized planets (owned by this player with allocation information)
 	std::vector<ColonizedPlanet> colonized_planets;
 	
-	// Fog of war: player's knowledge of planets
-	std::vector<KnowledgePlanet> planetKnowledge;
+	// Fog of war: player's knowledge of the galaxy
+	KnowledgeGalaxy* knowledge_galaxy;  // Owned by Player, initialized during game setup
 	
 	// Ship designs
 	std::vector<ShipDesign> ship_designs;      // All designs, ordered by creation (max 100)
