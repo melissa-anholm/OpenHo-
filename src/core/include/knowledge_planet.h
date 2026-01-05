@@ -25,12 +25,14 @@ class Player;
 class PlanetSnapshot
 {
 public:
+	// Core planet identity - set at construction, should not be modified
 	uint32_t id;
 	std::string name;
 	GalaxyCoord x;
 	GalaxyCoord y;
-	
 	PlayerID as_seen_by;  // Which player created this snapshot
+
+	// Observable fields - updated via observe_planet()
 	double apparent_temperature;
 	double apparent_gravity;
 	int32_t metal;
@@ -42,12 +44,18 @@ public:
 	int32_t can_be_profitable;
 	int32_t perceived_value;
 	
+	// Nova state - can be updated independently, not by observe_planet()
+	PlanetNovaState nova_state;
+	
 	// Default constructor - initializes with partial info (id, name, coordinates only)
 	PlanetSnapshot(const Planet& planet, PlayerID player_id);
 	
+	// Update snapshot with current observation of the planet
+	void observe_planet(const Planet& planet, const Player* observer, int32_t current_year);
+	
 	// Factory method to create full info snapshot
 	// full_info: all available fields are copied with apparent values calculated
-	static PlanetSnapshot full_info(const Planet& planet, PlayerID player_id, Player* owner_player);
+	static PlanetSnapshot full_info(const Planet& planet, PlayerID player_id, const Player* observer);
 };
 
 #endif // OPENHO_KNOWLEDGE_PLANET_H
