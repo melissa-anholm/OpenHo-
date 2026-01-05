@@ -37,8 +37,7 @@ public:
 	double apparent_gravity;
 	int32_t metal;
 	PlayerID apparent_owner;
-	int32_t population;
-	int32_t income;
+	int32_t apparent_population;  // -1 if unknown, otherwise estimated population
 	int32_t observation_year;  // When this information was collected
 	
 	int32_t can_be_profitable;

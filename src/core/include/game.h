@@ -68,8 +68,7 @@ public:
 	[[nodiscard]] Planet* get_planet(const std::string& planet_name);
 	[[nodiscard]] const Planet* get_planet(const std::string& planet_name) const;
 	
-	// Get all planets owned by a player (O(1) lookup)
-	const std::vector<size_t>& get_player_planets(uint32_t player_id) const;
+	// Note: get_player_planets removed - use player->colonized_planets instead
 		
 	// Allocate a globally unique fleet ID
 	[[nodiscard]] uint32_t allocate_fleet_id() { return next_fleet_id++; }
@@ -192,8 +191,7 @@ private:
 	// Per-player fleet mapping: player_id -> vector of fleet indices (updated when fleets change)
 	std::unordered_map<uint32_t, std::vector<size_t>> player_fleets;
 	
-	// Player planet ownership mapping: player_id -> vector of planet indices (updated when planets colonized/lost)
-	std::unordered_map<uint32_t, std::vector<size_t>> player_planets;
+	// Note: player_planets mapping removed - use players' colonized_planets instead
 	
 	// Player public information history: player_id -> vector of PlayerPublicInfo (one per turn)
 	std::unordered_map<uint32_t, std::vector<PlayerPublicInfo>> player_info_history;

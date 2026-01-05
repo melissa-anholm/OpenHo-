@@ -154,3 +154,106 @@ void GameState::initialize_player_knowledge()
 - Implement observation mechanics (exploration, colonization, etc.)
 - Implement fleet visibility tracking in KnowledgePlanet
 
+
+
+---
+
+## Session 9 - KnowledgePlanet & Planet Refactoring (January 5, 2026)
+
+**Status:** ✅ COMPLETE
+
+**Objective:** Refactor KnowledgePlanet and Planet classes, remove player_planets from GameState, and prepare for turn processing with unified colonized planets list.
+
+### Changes Made:
+
+**1. KnowledgePlanet Refactoring**
+- Removed `income` member (access via ColonizedPlanet if owned)
+- Renamed `population` → `apparent_population`
+- Set `apparent_population = -1` as sentinel for "unknown"
+- Rationale: Only relevant for unowned planets; owned planets use ColonizedPlanet
+
+**2. Planet Enhancement**
+- Added `population` member to Planet class
+- Initialized to 0 in constructor (default for uncolonized planets)
+- Set to starting population for homeworlds in assign_planets_random()
+- Provides source of truth for KnowledgePlanet::apparent_population
+
+**3. GameState Cleanup**
+- Removed `player_planets` map (was unused)
+- Removed `get_player_planets()` method (never called)
+- Removed updates from `build_entity_maps()`
+- Removed updates from `assign_planets_random()`
+- Rationale: Redundant with Player::colonized_planets
+
+**4. KnowledgePlanet Initialization**
+- Constructor sets `apparent_population = -1` (unknown)
+- `observe_planet()` copies `planet.population` to `apparent_population`
+- Homeworld gets full population knowledge at game start
+
+**5. Turn Processing Foundation**
+- Designed for lazy construction of colonized planets list during turn processing
+- Each turn: iterate players' colonized_planets to build temporary list
+- Advantages: Always correct, no maintenance burden, self-contained
+
+### Implementation Details:
+
+**KnowledgePlanet Constructor:**
+```cpp
+KnowledgePlanet::KnowledgePlanet(const Planet& planet, PlayerID player_id)
+{
+    // ... other fields ...
+    apparent_population = -1;  // -1 means unknown
+}
+```
+
+**KnowledgePlanet::observe_planet():**
+```cpp
+void KnowledgePlanet::observe_planet(const Planet& planet, const Player* observer, int32_t current_year)
+{
+    // ... other updates ...
+    apparent_population = planet.population;  // Copy actual population
+}
+```
+
+**Homeworld Population Setup:**
+```cpp
+// In assign_planets_random()
+planet->population = GameConstants::Starting_Colony_Population[setup.starting_colony_quality];
+```
+
+### Architecture Benefits:
+
+✅ **Cleaner separation** - Income only in ColonizedPlanet, population in both  
+✅ **Consistent naming** - apparent_* for observed values  
+✅ **Unknown sentinel** - -1 clearly indicates unobserved population  
+✅ **Source of truth** - Planet::population is authoritative  
+✅ **Removed redundancy** - No more player_planets map  
+✅ **Turn processing ready** - Foundation for lazy list construction  
+✅ **Compilation** - No errors, only pre-existing warnings  
+
+### Investigation Results:
+
+**player_planets Analysis:**
+- Declared but never called (get_player_planets was unused)
+- Built during initialization but then sat idle
+- Redundant with Player::colonized_planets
+- Would require maintenance on colonization/conquest
+- **Decision:** Remove entirely
+
+**Unified Colonized Planets List:**
+- Will be built fresh during each turn processing
+- Guarantees correctness (no stale data)
+- Simplifies maintenance (single source of truth)
+- Performance negligible (O(n) rebuild in O(n) process)
+
+### Next Steps (Phase 2d):
+
+The foundation is now in place for:
+- Implementing turn processing with unified colonized planets list
+- Updating populations during turn processing
+- Calculating income for all colonized planets
+- Adding observation mechanics for population discovery
+- Implementing fog of war based on observation logic
+
+**Commit:** `<pending>` - Refactor KnowledgePlanet and Planet, remove player_planets
+

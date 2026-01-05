@@ -20,8 +20,7 @@ KnowledgePlanet::KnowledgePlanet(const Planet& planet, PlayerID player_id)
 	apparent_gravity = UNKNOWN_DOUBLE_VALUE;
 	metal = UNKNOWN_INT_VALUE;
 	apparent_owner = OWNER_UNKNOWN;
-	population = UNKNOWN_INT_VALUE;
-	income = INCOME_UNKNOWN;
+	apparent_population = -1;  // -1 means unknown
 	observation_year = OBSERVATION_YEAR_UNKNOWN;
 	can_be_profitable = PROFITABILITY_UNKNOWN;
 	perceived_value = PERCEIVED_VALUE_UNKNOWN;
@@ -41,10 +40,9 @@ void KnowledgePlanet::observe_planet(const Planet& planet, const Player* observe
 	// Known fields from planet
 	metal = planet.metal;
 	apparent_owner = planet.owner;
+	apparent_population = planet.population;  // Copy actual population
 	
 	// Unknown fields (not available from Planet)
-	population = UNKNOWN_INT_VALUE;
-	income = INCOME_UNKNOWN;
 	observation_year = current_year;
 	can_be_profitable = PROFITABILITY_UNKNOWN;
 	perceived_value = PERCEIVED_VALUE_UNKNOWN;

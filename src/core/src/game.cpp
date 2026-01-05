@@ -155,14 +155,7 @@ const Planet* GameState::get_planet(const std::string& planet_name) const
 }
 
 
-const std::vector<size_t>& GameState::get_player_planets(uint32_t player_id) const
-{
-	static const std::vector<size_t> emptyVector;
-	auto it = player_planets.find(player_id);
-	if (it == player_planets.end() )
-		{ return emptyVector; } 
-	return it->second;
-}
+// Note: get_player_planets removed - use player->colonized_planets instead
 
 // ============================================================================
 // Money Allocation
@@ -449,15 +442,11 @@ std::unique_ptr<Galaxy> GameState::initialize_galaxy(const GalaxyGenerationParam
 
 void GameState::build_entity_maps()
 {
-	// Build planet ID to index map, planet name to index map, and player planet ownership map
+	// Build planet ID to index map and planet name to index map
 	for (size_t i = 0; i < galaxy->planets.size(); ++i)
 	{
 		planet_id_to_index[galaxy->planets[i].id] = i;
 		planet_name_to_index[galaxy->planets[i].name] = i;
-		if (galaxy->planets[i].owner != 0)
-		{
-			player_planets[galaxy->planets[i].owner].push_back(i);
-		}
 	}
 	
 	// Build player ID to index map and player name to index map
@@ -971,6 +960,9 @@ void GameState::assign_planets_random(const std::vector<Planet*>& suitable_plane
 		// Adjust homeworld temperature to match player's ideal_temperature
 		planet->true_temperature = player.ideal_temperature;
 		
+		// Set homeworld population based on starting colony quality
+		planet->population = GameConstants::Starting_Colony_Population[setup.starting_colony_quality];
+		
 		// Create ColonizedPlanet entry for this player with quality-based values
 		ColonizedPlanet colonized_planet(
 		planet, &player,
@@ -982,12 +974,6 @@ void GameState::assign_planets_random(const std::vector<Planet*>& suitable_plane
 		// Add to player's colonized planets
 		player.colonized_planets.push_back(colonized_planet);
 		
-		// Update player_planets mapping
-		auto it = planet_id_to_index.find(planet->id);
-		if (it != planet_id_to_index.end())
-		{
-			player_planets[player.id].push_back(it->second);
-		}
 		
 		// Log assignment
 		std::cout << "Player " << player.name << " assigned starting planet: " 

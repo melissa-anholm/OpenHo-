@@ -20,6 +20,7 @@ Planet::Planet(
 	  true_gravity(p_true_gravity),
 	  true_temperature(p_true_temperature),
 	  metal(p_metal),
+	  population(0),
 	  owner(p_owner),
 	  nova_state(PLANET_NORMAL)
 { }

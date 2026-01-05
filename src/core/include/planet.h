@@ -32,6 +32,7 @@ public:
 	// Mutable properties
 	double true_temperature;
 	int32_t metal;
+	int32_t population;  // Current population (0 if uncolonized, or for unobserved planets)
 	
 	PlayerID owner;  // 0 if unowned
 	
