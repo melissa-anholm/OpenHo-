@@ -22,6 +22,9 @@ Galaxy::Galaxy(const GalaxyGenerationParams& params, GameState* game_state)
 	// Phase 4: Generate planet parameters
 	generate_planet_parameters(all_coords, home_coords, planet_names, game_state);
 	
+	// Phase 5: Compute distance matrix
+	compute_distance_matrix();
+	
 	// Calculate galaxy size from coordinates
 	if (!all_coords.empty())
 	{
@@ -408,4 +411,36 @@ void Galaxy::initialize_planets_grid(
 			planet_idx++;
 		}
 	}
+}
+
+// ============================================================================
+// Distance Matrix Methods
+// ============================================================================
+void Galaxy::compute_distance_matrix()
+{
+	size_t n = planets.size();
+	distance_matrix.resize(n);
+	
+	for (size_t i = 0; i < n; ++i)
+	{
+		distance_matrix[i].resize(n);
+		for (size_t j = 0; j < n; ++j)
+		{
+			const Planet& from = planets[i];
+			const Planet& to = planets[j];
+			
+			// Calculate Euclidean distance
+			double dx = to.x - from.x;
+			double dy = to.y - from.y;
+			double euclidean_dist = std::sqrt(dx * dx + dy * dy);
+			
+			// Round to nearest integer, store as double
+			distance_matrix[i][j] = std::round(euclidean_dist);
+		}
+	}
+}
+
+double Galaxy::get_distance(uint32_t from_id, uint32_t to_id) const
+{
+	return distance_matrix.at(from_id).at(to_id);
 }

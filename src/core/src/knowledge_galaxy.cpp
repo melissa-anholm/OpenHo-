@@ -18,6 +18,10 @@ KnowledgeGalaxy::KnowledgeGalaxy(const Galaxy& galaxy, PlayerID player_id)
 	for (const auto& planet : galaxy.planets) {
 		planets.emplace_back(planet, player_id);
 	}
+	
+	// Copy distance matrix from Galaxy for O(1) local access
+	// No network latency for distance queries
+	distance_matrix = galaxy.distance_matrix;
 }
 
 KnowledgePlanet* KnowledgeGalaxy::get_planet(uint32_t planet_id)
@@ -49,4 +53,10 @@ const Planet* KnowledgeGalaxy::get_real_planet(uint32_t planet_id) const
 		return &real_galaxy->planets[planet_id];
 	}
 	return nullptr;
+}
+
+
+double KnowledgeGalaxy::get_distance(uint32_t from_id, uint32_t to_id) const
+{
+	return distance_matrix.at(from_id).at(to_id);
 }

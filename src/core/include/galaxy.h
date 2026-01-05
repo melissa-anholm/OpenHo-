@@ -59,10 +59,24 @@ struct Galaxy
 	// Home planet indices (indices into planets vector)
 	std::vector<size_t> home_planet_indices;
 	
+	// Distance matrix: [from_planet_id][to_planet_id] = distance
+	// Computed once at initialization, never updated
+	// Stores Euclidean distance rounded to nearest integer as double
+	std::vector<std::vector<double>> distance_matrix;
+	
 	// Constructor to initialize galaxy boundaries and planets
 	// Takes GameState reference for access to RNG and TextAssets
 	// Implementation in game.cpp
 	Galaxy(const GalaxyGenerationParams& params, class GameState* game_state);
+	
+	// Compute distance matrix after all planets are created
+	// Called from constructor after generate_planet_parameters()
+	void compute_distance_matrix();
+	
+	// Get distance between two planets
+	// Returns Euclidean distance rounded to nearest integer
+	// Throws std::out_of_range if planet IDs are invalid
+	double get_distance(uint32_t from_id, uint32_t to_id) const;
 	
 	// // Generate randomized planet names (helper method)
 	// // Generates n_planets unique names in random order from available_names
