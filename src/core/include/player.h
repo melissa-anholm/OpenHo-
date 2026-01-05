@@ -2,6 +2,8 @@
 #define OPENHO_PLAYER_H
 
 #include "planet.h"
+#include "colonized_planet.h"
+#include "knowledge_planet.h"
 #include "ship_design.h"
 #include "fleet.h"
 #include <cstdint>

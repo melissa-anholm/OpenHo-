@@ -3,6 +3,7 @@
 #include "ship_design.h"
 #include "fleet.h"
 #include "planet.h"
+#include "colonized_planet.h"
 
 // ============================================================================
 // Player Accessors (Read-Only)

@@ -22,6 +22,8 @@ typedef double GalaxyCoord;
 
 #include "enums.h"
 #include "planet.h"
+#include "colonized_planet.h"
+#include "knowledge_planet.h"
 #include "ship_design.h"
 #include "player.h"
 #include "galaxy.h"
