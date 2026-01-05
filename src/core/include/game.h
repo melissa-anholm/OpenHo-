@@ -72,8 +72,7 @@ public:
 	const std::vector<size_t>& get_player_planets(uint32_t player_id) const;
 		
 	// Allocate a globally unique fleet ID
-	[[nodiscard]] uint32_t allocate_fleet_id();
-		{ return next_fleet_id++; }
+	[[nodiscard]] uint32_t allocate_fleet_id() { return next_fleet_id++; }
 	
 	
 	// Initialize the first turn (called during game initialization)
