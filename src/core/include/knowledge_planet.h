@@ -37,15 +37,16 @@ public:
 	PlayerID apparent_owner;
 	int32_t population;
 	int32_t income;
-	uint32_t observation_year;  // When this information was collected
+	int32_t observation_year;  // When this information was collected
 	
-	bool can_be_profitable;
-	int perceived_value;
+	int32_t can_be_profitable;
+	int32_t perceived_value;
 	
-	// Factory methods to create snapshots
-	// partial_info: only basic data (id, name, coordinates) are copied
+	// Default constructor - initializes with partial info (id, name, coordinates only)
+	PlanetSnapshot(const Planet& planet, PlayerID player_id);
+	
+	// Factory method to create full info snapshot
 	// full_info: all available fields are copied with apparent values calculated
-	static PlanetSnapshot partial_info(const Planet& planet, PlayerID player_id);
 	static PlanetSnapshot full_info(const Planet& planet, PlayerID player_id, Player* owner_player);
 };
 

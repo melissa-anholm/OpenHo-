@@ -7,37 +7,30 @@
 // PlanetSnapshot Implementation
 // ============================================================================
 
-PlanetSnapshot PlanetSnapshot::partial_info(const Planet& planet, PlayerID player_id)
+PlanetSnapshot::PlanetSnapshot(const Planet& planet, PlayerID player_id)
 {
-	PlanetSnapshot snapshot;
-	snapshot.id = planet.id;
-	snapshot.name = planet.name;
-	snapshot.x = planet.x;
-	snapshot.y = planet.y;
-	snapshot.as_seen_by = player_id;
+	// Initialize with partial info (id, name, coordinates only)
+	id = planet.id;
+	name = planet.name;
+	x = planet.x;
+	y = planet.y;
+	as_seen_by = player_id;
 	
 	// Unknown fields for partial info
-	snapshot.apparent_temperature = UNKNOWN_DOUBLE_VALUE;
-	snapshot.apparent_gravity = UNKNOWN_DOUBLE_VALUE;
-	snapshot.metal = UNKNOWN_INT_VALUE;
-	snapshot.apparent_owner = OWNER_UNKNOWN;
-	snapshot.population = UNKNOWN_INT_VALUE;
-	snapshot.income = INCOME_UNKNOWN;
-	snapshot.observation_year = 0;
-	snapshot.can_be_profitable = false;
-	snapshot.perceived_value = 0;
-	
-	return snapshot;
+	apparent_temperature = UNKNOWN_DOUBLE_VALUE;
+	apparent_gravity = UNKNOWN_DOUBLE_VALUE;
+	metal = UNKNOWN_INT_VALUE;
+	apparent_owner = OWNER_UNKNOWN;
+	population = UNKNOWN_INT_VALUE;
+	income = INCOME_UNKNOWN;
+	observation_year = OBSERVATION_YEAR_UNKNOWN;
+	can_be_profitable = PROFITABILITY_UNKNOWN;
+	perceived_value = PERCEIVED_VALUE_UNKNOWN;
 }
 
 PlanetSnapshot PlanetSnapshot::full_info(const Planet& planet, PlayerID player_id, Player* owner_player)
 {
-	PlanetSnapshot snapshot;
-	snapshot.id = planet.id;
-	snapshot.name = planet.name;
-	snapshot.x = planet.x;
-	snapshot.y = planet.y;
-	snapshot.as_seen_by = player_id;
+	PlanetSnapshot snapshot(planet, player_id);
 	
 	// Calculate apparent values based on the observing player's ideals
 	snapshot.apparent_temperature = GameFormulas::calculate_apparent_temperature(
@@ -52,9 +45,9 @@ PlanetSnapshot PlanetSnapshot::full_info(const Planet& planet, PlayerID player_i
 	// Unknown fields (not available from Planet)
 	snapshot.population = UNKNOWN_INT_VALUE;
 	snapshot.income = INCOME_UNKNOWN;
-	snapshot.observation_year = 0;
-	snapshot.can_be_profitable = false;
-	snapshot.perceived_value = 0;
+	snapshot.observation_year = OBSERVATION_YEAR_UNKNOWN;
+	snapshot.can_be_profitable = PROFITABILITY_UNKNOWN;
+	snapshot.perceived_value = PERCEIVED_VALUE_UNKNOWN;
 	
 	return snapshot;
 }
