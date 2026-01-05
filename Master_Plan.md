@@ -528,3 +528,168 @@ Player
 ---
 
 **This document is the single source of truth for the OpenHo project. It should be updated after each significant session to reflect progress and maintain accuracy for future sessions.**
+
+
+---
+
+## Session 7: File Restructuring & KnowledgeGalaxy Implementation (January 5, 2026)
+
+**Status:** ✅ COMPLETE
+
+**Objective:** Reorganize codebase for clarity and implement KnowledgeGalaxy as the foundation for player galaxy knowledge system
+
+### Part 1: File Restructuring & Class Promotion
+
+**Completed:**
+- ✅ Created `colonized_planet.h/cpp` - Moved ColonizedPlanet class to dedicated files
+- ✅ Created `knowledge_planet.h/cpp` - Moved PlanetSnapshot (now KnowledgePlanet) to dedicated files
+- ✅ Updated `planet.h/cpp` - Now contains only Planet class
+- ✅ Promoted Planet to full class (was struct)
+- ✅ Promoted PlanetSnapshot to full class (was struct)
+- ✅ Updated all includes throughout codebase
+- ✅ CMakeLists.txt updated with new source files
+
+**Architecture Improvements:**
+- Clear separation of concerns: Planet, ColonizedPlanet, KnowledgePlanet in separate files
+- Better code organization for future maintenance
+- Foundation ready for KnowledgePlanet feature development
+
+### Part 2: PlanetSnapshot → KnowledgePlanet Refactoring
+
+**Completed:**
+- ✅ Added sentinel constants to enums.h:
+  - `OBSERVATION_YEAR_UNKNOWN = -1`
+  - `PROFITABILITY_UNKNOWN = -1`
+  - `PERCEIVED_VALUE_UNKNOWN = -1`
+- ✅ Refactored PlanetSnapshot constructor:
+  - Converted `partial_info()` static method to default constructor
+  - Constructor: `KnowledgePlanet(const Planet& planet, PlayerID player_id)`
+  - Initializes with partial info (id, name, coordinates only)
+  - All other fields set to appropriate unknown sentinel values
+- ✅ Kept `full_info()` as factory method for complete information snapshots
+- ✅ Added `nova_state` member (type: PlanetNovaState, initialized to PLANET_NORMAL)
+- ✅ Added `observe_planet()` method:
+  - Signature: `void observe_planet(const Planet& planet, const Player* observer, int32_t current_year)`
+  - Updates observable fields from current planet state
+  - Calculates apparent temperature and gravity based on observer's ideals
+  - Updates observation_year to current_year
+  - Does NOT modify nova_state
+  - Uses `const Player*` for read-only access
+- ✅ Resolved const member issue by removing const qualifiers:
+  - Fields `id`, `name`, `x`, `y`, `as_seen_by` no longer const
+  - Documented that these fields should not be modified after construction
+  - Allows vector storage without assignment operator issues
+- ✅ Renamed PlanetSnapshot → KnowledgePlanet throughout codebase
+- ✅ Updated Player to use `std::vector<KnowledgePlanet> planetKnowledge`
+
+**Key Design Decisions:**
+1. **Default constructor for partial info** - More intuitive than static factory method
+2. **Sentinel values at -1** - Consistent, easy to check for unknown state
+3. **Non-const fields with documentation** - Pragmatic approach, relies on convention
+4. **observe_planet() method** - Encapsulates knowledge update logic
+5. **nova_state independence** - Not updated by observations, managed separately
+
+### Part 3: KnowledgeGalaxy Implementation
+
+**Completed:**
+- ✅ Created `knowledge_galaxy.h` - KnowledgeGalaxy class definition
+- ✅ Created `knowledge_galaxy.cpp` - KnowledgeGalaxy implementation
+- ✅ Updated Player class:
+  - Replaced `std::vector<KnowledgePlanet> planetKnowledge`
+  - Added `KnowledgeGalaxy* knowledge_galaxy` member
+  - Added include for knowledge_galaxy.h
+- ✅ Updated CMakeLists.txt with knowledge_galaxy.cpp
+- ✅ Updated openho_core.h to include knowledge_galaxy.h
+
+**KnowledgeGalaxy Architecture:**
+
+```cpp
+class KnowledgeGalaxy {
+private:
+    const Galaxy* real_galaxy;  // Reference to real galaxy (for edge cases)
+    std::vector<KnowledgePlanet> planets;  // Indexed by planet_id
+    PlayerID player_id;
+
+public:
+    // Constructor - initializes with partial info for all planets
+    KnowledgeGalaxy(const Galaxy& galaxy, PlayerID player_id);
+    
+    // Accessors
+    KnowledgePlanet* get_planet(uint32_t planet_id);
+    const KnowledgePlanet* get_planet(uint32_t planet_id) const;
+    
+    size_t get_planet_count() const { return planets.size(); }
+    
+    // Update player's knowledge of a planet
+    void observe_planet(uint32_t planet_id, const Planet& real_planet, 
+                       const Player* observer, int32_t current_year);
+    
+    // Access to real galaxy (for edge cases)
+    const Planet* get_real_planet(uint32_t planet_id) const;
+};
+```
+
+**Key Features:**
+1. **Self-sufficient validation** - Uses player's knowledge for most game logic
+2. **Reference to real galaxy** - Available for edge cases, not primary validation path
+3. **Vector storage** - Direct indexing by planet_id for O(1) access
+4. **Initialization at game start** - Creates KnowledgePlanets for all planets with partial info
+5. **Extensible design** - Foundation for fog of war and future game logic
+
+**Ownership Structure:**
+```
+GameState
+  └─ Galaxy
+      └─ std::vector<Planet>  (all planets in the galaxy)
+
+Player
+  └─ KnowledgeGalaxy
+      └─ std::vector<KnowledgePlanet>  (player's knowledge of all planets)
+          ├─ const Galaxy* real_galaxy  (reference, for edge cases)
+          └─ KnowledgePlanet[i]
+              ├─ Planet* real_planet  (points to GameState's Planet)
+              ├─ Observable fields (temperature, gravity, metal, etc.)
+              ├─ Fleet information (my_fleet_ids, enemy_fleets)
+              └─ Optional ColonizedPlanet (if colonized)
+```
+
+### Session 7 Commits:
+
+1. `8243611` - Rename PlanetSnapshot to KnowledgePlanet
+   - Complete rename throughout codebase
+   - Updated class definitions, implementations, and references
+   
+2. `b22fdb9` - Implement KnowledgeGalaxy class for player galaxy knowledge
+   - Created knowledge_galaxy.h/cpp
+   - Updated Player to use KnowledgeGalaxy
+   - Updated build system and includes
+
+### Updated Future Plans:
+
+**Next Steps (Phase 2d - KnowledgePlanet Integration):**
+1. [ ] Integrate KnowledgeGalaxy initialization into GameState constructor
+2. [ ] Initialize homeworld with full knowledge
+3. [ ] Implement initial knowledge updates for all players
+4. [ ] Add helper methods to Player for common KnowledgeGalaxy queries
+5. [ ] Update game logic to use KnowledgeGalaxy for planet queries
+6. [ ] Implement fog of war rules for knowledge updates
+7. [ ] Add observation mechanics (exploration, colonization, etc.)
+8. [ ] Implement fleet visibility tracking in KnowledgePlanet
+
+**Phase 2e - Future Enhancements:**
+- [ ] Implement fog of war based on fleet positions
+- [ ] Add sensor range calculations for fleet observation
+- [ ] Implement knowledge decay/staleness tracking
+- [ ] Add knowledge sharing between allied players
+- [ ] Implement espionage/scouting mechanics
+
+### Benefits of Current Implementation:
+
+✅ **Clear architecture** - Separate files for each concept (Planet, ColonizedPlanet, KnowledgePlanet)  
+✅ **Self-sufficient player view** - KnowledgeGalaxy provides most validation independently  
+✅ **Extensible design** - Foundation for fog of war and game logic  
+✅ **Type safety** - Full classes instead of structs provide better encapsulation  
+✅ **Maintainability** - Well-organized codebase with clear responsibilities  
+✅ **Performance** - Vector indexing provides O(1) access by planet_id  
+✅ **Code compiles successfully** - All changes integrated and tested
+
