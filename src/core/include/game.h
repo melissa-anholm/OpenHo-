@@ -198,8 +198,19 @@ private:
 	// Player public information history: player_id -> vector of PlayerPublicInfo (one per turn)
 	std::unordered_map<uint32_t, std::vector<PlayerPublicInfo>> player_info_history;
 	
+	// Research advancement cost caches (indexed by tech level)
+	std::vector<int64_t> research_cost_range;
+	std::vector<int64_t> research_cost_speed;
+	std::vector<int64_t> research_cost_weapons;
+	std::vector<int64_t> research_cost_shields;
+	std::vector<int64_t> research_cost_mini;
+	std::vector<int64_t> research_cost_radical;
+	
 	
 	// Private helper methods
+	void initialize_research_cost_caches();
+	void ensure_research_costs_available(int32_t max_tech_level);
+	
 	std::vector<Player> initialize_players(const std::vector<PlayerSetup>& player_setups);
 	std::unique_ptr<Galaxy> initialize_galaxy(const GalaxyGenerationParams& params);
 	void build_entity_maps();

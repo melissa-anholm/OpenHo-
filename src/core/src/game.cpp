@@ -38,6 +38,9 @@ GameState::GameState(const class GameSetup& setup)
 	// This also assigns planets to players internally
 	galaxy = initialize_galaxy(galaxy_params);
 	
+	// Initialize research cost caches
+	initialize_research_cost_caches();
+	
 	// Initialize the first turn
 	start_first_turn();
 }
@@ -233,6 +236,108 @@ bool GameState::deserialize_state(const std::vector<uint8_t>& data)
 	// Placeholder for deserialization
 	// This will be implemented in serialization.cpp
 	return true;
+}
+
+// ============================================================================
+// Research Cost Cache Management
+// ============================================================================
+
+void GameState::initialize_research_cost_caches()
+{
+	// Initialize all research cost vectors with starting tech levels
+	// Players start with tech level 1 for most streams, so we initialize with 2 zeroes
+	// research_cost_X[0] = 0 (cost to reach level 0, starting level)
+	// research_cost_X[1] = 0 (cost to reach level 1, starting level)
+	// research_cost_X[2] = actual cost to advance from level 1 to 2
+	// etc.
+	
+	const int32_t INITIAL_TECH_LEVEL = 1;
+	const int32_t INITIAL_CACHE_SIZE = INITIAL_TECH_LEVEL + 1;  // +1 for level 0
+	const int32_t CACHE_EXTENSION_SIZE = 20;
+	
+	// Initialize each tech stream cache
+	research_cost_range.assign(INITIAL_CACHE_SIZE + CACHE_EXTENSION_SIZE, 0);
+	research_cost_speed.assign(INITIAL_CACHE_SIZE + CACHE_EXTENSION_SIZE, 0);
+	research_cost_weapons.assign(INITIAL_CACHE_SIZE + CACHE_EXTENSION_SIZE, 0);
+	research_cost_shields.assign(INITIAL_CACHE_SIZE + CACHE_EXTENSION_SIZE, 0);
+	research_cost_mini.assign(INITIAL_CACHE_SIZE + CACHE_EXTENSION_SIZE, 0);
+	research_cost_radical.assign(INITIAL_CACHE_SIZE + CACHE_EXTENSION_SIZE, 0);
+	
+	// Fill in the calculated costs starting from INITIAL_CACHE_SIZE
+	for (int32_t level = INITIAL_CACHE_SIZE; level < INITIAL_CACHE_SIZE + CACHE_EXTENSION_SIZE; ++level)
+	{
+		research_cost_range[level] = GameFormulas::calculate_tech_range_advancement_cost(level - 1);
+		research_cost_speed[level] = GameFormulas::calculate_tech_speed_advancement_cost(level - 1);
+		research_cost_weapons[level] = GameFormulas::calculate_tech_weapons_advancement_cost(level - 1);
+		research_cost_shields[level] = GameFormulas::calculate_tech_shields_advancement_cost(level - 1);
+		research_cost_mini[level] = GameFormulas::calculate_tech_mini_advancement_cost(level - 1);
+		research_cost_radical[level] = GameFormulas::calculate_tech_radical_advancement_cost(level - 1);
+	}
+}
+
+void GameState::ensure_research_costs_available(int32_t max_tech_level)
+{
+	// Check if we need to extend the cache for any tech stream
+	const int32_t CACHE_EXTENSION_SIZE = 20;
+	
+	// Find the maximum current cache size
+	size_t max_cache_size = std::max({
+		research_cost_range.size(),
+		research_cost_speed.size(),
+		research_cost_weapons.size(),
+		research_cost_shields.size(),
+		research_cost_mini.size(),
+		research_cost_radical.size()
+	});
+	
+	// If max_tech_level + 1 is beyond current cache, extend all caches
+	if (static_cast<size_t>(max_tech_level + 1) >= max_cache_size)
+	{
+		size_t new_size = max_tech_level + 1 + CACHE_EXTENSION_SIZE;
+		
+		// Extend each cache and fill in new values
+		size_t old_size = research_cost_range.size();
+		research_cost_range.resize(new_size);
+		for (size_t level = old_size; level < new_size; ++level)
+		{
+			research_cost_range[level] = GameFormulas::calculate_tech_range_advancement_cost(level - 1);
+		}
+		
+		old_size = research_cost_speed.size();
+		research_cost_speed.resize(new_size);
+		for (size_t level = old_size; level < new_size; ++level)
+		{
+			research_cost_speed[level] = GameFormulas::calculate_tech_speed_advancement_cost(level - 1);
+		}
+		
+		old_size = research_cost_weapons.size();
+		research_cost_weapons.resize(new_size);
+		for (size_t level = old_size; level < new_size; ++level)
+		{
+			research_cost_weapons[level] = GameFormulas::calculate_tech_weapons_advancement_cost(level - 1);
+		}
+		
+		old_size = research_cost_shields.size();
+		research_cost_shields.resize(new_size);
+		for (size_t level = old_size; level < new_size; ++level)
+		{
+			research_cost_shields[level] = GameFormulas::calculate_tech_shields_advancement_cost(level - 1);
+		}
+		
+		old_size = research_cost_mini.size();
+		research_cost_mini.resize(new_size);
+		for (size_t level = old_size; level < new_size; ++level)
+		{
+			research_cost_mini[level] = GameFormulas::calculate_tech_mini_advancement_cost(level - 1);
+		}
+		
+		old_size = research_cost_radical.size();
+		research_cost_radical.resize(new_size);
+		for (size_t level = old_size; level < new_size; ++level)
+		{
+			research_cost_radical[level] = GameFormulas::calculate_tech_radical_advancement_cost(level - 1);
+		}
+	}
 }
 
 // ============================================================================
@@ -613,30 +718,47 @@ void GameState::process_research_stream(Player& player, TechStream stream, int64
 	// Add the converted research points to the player's research points
 	*research_points += research_points_gained;
 	
+	// Ensure we have cached costs up to the player's current tech level
+	ensure_research_costs_available(*tech_level);
+	
 	// Check if we can advance the technology level
 	while (true)
 	{
-		int64_t advancement_cost = 10;
+		// Get advancement cost from cache
+		int64_t advancement_cost = 0;
+		int32_t next_level = *tech_level + 1;
 		
 		switch (stream)
 		{
 			case TECH_RANGE:
-				advancement_cost = GameFormulas::calculate_tech_range_advancement_cost(*tech_level);
+				if (static_cast<size_t>(next_level) >= research_cost_range.size())
+					ensure_research_costs_available(next_level);
+				advancement_cost = research_cost_range[next_level];
 				break;
 			case TECH_SPEED:
-				advancement_cost = GameFormulas::calculate_tech_speed_advancement_cost(*tech_level);
+				if (static_cast<size_t>(next_level) >= research_cost_speed.size())
+					ensure_research_costs_available(next_level);
+				advancement_cost = research_cost_speed[next_level];
 				break;
 			case TECH_WEAPONS:
-				advancement_cost = GameFormulas::calculate_tech_weapons_advancement_cost(*tech_level);
+				if (static_cast<size_t>(next_level) >= research_cost_weapons.size())
+					ensure_research_costs_available(next_level);
+				advancement_cost = research_cost_weapons[next_level];
 				break;
 			case TECH_SHIELDS:
-				advancement_cost = GameFormulas::calculate_tech_shields_advancement_cost(*tech_level);
+				if (static_cast<size_t>(next_level) >= research_cost_shields.size())
+					ensure_research_costs_available(next_level);
+				advancement_cost = research_cost_shields[next_level];
 				break;
 			case TECH_MINI:
-				advancement_cost = GameFormulas::calculate_tech_mini_advancement_cost(*tech_level);
+				if (static_cast<size_t>(next_level) >= research_cost_mini.size())
+					ensure_research_costs_available(next_level);
+				advancement_cost = research_cost_mini[next_level];
 				break;
 			case TECH_RADICAL:
-				advancement_cost = GameFormulas::calculate_tech_radical_advancement_cost(*tech_level);
+				if (static_cast<size_t>(next_level) >= research_cost_radical.size())
+					ensure_research_costs_available(next_level);
+				advancement_cost = research_cost_radical[next_level];
 				break;
 			default:
 				return;
