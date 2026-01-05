@@ -247,7 +247,7 @@ std::vector<Player> GameState::initialize_players(const std::vector<PlayerSetup>
 	
 	for (const auto& setup : player_setups)
 	{
-		Player player;
+		Player player(this);
 		player.id = player_id++;
 		player.type = setup.type;
 		player.iq = setup.ai_iq;
@@ -706,30 +706,6 @@ void GameState::process_planets()
 // ============================================================================
 // Fleet Management Methods
 // ============================================================================
-uint32_t GameState::create_fleet(uint32_t player_id, uint32_t design_id, 
-                                 uint32_t ship_count, uint32_t planet_id)
-{
-	Player* player = get_player(player_id);
-	if (!player)
-		{ return 0; }
-	
-	// Validate and get the ship design
-	const ShipDesign* design = player->get_ship_design(design_id);
-	if (!design)
-		{ return 0; }  // Design not found for this player
-	
-	// Validate and get the planet
-	Planet* planet = get_planet(planet_id);
-	if (!planet)
-		{ return 0; } // Planet not found
-	
-	// Allocate a globally unique fleet ID
-	uint32_t fleet_id = allocate_fleet_id();
-	
-	// Delegate to Player with validated pointers
-	return player->create_fleet(fleet_id, design, ship_count, planet);
-}
-
 Fleet* GameState::get_fleet(uint32_t player_id, uint32_t fleet_id)
 {
 	Player* player = get_player(player_id);

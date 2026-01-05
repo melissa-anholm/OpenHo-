@@ -1,6 +1,7 @@
 
 #include "openho_core.h"
 #include "player.h"
+#include "game.h"
 #include <cmath>
 
 // ============================================================================
@@ -64,18 +65,54 @@ int64_t Player::calculate_research_stream_amount( const ResearchAllocation& play
 // Fleet Management
 // ============================================================================
 
-uint32_t Player::create_fleet(uint32_t fleet_id, const ShipDesign* design, uint32_t ship_count, Planet* planet)
+bool Player::validate_fleet(uint32_t design_id, uint32_t ship_count, uint32_t planet_id) const
 {
-	// TODO: Validate ship_count is positive
-	// Note: fleet_id is allocated by GameState via allocate_fleet_id()
-	// Note: design pointer is validated by caller (GameState::create_fleet)
-	// Note: planet pointer is validated by caller (GameState::create_fleet)
+	// Validate ship_count is positive
+	if (ship_count == 0)
+		return false;
+	
+	// Validate design exists for this player
+	const ShipDesign* design = get_ship_design(design_id);
+	if (!design)
+		return false;
+	
+	// Validate planet exists through GameState
+	const Planet* planet = game_state->get_planet(planet_id);
+	if (!planet)
+		return false;
+	
+	return true;
+}
+
+uint32_t Player::build_fleet(uint32_t fleet_id, uint32_t design_id, uint32_t ship_count, uint32_t planet_id)
+{
+	// Get the design and planet pointers
+	const ShipDesign* design = get_ship_design(design_id);
+	if (!design)
+		return 0;
+	
+	Planet* planet = game_state->get_planet(planet_id);
+	if (!planet)
+		return 0;
 	
 	// Create fleet using private constructor (Player is a friend of Fleet)
 	Fleet new_fleet(fleet_id, id, design, ship_count, planet);
 	
 	fleets.push_back(new_fleet);
 	return fleet_id;
+}
+
+uint32_t Player::create_fleet(uint32_t design_id, uint32_t ship_count, uint32_t planet_id)
+{
+	// Validate parameters
+	if (!validate_fleet(design_id, ship_count, planet_id))
+		return 0;
+	
+	// Allocate a globally unique fleet ID from GameState
+	uint32_t fleet_id = game_state->allocate_fleet_id();
+	
+	// Build and add the fleet
+	return build_fleet(fleet_id, design_id, ship_count, planet_id);
 }
 
 Fleet* Player::get_fleet(uint32_t fleet_id)

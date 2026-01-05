@@ -55,12 +55,15 @@ class Player
 	friend class GameState;  // GameState has access to all private members
 	// Note: C API functions in c_api.cpp access Player through GameState, which is a friend
 
-public:
-	uint32_t id;
-	std::string name;
-	Gender gender;  // Player's gender (for icons/graphics and pronouns in notifications)
-	PlayerType type;
-	int32_t iq;  // For computer players
+	public:
+		uint32_t id;
+		std::string name;
+		Gender gender;  // Player's gender (for icons/graphics and pronouns in notifications)
+		PlayerType type;
+		int32_t iq;  // For computer players
+		
+		// Constructor
+		Player(class GameState* game_state_ref) : game_state(game_state_ref) {}
 	
 	// ========================================================================
 	// Public Accessors
@@ -155,9 +158,17 @@ public:
 	// Fleet Management
 	// ========================================================================
 	
-	/// Create a new fleet for this player
-	/// Note: fleet_id must be allocated by GameState via allocate_fleet_id()
-	[[nodiscard]] uint32_t create_fleet(uint32_t fleet_id, const ShipDesign* design, uint32_t ship_count, Planet* planet);
+		/// Create a new fleet for this player
+		/// Validates parameters, allocates fleet_id from GameState, and builds the fleet
+		[[nodiscard]] uint32_t create_fleet(uint32_t design_id, uint32_t ship_count, uint32_t planet_id);
+		
+		/// Validate fleet creation parameters
+		/// Returns true if all parameters are valid
+		[[nodiscard]] bool validate_fleet(uint32_t design_id, uint32_t ship_count, uint32_t planet_id) const;
+		
+		/// Build and add a fleet after validation
+		/// Called internally by create_fleet() after validation and fleet_id allocation
+		[[nodiscard]] uint32_t build_fleet(uint32_t fleet_id, uint32_t design_id, uint32_t ship_count, uint32_t planet_id);
 	
 	/// Get a fleet by ID (mutable)
 	[[nodiscard]] Fleet* get_fleet(uint32_t fleet_id);
@@ -187,10 +198,13 @@ public:
 	/// Delete a ship design
 	[[nodiscard]] bool delete_ship_design(uint32_t design_id);
 
-private:
-	// Resources
-	int64_t money_savings;  // Savings account
-	int64_t metal_reserve;
+	private:
+		// GameState reference for validation and fleet_id allocation
+		class GameState* game_state;
+		
+		// Resources
+		int64_t money_savings;  // Savings account
+		int64_t metal_reserve;
 		
 	// Ideal planetary conditions (hidden from player)
 	double ideal_temperature;

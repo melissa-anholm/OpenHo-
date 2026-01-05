@@ -76,8 +76,13 @@ uint32_t game_player_build_fleet(
 	if (game_state->check_player_build_fleet(player_id, design_id, ship_count, planet_id) != ErrorCode::SUCCESS)
 		return 0;
 	
-	// Delegate to GameState
-	return game_state->create_fleet(player_id, design_id, ship_count, planet_id);
+	// Get player and delegate to Player::create_fleet
+	GameState* mutable_game_state = const_cast<GameState*>(game_state);
+	Player* player = mutable_game_state->get_player(player_id);
+	if (!player)
+		return 0;
+	
+	return player->create_fleet(design_id, ship_count, planet_id);
 }
 
 // ============================================================================
