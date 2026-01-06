@@ -403,7 +403,7 @@ std::vector<Player> GameState::initialize_players(const std::vector<PlayerSetup>
 		// ideal_gravity will be assigned in assign_planets_random() after homeworld is determined
 		player.ideal_gravity = 0.0;  // Placeholder, will be set later
 		
-		new_players.push_back(player);
+		new_players.push_back(std::move(player));
 	}
 	
 	return new_players;
@@ -549,8 +549,44 @@ void GameState::process_money_allocation()
 
 void GameState::process_ships()
 {
-	// Process ship movement and actions
-	// (This will be implemented in a separate file)
+	// Process fleet arrivals at their destinations
+	// Iterate through all players and check their in-transit fleets
+	for (auto& player : players)
+	{
+		// Check each fleet to see if it has arrived
+		for (auto& fleet : player.fleets)
+		{
+			// Check if fleet is in transit and has arrived
+			if (fleet.transit && fleet.transit->arrival_turn <= current_turn)
+			{
+				// Fleet has arrived at destination
+				uint32_t dest_id = fleet.transit->destination_planet_id;
+				Planet* destination = nullptr;
+				
+				// Find the destination planet
+				if (dest_id < galaxy->planets.size())
+				{
+					destination = &galaxy->planets[dest_id];
+				}
+				
+				if (destination)
+				{
+					// Move fleet from space to destination
+					fleet.current_planet = destination;
+					
+					// Clear transit info
+					fleet.transit.reset();
+					
+					// Update old transit fields for compatibility
+					fleet.in_transit = false;
+					fleet.origin_planet = destination;
+					fleet.destination_planet = nullptr;
+					fleet.distance_to_destination = 0;
+					fleet.turns_to_destination = 0;
+				}
+			}
+		}
+	}
 }
 
 void GameState::process_novae()
@@ -898,7 +934,7 @@ void GameState::move_fleet(uint32_t player_id, uint32_t fleet_id, uint32_t desti
 	
 	// Delegate to fleet's move_to method, passing the player's knowledge galaxy
 	// This uses the distance matrix for accurate distance calculations
-	fleet->move_to(destination, player->knowledge_galaxy);
+	fleet->move_to(destination, player->knowledge_galaxy, current_turn);
 }
 
 void GameState::refuel_fleet(uint32_t player_id, uint32_t fleet_id)

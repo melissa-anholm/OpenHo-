@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <string>
+#include <memory>
 
 // Forward declarations
 struct Planet;
@@ -12,6 +13,31 @@ typedef int32_t PlayerID;
 
 // Forward declaration
 class Player;
+
+// ============================================================================
+// FleetTransit Struct
+// ============================================================================
+
+// Encapsulates all transit state for a fleet in motion
+struct FleetTransit
+{
+	uint32_t origin_planet_id;          // ID of origin planet
+	uint32_t destination_planet_id;     // ID of destination planet
+	uint32_t departure_turn;            // Turn when fleet departed
+	uint32_t arrival_turn;              // Turn when fleet arrives
+	double distance;                    // Distance traveled (from matrix)
+	uint32_t turns_to_travel;           // Turns needed to reach destination
+	
+	FleetTransit(uint32_t origin, uint32_t dest, uint32_t dep, uint32_t arr, double dist, uint32_t turns)
+		: origin_planet_id(origin),
+		  destination_planet_id(dest),
+		  departure_turn(dep),
+		  arrival_turn(arr),
+		  distance(dist),
+		  turns_to_travel(turns)
+	{
+	}
+};
 
 /// Fleet represents a group of identical ships traveling together
 /// All ships in a fleet must have the same design and fuel level
@@ -45,6 +71,17 @@ public:
 	double distance_to_destination; // Remaining distance in light-years
 	uint32_t turns_to_destination;  // Estimated turns until arrival
 	
+	// Transit state (new architecture)
+	std::unique_ptr<FleetTransit> transit;  // nullptr if docked, not-null if in transit
+	
+	// Move semantics (required by unique_ptr)
+	Fleet(Fleet&&) = default;
+	Fleet& operator=(Fleet&&) = default;
+	
+	// Delete copy semantics (unique_ptr is not copyable)
+	Fleet(const Fleet&) = delete;
+	Fleet& operator=(const Fleet&) = delete;
+	
 	// Member functions (implemented in fleet.cpp)
 	
 	/// Refuel fleet to maximum capacity (based on ship design's range)
@@ -55,7 +92,7 @@ public:
 	
 	/// Move fleet to destination planet
 	/// Sets up fleet movement with distance and turns calculated from distance matrix
-	void move_to(Planet* destination, const KnowledgeGalaxy* knowledge_galaxy);
+	void move_to(Planet* destination, KnowledgeGalaxy* knowledge_galaxy, uint32_t current_turn);
 };
 
 #endif // FLEET_H

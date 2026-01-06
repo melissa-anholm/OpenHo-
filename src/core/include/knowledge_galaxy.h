@@ -29,10 +29,16 @@ private:
 	std::vector<KnowledgePlanet> planets;  // Player's knowledge of each planet (indexed by planet_id)
 	std::vector<std::vector<double>> distance_matrix;  // Local copy of distance matrix for O(1) access
 	PlayerID player_id;
+	
+	// Space planets for holding in-transit fleets
+	Planet* space_real_planet;  // Virtual planet owned by this KnowledgeGalaxy
 
 public:
 	// Constructor - initializes with partial info for all planets
 	KnowledgeGalaxy(const Galaxy& galaxy, PlayerID player_id);
+	
+	// Destructor - cleans up space_real_planet
+	~KnowledgeGalaxy();
 	
 	// Accessors
 	KnowledgePlanet* get_planet(uint32_t planet_id);
@@ -50,6 +56,10 @@ public:
 	// Returns Euclidean distance rounded to nearest integer
 	// Throws std::out_of_range if planet IDs are invalid
 	double get_distance(uint32_t from_id, uint32_t to_id) const;
+	
+	// Access to space planet (for in-transit fleets)
+	Planet* get_space_real_planet() { return space_real_planet; }
+	const Planet* get_space_real_planet() const { return space_real_planet; }
 };
 
 #endif // OPENHO_KNOWLEDGE_GALAXY_H

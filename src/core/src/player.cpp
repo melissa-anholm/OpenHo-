@@ -98,7 +98,7 @@ uint32_t Player::build_fleet(uint32_t fleet_id, uint32_t design_id, uint32_t shi
 	// Create fleet using private constructor (Player is a friend of Fleet)
 	Fleet new_fleet(fleet_id, id, design, ship_count, planet);
 	
-	fleets.push_back(new_fleet);
+	fleets.push_back(std::move(new_fleet));
 	return fleet_id;
 }
 

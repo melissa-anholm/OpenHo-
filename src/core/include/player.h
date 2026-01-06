@@ -67,6 +67,14 @@ class Player
 		
 		// Constructor
 		Player(class GameState* game_state_ref) : game_state(game_state_ref) {}
+		
+		// Move semantics (required by Fleet's unique_ptr)
+		Player(Player&&) = default;
+		Player& operator=(Player&&) = default;
+		
+		// Delete copy semantics (Fleet is not copyable)
+		Player(const Player&) = delete;
+		Player& operator=(const Player&) = delete;
 	
 	// ========================================================================
 	// Public Accessors

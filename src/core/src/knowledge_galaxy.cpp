@@ -22,6 +22,26 @@ KnowledgeGalaxy::KnowledgeGalaxy(const Galaxy& galaxy, PlayerID player_id)
 	// Copy distance matrix from Galaxy for O(1) local access
 	// No network latency for distance queries
 	distance_matrix = galaxy.distance_matrix;
+	
+	// Create virtual space planet for holding in-transit fleets
+	// Each player gets their own space planet to prevent cross-player conflicts
+	space_real_planet = new Planet(
+		UINT32_MAX,           // Special ID for space planet
+		"SPACE",              // Name
+		-1.0,                 // x coordinate (invalid)
+		-1.0,                 // y coordinate (invalid)
+		0.0,                  // true_gravity
+		0.0,                  // true_temperature
+		0,                    // metal
+		-1                    // owner (OWNER_UNKNOWN)
+	);
+}
+
+KnowledgeGalaxy::~KnowledgeGalaxy()
+{
+	// Clean up the space planet
+	delete space_real_planet;
+	space_real_planet = nullptr;
 }
 
 KnowledgePlanet* KnowledgeGalaxy::get_planet(uint32_t planet_id)
@@ -54,7 +74,6 @@ const Planet* KnowledgeGalaxy::get_real_planet(uint32_t planet_id) const
 	}
 	return nullptr;
 }
-
 
 double KnowledgeGalaxy::get_distance(uint32_t from_id, uint32_t to_id) const
 {
