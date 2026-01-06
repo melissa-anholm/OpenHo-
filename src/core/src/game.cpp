@@ -344,7 +344,7 @@ std::vector<Player> GameState::initialize_players(const std::vector<PlayerSetup>
 	// Initialize players based on setup configuration
 	std::vector<Player> new_players;
 	
-	uint32_t player_id = 1;  // Player IDs start at 1 (0 is reserved for NOT_OWNED)
+	int32_t player_id = 1;  // Player IDs start at 1 (NOT_OWNED is reserved)
 	
 	for (const auto& setup : player_setups)
 	{

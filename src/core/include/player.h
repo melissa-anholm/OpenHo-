@@ -51,7 +51,7 @@ struct PlayerPublicInfo
 
 // Player structure
 // IMPORTANT: Player IDs must never be 0!
-// PlayerID 0 is reserved to mean "NOT_OWNED" for planets.
+// NOT_OWNED (0) is reserved to mean unowned for planets.
 // Player IDs must start from 1 and increment from there.
 class Player
 {
