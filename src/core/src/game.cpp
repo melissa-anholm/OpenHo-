@@ -920,21 +920,13 @@ bool GameState::delete_fleet(uint32_t player_id, uint32_t fleet_id)
 
 void GameState::move_fleet(uint32_t player_id, uint32_t fleet_id, uint32_t destination_planet_id)
 {
-	Fleet* fleet = get_fleet(player_id, fleet_id);
-	if (!fleet)
-		{ return; }
-	
-	Planet* destination = get_planet(destination_planet_id);
-	if (!destination)
-		{ return; }
-	
+	// Delegate to Player to handle validation and initiate movement
 	Player* player = get_player(player_id);
-	if (!player || !player->knowledge_galaxy)
-		{ return; }
+	if (!player)
+		return;  // Player not found
 	
-	// Delegate to fleet's move_to method, passing the player's knowledge galaxy
-	// This uses the distance matrix for accurate distance calculations
-	fleet->move_to(destination, player->knowledge_galaxy, current_turn);
+	// Player::move_fleet handles all validation and calls Fleet::move_to()
+	player->move_fleet(fleet_id, destination_planet_id);
 }
 
 void GameState::refuel_fleet(uint32_t player_id, uint32_t fleet_id)

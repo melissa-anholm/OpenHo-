@@ -149,18 +149,29 @@ bool Player::delete_fleet(uint32_t fleet_id)
 
 void Player::move_fleet(uint32_t fleet_id, uint32_t destination_planet_id)
 {
-	// TODO: Validate destination_planet_id is valid
-	// TODO: Calculate distance and travel time
-	// TODO: Check fuel availability
-	
+	// Validate fleet exists
 	Fleet* fleet = get_fleet(fleet_id);
 	if (!fleet)
-		return;
+		return;  // Fleet not found
 	
-	// NOTE: This is a placeholder. GameState::move_fleet will handle the actual
-	// planet lookup and distance calculations. This just marks the fleet as needing movement.
-	fleet->in_transit = true;
-	// TODO: Store destination_planet_id for GameState to look up the actual Planet pointer
+	// Validate destination planet exists
+	if (!game_state)
+		return;  // No game state reference
+	
+	Planet* destination = game_state->get_planet(destination_planet_id);
+	if (!destination)
+		return;  // Destination planet not found
+	
+	// Validate knowledge galaxy exists
+	if (!knowledge_galaxy)
+		return;  // No knowledge galaxy
+	
+	// Get current turn from game state
+	uint32_t current_turn = game_state->get_current_turn();
+	
+	// Delegate to Fleet::move_to() to initiate movement
+	// This creates FleetTransit and moves fleet to space planet
+	fleet->move_to(destination, knowledge_galaxy, current_turn);
 }
 
 
