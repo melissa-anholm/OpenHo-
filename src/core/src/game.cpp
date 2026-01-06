@@ -555,8 +555,13 @@ void GameState::process_ships()
 
 void GameState::process_novae()
 {
-	// Process nova events
-	// (This will be implemented in planet_mechanics.cpp)
+	// TODO: Process nova events (rare event - low priority)
+	// Placeholder: Currently does nothing
+	// Real implementation will:
+	//   - Check for planets entering nova state
+	//   - Handle nova warning periods
+	//   - Destroy planets in nova state
+	//   - Update player knowledge of destroyed planets
 }
 
 // ============================================================================
