@@ -55,10 +55,6 @@ public:
 	
 	// Update snapshot with current observation of the planet
 	void observe_planet(const Planet& planet, const Player* observer, int32_t current_year);
-	
-	// Factory method to create full info snapshot
-	// full_info: all available fields are copied with apparent values calculated
-	static KnowledgePlanet full_info(const Planet& planet, PlayerID player_id, const Player* observer);
 };
 
 #endif // OPENHO_KNOWLEDGE_PLANET_H

@@ -48,9 +48,3 @@ void KnowledgePlanet::observe_planet(const Planet& planet, const Player* observe
 	perceived_value = PERCEIVED_VALUE_UNKNOWN;
 }
 
-KnowledgePlanet KnowledgePlanet::full_info(const Planet& planet, PlayerID player_id, const Player* observer)
-{
-	KnowledgePlanet snapshot(planet, player_id);
-	snapshot.observe_planet(planet, observer, 0);  // Year 0 for initial observation
-	return snapshot;
-}
