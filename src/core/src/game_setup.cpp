@@ -176,7 +176,7 @@ PlayerSetup GameSetup::query_single_player(int player_number)
 	}
 	
 	// For now, hardcode starting colony quality to Normal
-	player.starting_colony_quality = COLONY_NORMAL;
+	player.starting_colony_quality = START_NORMAL;
 	
 	return player;
 }

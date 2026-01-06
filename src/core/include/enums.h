@@ -108,17 +108,6 @@ inline std::string get_starting_colony_quality_name(StartingColonyQuality qualit
 	return "Unknown";
 }
 
-// Legacy aliases for backward compatibility (deprecated)
-using ColonyQuality = StartingColonyQuality;
-const auto& COLONY_QUALITY_NAMES = STARTING_COLONY_QUALITY_NAMES;
-inline std::string get_colony_quality_name(StartingColonyQuality quality) { return get_starting_colony_quality_name(quality); }
-constexpr auto COLONY_OUTPOST = START_OUTPOST;
-constexpr auto COLONY_BARREN = START_BARREN;
-constexpr auto COLONY_BACKWARD = START_BACKWARD;
-constexpr auto COLONY_NORMAL = START_NORMAL;
-constexpr auto COLONY_ADVANCED = START_ADVANCED;
-constexpr auto COLONY_THRIVING = START_THRIVING;
-constexpr auto COLONY_ABUNDANT = START_ABUNDANT;
 
 // Galaxy generation shape patterns
 enum GalaxyShape
