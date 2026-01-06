@@ -512,6 +512,19 @@ void GameState::update_planet_incomes()
 			double happiness = (tempHappiness + gravHappiness) / 2.0;
 			
 			colonized.set_income(static_cast<int32_t>(colonized.get_population() * happiness * 10));
+			
+			// Apply population growth
+			int64_t population_growth = GameFormulas::calculate_population_growth(
+				colonized.get_population(),
+				planet->true_temperature,
+				planet->true_gravity,
+				player.ideal_temperature,
+				player.ideal_gravity
+			);
+			
+			int64_t new_population = colonized.get_population() + population_growth;
+			colonized.set_population(static_cast<int32_t>(new_population));
+			planet->population = static_cast<int32_t>(new_population);
 		}
 	}
 }

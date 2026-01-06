@@ -162,11 +162,26 @@ namespace GameFormulas
 		double ideal_temperature,
 		double ideal_gravity )
 	{
-		// Placeholder: simple linear growth
-		// Real formula will depend on how well the planet matches the player's ideals
-		// For now: 1% population growth per turn
-		int64_t growth = static_cast<int64_t>(current_population * 0.01);
-		return std::max(growth, static_cast<int64_t>(1));  // At least 1 population growth
+		// Placeholder: simple population growth
+		// TODO: Real formula will depend on planet conditions, player ideals, infrastructure, etc.
+		// For now: 10% population growth per turn, up to max of 1,000,000
+		// Note: Parameters (planet_temperature, planet_gravity, ideal_temperature, ideal_gravity) are unused
+		
+		const int64_t MAX_POPULATION = 1000000;
+		
+		// If already at max, no growth
+		if (current_population >= MAX_POPULATION)
+			return 0;
+		
+		// Calculate 10% growth
+		int64_t growth = static_cast<int64_t>(current_population * 0.10);
+		
+		// Ensure we don't exceed max population
+		int64_t new_population = current_population + growth;
+		if (new_population > MAX_POPULATION)
+			return MAX_POPULATION - current_population;
+		
+		return growth;
 	}
 	
 	// ============================================================================
