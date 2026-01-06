@@ -86,95 +86,75 @@ uint32_t game_get_num_fleets(void* game)
 // ============================================================================
 // Player Queries
 // ============================================================================
-void game_get_player(void* game, uint32_t player_id, Player* out)
+int64_t game_get_player_money_income(void* game, uint32_t player_id)
 {
-	if (!game || !out)
-		{ return; }
+	if (!game)
+		return 0;
 	
 	GameState* gameState = static_cast<GameState*>(game);
-	const Player* player = gameState->get_player(player_id);
-	
-	if (player)
-		{ *out = *player; }
-	else
-	{
-		// Return a zeroed-out player structure
-		std::memset(out, 0, sizeof(Player));
-	}
+	return gameState->get_player_money_income(player_id);
 }
 
-void game_get_player_money_income(void* game, uint32_t player_id, int64_t* out)
+int64_t game_get_player_metal_income(void* game, uint32_t player_id)
 {
-	if (!game || !out)
-		{ return; }
+	if (!game)
+		return 0;
 	
 	GameState* gameState = static_cast<GameState*>(game);
-	*out = gameState->get_player_money_income(player_id);
+	return gameState->get_player_metal_income(player_id);
 }
 
-void game_get_player_metal_income(void* game, uint32_t player_id, int64_t* out)
+int64_t game_get_player_money_reserve(void* game, uint32_t player_id)
 {
-	if (!game || !out)
-		{ return; }
+	if (!game)
+		return 0;
 	
 	GameState* gameState = static_cast<GameState*>(game);
-	*out = gameState->get_player_metal_income(player_id);
+	return gameState->get_player_money(player_id);
 }
 
-void game_get_player_money_reserve(void* game, uint32_t player_id, int64_t* out)
+int64_t game_get_player_metal_reserve(void* game, uint32_t player_id)
 {
-	if (!game || !out)
-		{ return; }
+	if (!game)
+		return 0;
 	
 	GameState* gameState = static_cast<GameState*>(game);
-	*out = gameState->get_player_money(player_id);
-}
-
-void game_get_player_metal_reserve(void* game, uint32_t player_id, int64_t* out)
-{
-	if (!game || !out)
-		{ return; }
-	
-	GameState* gameState = static_cast<GameState*>(game);
-	*out = gameState->get_player_metal_reserve(player_id);
+	return gameState->get_player_metal_reserve(player_id);
 }
 
 // ============================================================================
 // Planet Queries
 // ============================================================================
-void game_get_planet(void* game, uint32_t planetID, Planet* out)
+ErrorCode game_get_planet(void* game, uint32_t planetID, Planet* out)
 {
 	if (!game || !out)
-		{ return; }
+		return ErrorCode::INVALID_PARAMETER;
 	
 	GameState* gameState = static_cast<GameState*>(game);
 	const Planet* planet = gameState->get_planet(planetID);
 	
-	if (planet)
-		{ *out = *planet; }
-	else
-	{
-		// Return a zeroed-out planet structure
-		std::memset(out, 0, sizeof(Planet));
-	}
+	if (!planet)
+		return ErrorCode::PLANET_NOT_FOUND;
+	
+	*out = *planet;
+	return ErrorCode::SUCCESS;
 }
 
-void game_get_planet_perceived_values(void* game, uint32_t planetID, uint32_t player_id,
-									   double* outTemp, double* outGravity)
+ErrorCode game_get_planet_perceived_values(void* game, uint32_t planetID, uint32_t player_id,
+							   double* outTemp, double* outGravity)
 {
 	if (!game || !outTemp || !outGravity)
-		{ return; }
+		return ErrorCode::INVALID_PARAMETER;
 	
 	GameState* gameState = static_cast<GameState*>(game);
 	const Planet* planet = gameState->get_planet(planetID);
 	const Player* player = gameState->get_player(player_id);
 	
-	if (!planet || !player)
-	{
-		*outTemp = 0.0;
-		*outGravity = 0.0;
-		return;
-	}
+	if (!planet)
+		return ErrorCode::PLANET_NOT_FOUND;
+	
+	if (!player)
+		return ErrorCode::INVALID_PLAYER_ID;
 	
 	// Perceived values are based on the player's ideal conditions
 	// The formula creates a "happiness" or "desirability" score
@@ -189,6 +169,8 @@ void game_get_planet_perceived_values(void* game, uint32_t planetID, uint32_t pl
 	double idealGrav = gameState->get_player_ideal_gravity(player_id);
 	double gravDiff = std::abs(planet->true_gravity - idealGrav);
 	*outGravity = std::max(0.0, 1.0 - gravDiff / 2.0);
+	
+	return ErrorCode::SUCCESS;
 }
 
 // ============================================================================
@@ -216,27 +198,29 @@ void game_get_full_player_info_history(void* game, uint32_t player_id, const std
 // ============================================================================
 // Money Allocation
 // ============================================================================
-void game_set_money_allocation(void* game, uint32_t player_id, const Player::MoneyAllocation* money_alloc)
+ErrorCode game_set_money_allocation(void* game, uint32_t player_id, const Player::MoneyAllocation* money_alloc)
 {
 	if (!game || !money_alloc)
-		{ return; }
+		return ErrorCode::INVALID_PARAMETER;
 	
 	GameState* gameState = static_cast<GameState*>(game);
 	
 	try
 	{
 		gameState->set_money_allocation(player_id, *money_alloc);
+		return ErrorCode::SUCCESS;
 	}
 	catch (const std::exception& e)
 	{
 		// In production, log the error
+		return ErrorCode::INVALID_ALLOCATION;
 	}
 }
 
-void game_get_money_allocation(void* game, uint32_t player_id, Player::MoneyAllocation* out)
+ErrorCode game_get_money_allocation(void* game, uint32_t player_id, Player::MoneyAllocation* out)
 {
 	if (!game || !out) 
-		{ return; }
+		return ErrorCode::INVALID_PARAMETER;
 	
 	GameState* gameState = static_cast<GameState*>(game);
 	
@@ -244,12 +228,12 @@ void game_get_money_allocation(void* game, uint32_t player_id, Player::MoneyAllo
 	{
 		const Player::MoneyAllocation& alloc = gameState->get_money_allocation(player_id);
 		*out = alloc;
+		return ErrorCode::SUCCESS;
 	}
 	catch (const std::exception& e)
 	{
 		// In production, log the error
-		// Return a zeroed-out allocation
-		std::memset(out, 0, sizeof(Player::MoneyAllocation));
+		return ErrorCode::INVALID_PLAYER_ID;
 	}
 }
 
@@ -277,13 +261,14 @@ void game_set_ai_seed(void* game, uint64_t seed)
 // ============================================================================
 // Turn Processing
 // ============================================================================
-void game_process_turn(void* game)
+ErrorCode game_process_turn(void* game)
 {
 	if (!game)
-		{ return; }
+		return ErrorCode::INVALID_PARAMETER;
 	
 	GameState* gameState = static_cast<GameState*>(game);
 	gameState->process_turn();
+	return ErrorCode::SUCCESS;
 }
 
 // ============================================================================
@@ -373,18 +358,19 @@ uint32_t game_create_ship_design(void* game, uint32_t player_id, const char* nam
 	                                    tech_weapons, tech_shields, tech_miniaturization);
 }
 
-void game_get_ship_design(void* game, uint32_t player_id, uint32_t design_id, ShipDesign* out)
+ErrorCode game_get_ship_design(void* game, uint32_t player_id, uint32_t design_id, ShipDesign* out)
 {
 	if (!game || !out)
-		{ return; }
+		return ErrorCode::INVALID_PARAMETER;
 	
 	GameState* gameState = static_cast<GameState*>(game);
 	const ShipDesign* design = gameState->get_ship_design(player_id, design_id);
 	
-	if (design)
-		{ *out = *design; }
-	else
-		{ std::memset(out, 0, sizeof(ShipDesign)); }
+	if (!design)
+		return ErrorCode::SHIP_DESIGN_NOT_FOUND;
+	
+	*out = *design;
+	return ErrorCode::SUCCESS;
 }
 
 void game_get_player_ship_designs(void* game, uint32_t player_id, ShipDesign* out, uint32_t maxCount, uint32_t* outCount)
@@ -413,20 +399,22 @@ uint32_t game_get_num_player_ship_designs(void* game, uint32_t player_id)
 	return static_cast<uint32_t>(gameState->get_player_ship_designs(player_id).size());
 }
 
-void game_delete_ship_design(void* game, uint32_t player_id, uint32_t design_id)
+ErrorCode game_delete_ship_design(void* game, uint32_t player_id, uint32_t design_id)
 {
 	if (!game) 
-		{ return; }
+		return ErrorCode::INVALID_PARAMETER;
 	
 	GameState* gameState = static_cast<GameState*>(game);
-	(void)gameState->delete_ship_design(player_id, design_id);  // Ignore return value
+	bool success = gameState->delete_ship_design(player_id, design_id);
+	return success ? ErrorCode::SUCCESS : ErrorCode::SHIP_DESIGN_NOT_FOUND;
 }
 
-void game_build_ship_from_design(void* game, uint32_t player_id, uint32_t design_id)
+ErrorCode game_build_ship_from_design(void* game, uint32_t player_id, uint32_t design_id)
 {
 	if (!game) 
-		{ return; }
+		return ErrorCode::INVALID_PARAMETER;
 	
 	GameState* gameState = static_cast<GameState*>(game);
 	gameState->build_ship_from_design(player_id, design_id);
+	return ErrorCode::SUCCESS;
 }

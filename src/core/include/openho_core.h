@@ -20,6 +20,7 @@ typedef double GalaxyCoord;
 // Enums
 // ============================================================================
 
+#include "error_codes.h"
 #include "enums.h"
 #include "planet.h"
 #include "colonized_planet.h"
@@ -49,15 +50,14 @@ void game_destroy(void* game);
 [[nodiscard]] uint32_t game_get_num_planets(void* game);
 
 // Player queries
-void game_get_player(void* game, uint32_t player_id, Player* out);
 [[nodiscard]] int64_t game_get_player_money_income(void* game, uint32_t player_id);
 [[nodiscard]] int64_t game_get_player_metal_income(void* game, uint32_t player_id);
 [[nodiscard]] int64_t game_get_player_money_reserve(void* game, uint32_t player_id);
 [[nodiscard]] int64_t game_get_player_metal_reserve(void* game, uint32_t player_id);
 
 // Planet queries
-void game_get_planet(void* game, uint32_t planet_id, Planet* out);
-void game_get_planet_perceived_values(void* game, uint32_t planet_id, uint32_t player_id, double* out_temp, double* out_grav);
+[[nodiscard]] ErrorCode game_get_planet(void* game, uint32_t planet_id, Planet* out);
+[[nodiscard]] ErrorCode game_get_planet_perceived_values(void* game, uint32_t planet_id, uint32_t player_id, double* out_temp, double* out_grav);
 
 // Fleet queries
 [[nodiscard]] uint32_t game_get_num_fleets(void* game);
@@ -68,22 +68,22 @@ void game_get_full_player_info_history(void* game, uint32_t player_id, const std
 
 // Ship design queries and management
 [[nodiscard]] uint32_t game_create_ship_design(void* game, uint32_t player_id, const char* name, ShipType type, int32_t tech_range, int32_t tech_speed, int32_t tech_weapons, int32_t tech_shields, int32_t tech_miniaturization);
-void game_get_ship_design(void* game, uint32_t player_id, uint32_t design_id, ShipDesign* out);
+[[nodiscard]] ErrorCode game_get_ship_design(void* game, uint32_t player_id, uint32_t design_id, ShipDesign* out);
 void game_get_player_ship_designs(void* game, uint32_t player_id, ShipDesign* out, uint32_t max_count, uint32_t* out_count);
 [[nodiscard]] uint32_t game_get_num_player_ship_designs(void* game, uint32_t player_id);
-void game_delete_ship_design(void* game, uint32_t player_id, uint32_t design_id);
-void game_build_ship_from_design(void* game, uint32_t player_id, uint32_t design_id);
+[[nodiscard]] ErrorCode game_delete_ship_design(void* game, uint32_t player_id, uint32_t design_id);
+[[nodiscard]] ErrorCode game_build_ship_from_design(void* game, uint32_t player_id, uint32_t design_id);
 
 // Money allocation
-void game_set_money_allocation(void* game, uint32_t player_id, const Player::MoneyAllocation* alloc);
-void game_get_money_allocation(void* game, uint32_t player_id, Player::MoneyAllocation* out);
+[[nodiscard]] ErrorCode game_set_money_allocation(void* game, uint32_t player_id, const Player::MoneyAllocation* alloc);
+[[nodiscard]] ErrorCode game_get_money_allocation(void* game, uint32_t player_id, Player::MoneyAllocation* out);
 
 	// AI RNG seed management
 	[[nodiscard]] uint64_t game_get_ai_seed(void* game);
 	void game_set_ai_seed(void* game, uint64_t seed);
 
 // Turn processing
-void game_process_turn(void* game);
+[[nodiscard]] ErrorCode game_process_turn(void* game);
 
 // Serialization
 [[nodiscard]] int game_serialize_state(void* game, void* buffer, int buffer_size);
