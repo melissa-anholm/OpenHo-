@@ -20,7 +20,7 @@ KnowledgePlanet::KnowledgePlanet(const Planet& planet, PlayerID player_id)
 	apparent_gravity = UNKNOWN_DOUBLE_VALUE;
 	metal = UNKNOWN_INT_VALUE;
 	apparent_owner = OWNER_UNKNOWN;
-	apparent_population = -1;  // -1 means unknown
+	apparent_population = POPULATION_UNKNOWN;
 	observation_year = OBSERVATION_YEAR_UNKNOWN;
 	can_be_profitable = PROFITABILITY_UNKNOWN;
 	perceived_value = PERCEIVED_VALUE_UNKNOWN;

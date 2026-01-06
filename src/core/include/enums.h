@@ -145,6 +145,7 @@ constexpr uint32_t OWNER_UNKNOWN = UINT32_MAX;
 constexpr int32_t OBSERVATION_YEAR_UNKNOWN = -1;
 constexpr int32_t PROFITABILITY_UNKNOWN = -1;
 constexpr int32_t PERCEIVED_VALUE_UNKNOWN = -1;
+constexpr int32_t POPULATION_UNKNOWN = -1;
 
 // ============================================================================
 // Error Codes
