@@ -2,6 +2,7 @@
 #include "galaxy.h"
 #include "planet.h"
 #include "player.h"
+#include "game_constants.h"
 
 // ============================================================================
 // KnowledgeGalaxy Implementation
@@ -32,13 +33,10 @@ KnowledgeGalaxy::KnowledgeGalaxy(const Galaxy& galaxy, PlayerID player_id)
 		static_cast<double>(INT32_MAX),       // x coordinate (unreachable)
 		static_cast<double>(INT32_MAX),       // y coordinate (unreachable)
 		1.0,                                  // true_gravity (neutral)
-		0.0,                                  // true_temperature (placeholder, should be player's best_perceived_temperature_K)
+		GameConstants::best_perceived_temperature_K,  // true_temperature
 		0,                                    // metal
 		player_id                             // owner (assigned to this player)
 	);
-	
-	// TODO: Set true_temperature to player's best_perceived_temperature_K
-	// This requires access to player data which is not available in KnowledgeGalaxy constructor
 }
 
 KnowledgeGalaxy::~KnowledgeGalaxy()
