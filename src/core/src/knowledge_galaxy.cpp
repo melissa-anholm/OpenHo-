@@ -25,16 +25,20 @@ KnowledgeGalaxy::KnowledgeGalaxy(const Galaxy& galaxy, PlayerID player_id)
 	
 	// Create virtual space planet for holding in-transit fleets
 	// Each player gets their own space planet to prevent cross-player conflicts
+	// Use INT32_MAX for coordinates to ensure they cannot conflict with real planets
 	space_real_planet = new Planet(
-		UINT32_MAX,           // Special ID for space planet
-		"SPACE",              // Name
-		-1.0,                 // x coordinate (invalid)
-		-1.0,                 // y coordinate (invalid)
-		0.0,                  // true_gravity
-		0.0,                  // true_temperature
-		0,                    // metal
-		-1                    // owner (OWNER_UNKNOWN)
+		UINT32_MAX,                           // Special ID for space planet
+		"Transit",                            // Name
+		static_cast<double>(INT32_MAX),       // x coordinate (unreachable)
+		static_cast<double>(INT32_MAX),       // y coordinate (unreachable)
+		1.0,                                  // true_gravity (neutral)
+		0.0,                                  // true_temperature (placeholder, should be player's best_perceived_temperature_K)
+		0,                                    // metal
+		player_id                             // owner (assigned to this player)
 	);
+	
+	// TODO: Set true_temperature to player's best_perceived_temperature_K
+	// This requires access to player data which is not available in KnowledgeGalaxy constructor
 }
 
 KnowledgeGalaxy::~KnowledgeGalaxy()
