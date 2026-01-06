@@ -7,6 +7,7 @@
 // Forward declarations
 struct Planet;
 struct ShipDesign;
+class KnowledgeGalaxy;
 typedef int32_t PlayerID;
 
 // Forward declaration
@@ -51,6 +52,10 @@ public:
 	
 	/// Refuel fleet by a specific amount, capped at maximum capacity
 	void partial_refuel(int32_t amount);
+	
+	/// Move fleet to destination planet
+	/// Sets up fleet movement with distance and turns calculated from distance matrix
+	void move_to(Planet* destination, const KnowledgeGalaxy* knowledge_galaxy);
 };
 
 #endif // FLEET_H

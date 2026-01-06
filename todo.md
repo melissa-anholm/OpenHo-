@@ -357,3 +357,110 @@ The foundation is now in place for:
 - Track fleets in transit (if visible)
 
 **Commit:** `<pending>` - Implement fleet visibility tracking in KnowledgePlanet
+
+
+---
+
+## Session 11 - Fleet Movement Refactoring (January 5, 2026)
+
+**Status:** ✅ COMPLETE
+
+**Objective:** Move fleet movement logic from GameState::move_fleet() to Fleet::move_to() method, and integrate distance matrix for accurate distance calculations.
+
+### Changes Made:
+
+**1. Fleet Class Enhancement**
+- Added `move_to(Planet* destination, const KnowledgeGalaxy* knowledge_galaxy)` method
+- Moved all movement setup logic from GameState to Fleet
+- Fleet now owns its own movement logic
+- Added forward declaration for KnowledgeGalaxy in fleet.h
+
+**2. Fleet::move_to() Implementation**
+- Validates inputs (destination, knowledge_galaxy, current_planet)
+- Checks if already at destination
+- Sets up movement state:
+  - `origin_planet = current_planet`
+  - `destination_planet = destination`
+  - `current_planet = nullptr`
+  - `in_transit = true`
+- **Uses distance matrix** for distance calculation:
+  - `distance = knowledge_galaxy->get_distance(origin_id, destination_id)`
+  - Replaces manual Euclidean distance calculation
+- Calculates turns based on ship speed:
+  - `turns_to_destination = ceil(distance / ship_speed)`
+
+**3. GameState::move_fleet() Refactoring**
+- Simplified to validation and delegation
+- Gets fleet, destination planet, and player
+- Calls `fleet->move_to(destination, player->knowledge_galaxy)`
+- Removed all manual distance calculations
+- Much cleaner and more maintainable
+
+**4. Added Necessary Includes**
+- `#include "knowledge_galaxy.h"` in fleet.cpp
+- `#include <cmath>` in fleet.cpp (for std::ceil)
+
+### Design Rationale:
+
+**Why Move to Fleet Class?**
+- ✅ Fleet should own its movement logic
+- ✅ More object-oriented design
+- ✅ Cleaner separation of concerns
+- ✅ Easier to test fleet movement independently
+
+**Why Use Distance Matrix?**
+- ✅ Avoids duplicate distance calculations
+- ✅ Uses pre-computed, accurate distances
+- ✅ O(1) lookup instead of manual calculation
+- ✅ Consistent with game design
+
+**Why Pass KnowledgeGalaxy?**
+- ✅ Fleet has access to player's distance matrix
+- ✅ Avoids passing GameState around
+- ✅ Cleaner API
+- ✅ Fleet can operate independently
+
+### Architecture Benefits:
+
+✅ **Better encapsulation** - Fleet owns its movement logic  
+✅ **Cleaner GameState** - Less responsibility in GameState  
+✅ **Distance matrix integration** - Uses pre-computed distances  
+✅ **More testable** - Fleet movement can be tested independently  
+✅ **Consistent API** - Fleet methods for fleet operations  
+✅ **No code duplication** - Single source of movement logic  
+
+### Code Comparison:
+
+**Before (GameState::move_fleet):**
+```cpp
+// 40+ lines of manual distance calculation
+double dx = destination->x - origin->x;
+double dy = destination->y - origin->y;
+distance = std::sqrt(dx * dx + dy * dy);
+```
+
+**After (Fleet::move_to):**
+```cpp
+// 1 line using distance matrix
+double distance = knowledge_galaxy->get_distance(origin_id, destination_id);
+```
+
+### Compilation:
+✅ Project compiles successfully  
+✅ No new errors introduced  
+✅ Only pre-existing warnings  
+
+### Next Steps (Future):
+
+**Immediate:**
+- [ ] Implement process_ships() to move fleets when turns_to_destination reaches 0
+- [ ] Update KnowledgePlanet fleet lists when fleets move
+- [ ] Handle fleet arrival at destination
+
+**Future:**
+- [ ] Implement fuel consumption during travel
+- [ ] Add waypoint/multi-leg journey support
+- [ ] Implement fleet interception mechanics
+- [ ] Add fleet combat in transit
+
+**Commit:** `<pending>` - Refactor fleet movement to Fleet::move_to() with distance matrix

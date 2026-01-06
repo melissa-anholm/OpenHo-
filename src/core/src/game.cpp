@@ -892,34 +892,13 @@ void GameState::move_fleet(uint32_t player_id, uint32_t fleet_id, uint32_t desti
 	if (!destination)
 		{ return; }
 	
-	// If fleet is already at destination, do nothing
-	if (fleet->current_planet && fleet->current_planet->id == destination_planet_id)
+	Player* player = get_player(player_id);
+	if (!player || !player->knowledge_galaxy)
 		{ return; }
 	
-	// Set up movement
-	fleet->origin_planet = fleet->current_planet;
-	fleet->destination_planet = destination;
-	fleet->current_planet = nullptr;
-	fleet->in_transit = true;
-	
-	// Calculate distance and turns (placeholder - will be refined with actual pathfinding)
-	if (fleet->origin_planet && fleet->destination_planet)
-	{
-		double dx = fleet->destination_planet->x - fleet->origin_planet->x;
-		double dy = fleet->destination_planet->y - fleet->origin_planet->y;
-		fleet->distance_to_destination = std::sqrt(dx * dx + dy * dy);
-		
-		// Calculate turns based on fleet speed
-		if (fleet->ship_design && fleet->ship_design->get_speed() > 0)
-		{
-			fleet->turns_to_destination = static_cast<uint32_t>(
-				std::ceil(fleet->distance_to_destination / fleet->ship_design->get_speed() ) );
-		}
-		else
-		{
-			fleet->turns_to_destination = 0;
-		}
-	}
+	// Delegate to fleet's move_to method, passing the player's knowledge galaxy
+	// This uses the distance matrix for accurate distance calculations
+	fleet->move_to(destination, player->knowledge_galaxy);
 }
 
 void GameState::refuel_fleet(uint32_t player_id, uint32_t fleet_id)
