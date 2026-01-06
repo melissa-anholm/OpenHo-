@@ -12,7 +12,7 @@
 // ============================================================================
 
 typedef uint32_t EntityID;
-typedef uint32_t PlayerID;
+typedef int32_t PlayerID;
 typedef double GalaxyCoord;
 
 class Player;

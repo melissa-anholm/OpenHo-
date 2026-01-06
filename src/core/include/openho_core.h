@@ -11,7 +11,7 @@
 
 // Unique identifiers for game entities
 typedef uint32_t EntityID;
-typedef uint32_t PlayerID;
+typedef int32_t PlayerID;
 
 // Coordinate types
 typedef double GalaxyCoord;

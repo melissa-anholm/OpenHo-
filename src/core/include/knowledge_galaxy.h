@@ -9,7 +9,7 @@
 // Forward Declarations
 // ============================================================================
 
-typedef uint32_t PlayerID;
+typedef int32_t PlayerID;
 
 class Galaxy;
 class Planet;

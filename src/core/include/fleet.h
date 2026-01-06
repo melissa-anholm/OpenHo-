@@ -7,7 +7,7 @@
 // Forward declarations
 struct Planet;
 struct ShipDesign;
-typedef uint32_t PlayerID;
+typedef int32_t PlayerID;
 
 // Forward declaration
 class Player;
