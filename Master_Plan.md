@@ -693,3 +693,143 @@ Player
 ✅ **Performance** - Vector indexing provides O(1) access by planet_id  
 ✅ **Code compiles successfully** - All changes integrated and tested
 
+
+
+---
+
+## Session 12 - FleetTransit Architecture & C API Improvements (January 5, 2026)
+
+**Status:** ✅ COMPLETE
+
+**Objective:** Implement turn-based fleet movement with FleetTransit architecture; improve C API structure and error handling
+
+### Major Accomplishments:
+
+#### 1. FleetTransit Architecture Implementation
+- ✅ Created `FleetTransit` struct to centralize all transit state:
+  - `uint32_t origin_planet_id` - Starting planet
+  - `uint32_t destination_planet_id` - Target planet
+  - `uint32_t departure_turn` - When fleet left
+  - `uint32_t arrival_turn` - When fleet arrives
+  - `double distance` - Pre-calculated distance
+  - `uint32_t turns_to_travel` - Travel time in turns
+  
+- ✅ Refactored `Fleet` class to use `std::unique_ptr<FleetTransit>`:
+  - Replaced scattered transit fields (in_transit, origin_planet, destination_planet, etc.)
+  - Added move semantics (move constructor, move assignment)
+  - Deleted copy semantics (enforces exclusive ownership)
+  - Added `move_to()` method for initiating fleet movement
+
+- ✅ Implemented **space_planet pattern** for in-transit fleets:
+  - Each player's `KnowledgeGalaxy` owns its own `space_real_planet` (virtual Planet)
+  - Each player has corresponding `space_knowledge_planet` (KnowledgePlanet view)
+  - In-transit fleets stored in player's space_real_planet
+  - Prevents accidental battles between players' in-transit fleets
+  - Clean isolation of each player's transit state
+
+#### 2. Fleet Movement Implementation
+- ✅ Implemented `Fleet::move_to()` method:
+  - Takes non-const KnowledgeGalaxy reference
+  - Creates FleetTransit with origin, destination, dates, distance
+  - Removes fleet from current_planet's my_fleets
+  - Adds fleet to space_real_planet's my_fleets
+  - Updates current_planet to point to space_real_planet
+  - Uses distance matrix for O(1) distance lookups
+
+- ✅ Implemented `GameState::process_ships()` for fleet arrivals:
+  - Iterates through all players' in-transit fleets
+  - Checks if arrival_turn <= current_turn
+  - Moves arrived fleets from space_real_planet to destination
+  - Destroys FleetTransit instance (resets unique_ptr)
+  - Integrated into turn processing pipeline
+
+#### 3. Move Semantics Cascade
+- ✅ Added move semantics to `Fleet` class
+- ✅ Added move semantics to `Player` class (required by Fleet vectors)
+- ✅ Added move semantics to `KnowledgePlanet` class (required by unique_ptr)
+- ✅ Updated all vector push_back operations to use std::move()
+- ✅ Deleted copy constructors/assignment operators where appropriate
+
+#### 4. Fleet Management Infrastructure
+- ✅ Added `my_fleets` vector to both `Planet` and `KnowledgePlanet`
+- ✅ Implemented `add_my_fleet()` and `remove_my_fleet()` methods
+- ✅ Added proper includes (#include <vector>, #include <algorithm>)
+- ✅ Fixed all compilation errors related to move semantics
+
+#### 5. C API Improvements
+- ✅ **Removed `game_get_player()`** - Struct-copying function that conflicted with non-copyable Player
+  - Forces UI to use specific accessor functions instead
+  - Cleaner, thinner communication layer
+
+- ✅ **Removed all dangerous `memset` calls** on non-trivial types:
+  - Replaced `memset(out, 0, sizeof(Planet))` with `*out = Planet()`
+  - Replaced `memset(out, 0, sizeof(ShipDesign))` with `*out = ShipDesign()`
+  - Replaced `memset(out, 0, sizeof(MoneyAllocation))` with proper construction
+  - Eliminates undefined behavior and potential memory leaks
+
+- ✅ **Added error codes to functions that can fail:**
+  - `game_get_planet()` - returns ErrorCode
+  - `game_get_planet_perceived_values()` - returns ErrorCode
+  - `game_get_ship_design()` - returns ErrorCode
+  - `game_get_money_allocation()` - returns ErrorCode
+  - `game_set_money_allocation()` - returns ErrorCode
+  - `game_delete_ship_design()` - returns ErrorCode
+  - `game_build_ship_from_design()` - returns ErrorCode
+  - `game_process_turn()` - returns ErrorCode
+
+- ✅ **Established consistent error handling pattern:**
+  - All functions validate inputs (return INVALID_PARAMETER if null)
+  - All functions return specific error codes (PLANET_NOT_FOUND, SHIP_DESIGN_NOT_FOUND, etc.)
+  - All functions return SUCCESS on successful completion
+  - Added #include error_codes.h to openho_core.h
+
+### Architecture Decisions:
+
+**Why space_planet is player-specific:**
+- Each player has their own virtual space planet (not shared)
+- Prevents accidental battles between different players' in-transit fleets
+- Cleaner isolation and no synchronization issues
+- Each player's KnowledgeGalaxy is truly independent
+
+**Why unique_ptr for FleetTransit:**
+- Enforces exclusive ownership of transit state
+- Automatic cleanup when fleet arrives
+- Clear semantics: nullptr means not in transit
+- Prevents accidental copies of complex transit data
+
+**Why Player is non-copyable:**
+- Natural consequence of Fleet being non-copyable
+- Each player is a unique entity in the game
+- Prevents subtle bugs from accidental copies
+- Forces explicit move semantics where needed
+
+### Commits:
+1. `bb2e391` - Refactor fleet movement to Fleet::move_to() with distance matrix integration (remote)
+2. `03ac378` - Improve C API structure and error handling (local)
+
+### Compilation Status:
+✅ **Clean build** - No errors, only pre-existing warnings about memset on non-trivial types (now fixed)
+
+### Testing Needed:
+- [ ] Unit tests for fleet movement scenarios
+- [ ] End-to-end movement with multiple players
+- [ ] Verify distance calculations and arrival dates
+- [ ] Test fleet cleanup on arrival
+- [ ] Verify space planet isolation between players
+- [ ] Test C API error codes with invalid inputs
+
+### Future Enhancements:
+- [ ] Implement fleet interception mechanics
+- [ ] Add waypoint support for multi-leg journeys
+- [ ] Implement fleet combat during transit
+- [ ] Add fleet fuel consumption during movement
+- [ ] Implement fleet visibility during transit
+- [ ] Add fleet status queries (ETA, fuel, etc.)
+
+### Key Takeaways:
+- **Architectural clarity** - FleetTransit centralizes all movement state
+- **Type safety** - unique_ptr enforces proper ownership semantics
+- **Player isolation** - Each player's space planet prevents cross-player issues
+- **API consistency** - C API now has uniform error handling
+- **Code quality** - Removed dangerous patterns (memset on non-trivial types)
+- **Performance** - O(1) distance lookups via pre-computed matrix
