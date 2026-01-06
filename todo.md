@@ -257,3 +257,103 @@ The foundation is now in place for:
 
 **Commit:** `<pending>` - Refactor KnowledgePlanet and Planet, remove player_planets
 
+
+
+---
+
+## Session 10 - Fleet Visibility in KnowledgePlanet (January 5, 2026)
+
+**Status:** ✅ COMPLETE
+
+**Objective:** Implement fleet visibility tracking in KnowledgePlanet with storage for player's own fleets and visible enemy fleets.
+
+### Changes Made:
+
+**1. FleetVisibleInfo Struct**
+- Created new struct for representing visible enemy fleets
+- Fields: fleet_id, owner (PlayerID), ship_count
+- TODO: Add more observable properties (design type, fuel level, etc.)
+- Placed in knowledge_planet.h for easy access
+
+**2. KnowledgePlanet Enhancement**
+- Added `my_fleets` vector: `std::vector<Fleet*>`
+  - Stores player's own fleets stationed at this planet
+  - Direct Fleet pointers for quick access
+- Added `enemy_fleets` vector: `std::vector<FleetVisibleInfo>`
+  - Stores visible enemy fleets at this planet
+  - Uses FleetVisibleInfo struct for observable data
+
+**3. Fleet Management Methods**
+- `add_my_fleet(Fleet* fleet)` - Add player's own fleet with duplicate prevention
+- `remove_my_fleet(uint32_t fleet_id)` - Remove player's own fleet by ID
+- `add_visible_enemy_fleet(FleetVisibleInfo)` - Add visible enemy fleet with duplicate prevention
+- `remove_visible_enemy_fleet(uint32_t fleet_id)` - Remove visible enemy fleet by ID
+- `clear_enemy_fleets()` - Clear all enemy fleets (for turn updates)
+
+**4. Implementation Details**
+- Used std::find_if for safe removal by fleet_id
+- Duplicate prevention in add methods
+- Empty vectors initialized automatically in constructor
+- Added necessary includes: `#include <vector>` and `#include <algorithm>`
+
+### Design Rationale:
+
+**Why Option A (Methods in KnowledgePlanet)?**
+- Most natural: Fleets are associated with planets
+- Encapsulated: KnowledgePlanet manages its own fleet data
+- Cleaner: No need for external visibility update logic
+- UI-aligned: Queries return exactly what UI needs
+
+**Why Store Fleet Pointers?**
+- Direct access to Fleet objects (not just IDs)
+- Efficient lookups for fleet information
+- Safe: Planets are never destroyed mid-game
+- Avoids indirection through GameState
+
+**Why FleetVisibleInfo for Enemy Fleets?**
+- Encapsulates observable properties only
+- Prevents accidental access to non-observable data
+- Extensible: Easy to add more observable properties
+- Type-safe: Separate struct prevents confusion
+
+### Architecture Benefits:
+
+✅ **Natural organization** - Fleets grouped by their location  
+✅ **Fog of war ready** - Only visible fleets stored  
+✅ **UI-aligned** - Queries return exactly what UI needs  
+✅ **Single source of truth** - All fleet knowledge in KnowledgePlanet  
+✅ **No dangling pointers** - Fleet pointers are safe  
+✅ **Efficient lookups** - O(n) where n = fleets at planet (typically small)  
+✅ **Compilation** - No errors, only pre-existing warnings  
+
+### Future Implementation (Not Yet Done):
+
+**Phase 1: Fleet Movement**
+- [ ] Implement process_ships() to handle fleet movement
+- [ ] Move fleets from origin_planet to destination_planet
+- [ ] Update KnowledgePlanet fleet lists when fleets move
+
+**Phase 2: Visibility Updates**
+- [ ] Update fleet visibility during turn processing
+- [ ] Clear old visibility data at start of turn
+- [ ] Add fleets to KnowledgePlanets based on current positions
+- [ ] Implement sensor range calculations
+
+**Phase 3: Sensor Range**
+- [ ] Calculate sensor range based on tech level
+- [ ] Only show enemy fleets within sensor range
+- [ ] Track fleets in transit if visible
+
+### Compilation:
+✅ Project compiles successfully  
+✅ No new errors introduced  
+✅ Only pre-existing warnings about unused parameters  
+
+### Next Steps (Phase 2d):
+- Implement process_ships() to handle fleet movement
+- Update KnowledgePlanet fleet lists when fleets move
+- Implement fleet visibility updates during turn processing
+- Add sensor range calculations for visibility rules
+- Track fleets in transit (if visible)
+
+**Commit:** `<pending>` - Implement fleet visibility tracking in KnowledgePlanet

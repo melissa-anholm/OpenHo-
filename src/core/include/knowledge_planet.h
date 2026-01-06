@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <vector>
 #include "enums.h"
 #include "planet.h"
 
@@ -16,6 +17,20 @@ typedef int32_t PlayerID;
 typedef double GalaxyCoord;
 
 class Player;
+struct Fleet;
+
+// ============================================================================
+// FleetVisibleInfo Struct
+// ============================================================================
+
+/// Information about an enemy fleet visible at a planet
+struct FleetVisibleInfo
+{
+	uint32_t fleet_id;           // Unique identifier for the fleet
+	PlayerID owner;              // Which player owns this fleet
+	uint32_t ship_count;         // Number of ships in the fleet
+	// TODO: Add more observable properties as needed (design type, fuel level, etc.)
+};
 
 // ============================================================================
 // KnowledgePlanet Class
@@ -50,11 +65,22 @@ public:
 	// nullptr if not colonized, otherwise contains colonization-specific data
 	std::unique_ptr<class ColonizedPlanet> colonization;
 	
+	// Fleet visibility - fleets at this planet
+	std::vector<Fleet*> my_fleets;                 // Player's own fleets stationed here
+	std::vector<FleetVisibleInfo> enemy_fleets;    // Enemy fleets visible at this planet
+	
 	// Default constructor - initializes with partial info (id, name, coordinates only)
 	KnowledgePlanet(const Planet& planet, PlayerID player_id);
 	
 	// Update snapshot with current observation of the planet
 	void observe_planet(const Planet& planet, const Player* observer, int32_t current_year);
+	
+	// Fleet management methods
+	void add_my_fleet(Fleet* fleet);
+	void remove_my_fleet(uint32_t fleet_id);
+	void add_visible_enemy_fleet(const FleetVisibleInfo& fleet_info);
+	void remove_visible_enemy_fleet(uint32_t fleet_id);
+	void clear_enemy_fleets();
 };
 
 #endif // OPENHO_KNOWLEDGE_PLANET_H
