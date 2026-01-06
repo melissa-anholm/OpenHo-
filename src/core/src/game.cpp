@@ -538,6 +538,10 @@ void GameState::process_money_allocation()
 		// Add income to money
 		player.money_savings += player.money_income;
 		
+		// TODO: Add windfall income (special events, bonuses, etc.)
+		int64_t windfall = GameFormulas::calculate_windfall_income(player.id, this);
+		player.money_savings += windfall;
+		
 		// Allocate money according to allocation settings
 		// (This will be implemented in money_allocation.cpp)
 	}
