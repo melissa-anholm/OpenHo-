@@ -190,8 +190,14 @@ class Player
 	/// Delete a fleet
 	[[nodiscard]] bool delete_fleet(uint32_t fleet_id);
 	
-	/// Move a fleet to a destination planet
-	void move_fleet(uint32_t fleet_id, uint32_t destination_planet_id);
+		/// Move a fleet to a destination planet
+		void move_fleet(uint32_t fleet_id, uint32_t destination_planet_id);
+		
+		/// Get all fleets currently in transit
+		[[nodiscard]] std::vector<Fleet*> get_fleets_in_transit();
+		
+		/// Get all fleets currently in transit (const version)
+		[[nodiscard]] const std::vector<const Fleet*> get_fleets_in_transit() const;
 	
 	// ========================================================================
 	// Ship Design Management

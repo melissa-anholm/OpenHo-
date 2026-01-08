@@ -96,10 +96,17 @@ void Fleet::move_to(Planet* destination, KnowledgeGalaxy* knowledge_galaxy, uint
 	distance_to_destination = distance;
 	turns_to_destination = turns;
 	
-	// Move fleet to space planet
+	// Move fleet to space planet (both real and knowledge)
 	Planet* space_planet = knowledge_galaxy->get_space_real_planet();
 	if (space_planet)
 	{
 		current_planet = space_planet;
+		
+		// Add fleet to space knowledge planet's fleet list
+		KnowledgePlanet* space_knowledge = knowledge_galaxy->get_space_knowledge_planet();
+		if (space_knowledge)
+		{
+			space_knowledge->add_my_fleet(this);
+		}
 	}
 }

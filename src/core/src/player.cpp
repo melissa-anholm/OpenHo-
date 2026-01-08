@@ -174,6 +174,42 @@ void Player::move_fleet(uint32_t fleet_id, uint32_t destination_planet_id)
 	fleet->move_to(destination, knowledge_galaxy, current_turn);
 }
 
+std::vector<Fleet*> Player::get_fleets_in_transit()
+{
+	std::vector<Fleet*> result;
+	
+	if (!knowledge_galaxy)
+		return result;
+	
+	KnowledgePlanet* space_planet = knowledge_galaxy->get_space_knowledge_planet();
+	if (!space_planet)
+		return result;
+	
+	// Get the fleet list from the space knowledge planet
+	return space_planet->my_fleets;
+}
+
+const std::vector<const Fleet*> Player::get_fleets_in_transit() const
+{
+	std::vector<const Fleet*> result;
+	
+	if (!knowledge_galaxy)
+		return result;
+	
+	const KnowledgePlanet* space_planet = knowledge_galaxy->get_space_knowledge_planet();
+	if (!space_planet)
+		return result;
+	
+	// Get the fleet list from the space knowledge planet
+	// Convert mutable pointers to const pointers
+	for (const auto& fleet_ptr : space_planet->my_fleets)
+	{
+		result.push_back(fleet_ptr);
+	}
+	
+	return result;
+}
+
 
 // ============================================================================
 // Ship Design Management

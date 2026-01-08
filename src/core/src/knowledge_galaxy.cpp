@@ -37,14 +37,21 @@ KnowledgeGalaxy::KnowledgeGalaxy(const Galaxy& galaxy, PlayerID player_id)
 		0,                                    // metal
 		player_id                             // owner (assigned to this player)
 	);
+	
+	// Create knowledge planet for the space planet
+	// This represents the player's knowledge view of the space planet
+	space_knowledge_planet = new KnowledgePlanet(*space_real_planet, player_id);
 }
 
-KnowledgeGalaxy::~KnowledgeGalaxy()
-{
-	// Clean up the space planet
-	delete space_real_planet;
-	space_real_planet = nullptr;
-}
+	KnowledgeGalaxy::~KnowledgeGalaxy()
+	{
+		// Clean up the space planets
+		delete space_knowledge_planet;
+		space_knowledge_planet = nullptr;
+		
+		delete space_real_planet;
+		space_real_planet = nullptr;
+	}
 
 KnowledgePlanet* KnowledgeGalaxy::get_planet(uint32_t planet_id)
 {

@@ -32,6 +32,7 @@ private:
 	
 	// Space planets for holding in-transit fleets
 	Planet* space_real_planet;  // Virtual planet owned by this KnowledgeGalaxy
+	KnowledgePlanet* space_knowledge_planet;  // Player's knowledge view of the space planet
 
 public:
 	// Constructor - initializes with partial info for all planets
@@ -60,6 +61,9 @@ public:
 	// Access to space planet (for in-transit fleets)
 	Planet* get_space_real_planet() { return space_real_planet; }
 	const Planet* get_space_real_planet() const { return space_real_planet; }
+	
+	KnowledgePlanet* get_space_knowledge_planet() { return space_knowledge_planet; }
+	const KnowledgePlanet* get_space_knowledge_planet() const { return space_knowledge_planet; }
 };
 
 #endif // OPENHO_KNOWLEDGE_GALAXY_H
