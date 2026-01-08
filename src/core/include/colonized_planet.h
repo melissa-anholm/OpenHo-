@@ -149,9 +149,9 @@ public:
 	{
 		switch (desirability)
 		{
-			case 1: return "Poor";
-			case 2: return "Moderate";
-			case 3: return "Excellent";
+			case 1: return "Yuck!";
+			case 2: return "Hmmm.";
+			case 3: return "Oooh!";
 			default: return "Unknown";
 		}
 	}

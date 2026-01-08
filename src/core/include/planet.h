@@ -26,13 +26,10 @@ public:
 	GalaxyCoord x;
 	GalaxyCoord y;
 	
-	// Immutable properties
 	double true_gravity;
-	
-	// Mutable properties
 	double true_temperature;
 	int32_t metal;
-	int32_t population;  // Current population (0 if uncolonized, or for unobserved planets)
+	int32_t population;
 	
 	PlayerID owner;  // NOT_OWNED if unowned
 	
@@ -48,7 +45,7 @@ public:
 		double p_true_gravity,
 		double p_true_temperature,
 		int32_t p_metal,
-		PlayerID p_owner = 0);
+		PlayerID p_owner = 0 );
 };
 
 #endif // OPENHO_PLANET_H

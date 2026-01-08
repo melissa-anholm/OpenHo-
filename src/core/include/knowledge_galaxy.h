@@ -26,7 +26,7 @@ class KnowledgeGalaxy
 {
 private:
 	const Galaxy* real_galaxy;  // Reference to the real galaxy (for edge cases)
-	std::vector<KnowledgePlanet> planets;  // Player's knowledge of each planet (indexed by planet_id)
+	std::vector<KnowledgePlanet> knowledge_planets;  // Player's knowledge of each planet (indexed by planet_id)
 	std::vector<std::vector<double>> distance_matrix;  // Local copy of distance matrix for O(1) access
 	PlayerID player_id;
 	
@@ -45,7 +45,7 @@ public:
 	KnowledgePlanet* get_planet(uint32_t planet_id);
 	const KnowledgePlanet* get_planet(uint32_t planet_id) const;
 	
-	size_t get_planet_count() const { return planets.size(); }
+	size_t get_planet_count() const { return knowledge_planets.size(); }
 	
 	// Update player's knowledge of a planet
 	void observe_planet(uint32_t planet_id, const Planet& real_planet, const Player* observer, int32_t current_year);

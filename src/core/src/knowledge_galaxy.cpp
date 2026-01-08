@@ -7,18 +7,15 @@
 // ============================================================================
 // KnowledgeGalaxy Implementation
 // ============================================================================
-
 KnowledgeGalaxy::KnowledgeGalaxy(const Galaxy& galaxy, PlayerID player_id)
 	: real_galaxy(&galaxy),
 	  player_id(player_id)
 {
 	// Initialize KnowledgePlanets for all planets in the galaxy
 	// Start with partial info (id, name, coordinates only)
-	planets.reserve(galaxy.planets.size());
-	
-	for (const auto& planet : galaxy.planets) {
-		planets.emplace_back(planet, player_id);
-	}
+	knowledge_planets.reserve(galaxy.planets.size());
+	for (const auto& planet : galaxy.planets) 
+		{ knowledge_planets.emplace_back(planet, player_id); }
 	
 	// Copy distance matrix from Galaxy for O(1) local access
 	// No network latency for distance queries
@@ -35,50 +32,53 @@ KnowledgeGalaxy::KnowledgeGalaxy(const Galaxy& galaxy, PlayerID player_id)
 		1.0,                                  // true_gravity (neutral)
 		GameConstants::best_perceived_temperature_K,  // true_temperature
 		0,                                    // metal
-		player_id                             // owner (assigned to this player)
-	);
+		player_id  );                         // owner (assigned to this player)
 	
 	// Create knowledge planet for the space planet
 	// This represents the player's knowledge view of the space planet
 	space_knowledge_planet = new KnowledgePlanet(*space_real_planet, player_id);
 }
 
-	KnowledgeGalaxy::~KnowledgeGalaxy()
-	{
-		// Clean up the space planets
-		delete space_knowledge_planet;
-		space_knowledge_planet = nullptr;
-		
-		delete space_real_planet;
-		space_real_planet = nullptr;
-	}
+KnowledgeGalaxy::~KnowledgeGalaxy()
+{
+	// Clean up the space planets
+	delete space_knowledge_planet;
+	space_knowledge_planet = nullptr;
+	
+	delete space_real_planet;
+	space_real_planet = nullptr;
+}
 
 KnowledgePlanet* KnowledgeGalaxy::get_planet(uint32_t planet_id)
 {
-	if (planet_id < planets.size()) {
-		return &planets[planet_id];
+	if (planet_id < knowledge_planets.size()) 
+	{
+		return &knowledge_planets[planet_id];
 	}
 	return nullptr;
 }
 
 const KnowledgePlanet* KnowledgeGalaxy::get_planet(uint32_t planet_id) const
 {
-	if (planet_id < planets.size()) {
-		return &planets[planet_id];
+	if (planet_id < knowledge_planets.size()) 
+	{
+		return &knowledge_planets[planet_id];
 	}
 	return nullptr;
 }
 
 void KnowledgeGalaxy::observe_planet(uint32_t planet_id, const Planet& real_planet, const Player* observer, int32_t current_year)
 {
-	if (planet_id < planets.size()) {
-		planets[planet_id].observe_planet(real_planet, observer, current_year);
+	if (planet_id < knowledge_planets.size()) 
+	{
+		knowledge_planets[planet_id].observe_planet(real_planet, observer, current_year);
 	}
 }
 
 const Planet* KnowledgeGalaxy::get_real_planet(uint32_t planet_id) const
 {
-	if (real_galaxy && planet_id < real_galaxy->planets.size()) {
+	if (real_galaxy && planet_id < real_galaxy->planets.size()) 
+	{
 		return &real_galaxy->planets[planet_id];
 	}
 	return nullptr;

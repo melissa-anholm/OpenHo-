@@ -38,7 +38,7 @@ Fleet::Fleet(uint32_t fleet_id, PlayerID player_id, const ShipDesign* design,
 void Fleet::refuel()
 {
 	if (ship_design)
-		fuel = ship_design->get_range();
+		{ fuel = ship_design->get_range(); }
 }
 
 void Fleet::partial_refuel(int32_t amount)
@@ -47,7 +47,7 @@ void Fleet::partial_refuel(int32_t amount)
 	{
 		fuel += amount;
 		if (fuel > ship_design->get_range())
-			fuel = ship_design->get_range();  // Cap at maximum
+			{ fuel = ship_design->get_range(); }  // Cap at maximum
 	}
 }
 
@@ -55,11 +55,11 @@ void Fleet::move_to(Planet* destination, KnowledgeGalaxy* knowledge_galaxy, uint
 {
 	// Validate inputs
 	if (!destination || !knowledge_galaxy || !current_planet)
-		return;
+		{ return; }
 	
 	// If fleet is already at destination, do nothing
 	if (current_planet->id == destination->id)
-		return;
+		{ return; }
 	
 	// Get origin planet ID
 	uint32_t origin_id = current_planet->id;
@@ -75,7 +75,7 @@ void Fleet::move_to(Planet* destination, KnowledgeGalaxy* knowledge_galaxy, uint
 		turns = static_cast<uint32_t>(std::ceil(distance / ship_design->get_range()));
 	}
 	if (turns == 0)
-		turns = 1;  // At least 1 turn to travel
+		{ turns = 1; }  // At least 1 turn to travel
 	
 	uint32_t arrival_turn = current_turn + turns;
 	
@@ -86,8 +86,7 @@ void Fleet::move_to(Planet* destination, KnowledgeGalaxy* knowledge_galaxy, uint
 		current_turn,
 		arrival_turn,
 		distance,
-		turns
-	);
+		turns );
 	
 	// Update fleet state
 	in_transit = true;

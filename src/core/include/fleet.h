@@ -35,8 +35,7 @@ struct FleetTransit
 		  arrival_turn(arr),
 		  distance(dist),
 		  turns_to_travel(turns)
-	{
-	}
+	{ }
 };
 
 /// Fleet represents a group of identical ships traveling together
