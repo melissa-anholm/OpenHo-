@@ -69,17 +69,17 @@ bool Player::validate_fleet(uint32_t design_id, uint32_t ship_count, uint32_t pl
 {
 	// Validate ship_count is positive
 	if (ship_count == 0)
-		return false;
+		{ return false; }
 	
 	// Validate design exists for this player
 	const ShipDesign* design = get_ship_design(design_id);
 	if (!design)
-		return false;
+		{ return false; }
 	
 	// Validate planet exists through GameState
 	const Planet* planet = game_state->get_planet(planet_id);
 	if (!planet)
-		return false;
+		{ return false; }
 	
 	return true;
 }
@@ -88,25 +88,26 @@ uint32_t Player::build_fleet(uint32_t fleet_id, uint32_t design_id, uint32_t shi
 {
 	// Get the design and planet pointers
 	const ShipDesign* design = get_ship_design(design_id);
-	if (!design)
-		return 0;
+	if (!design) 
+		{ return 0; }
 	
 	Planet* planet = game_state->get_planet(planet_id);
 	if (!planet)
-		return 0;
+		{ return 0; }
 	
 	// Create fleet using private constructor (Player is a friend of Fleet)
 	Fleet new_fleet(fleet_id, id, design, ship_count, planet);
 	
 	fleets.push_back(std::move(new_fleet));
+	//
 	return fleet_id;
 }
 
 uint32_t Player::create_fleet(uint32_t design_id, uint32_t ship_count, uint32_t planet_id)
 {
 	// Validate parameters
-	if (!validate_fleet(design_id, ship_count, planet_id))
-		return 0;
+	if (!validate_fleet(design_id, ship_count, planet_id) )
+		{ return 0; }
 	
 	// Allocate a globally unique fleet ID from GameState
 	uint32_t fleet_id = game_state->allocate_fleet_id();
@@ -120,7 +121,7 @@ Fleet* Player::get_fleet(uint32_t fleet_id)
 	for (auto& fleet : fleets)
 	{
 		if (fleet.id == fleet_id)
-			return &fleet;
+			{ return &fleet; }
 	}
 	return nullptr;
 }
@@ -129,7 +130,7 @@ const Fleet* Player::get_fleet(uint32_t fleet_id) const
 	for (const auto& fleet : fleets)
 	{
 		if (fleet.id == fleet_id)
-			return &fleet;
+			{ return &fleet; }
 	}
 	return nullptr;
 }
@@ -152,19 +153,19 @@ void Player::move_fleet(uint32_t fleet_id, uint32_t destination_planet_id)
 	// Validate fleet exists
 	Fleet* fleet = get_fleet(fleet_id);
 	if (!fleet)
-		return;  // Fleet not found
+		{ return; }  // Fleet not found
 	
 	// Validate destination planet exists
 	if (!game_state)
-		return;  // No game state reference
+		{ return; }  // No game state reference
 	
 	Planet* destination = game_state->get_planet(destination_planet_id);
 	if (!destination)
-		return;  // Destination planet not found
+		{ return; }  // Destination planet not found
 	
 	// Validate knowledge galaxy exists
 	if (!knowledge_galaxy)
-		return;  // No knowledge galaxy
+		{ return; }  // No knowledge galaxy
 	
 	// Get current turn from game state
 	uint32_t current_turn = game_state->get_current_turn();

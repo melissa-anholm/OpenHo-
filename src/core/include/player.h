@@ -55,26 +55,26 @@ struct PlayerPublicInfo
 // Player IDs must start from 1 and increment from there.
 class Player
 {
-	friend class GameState;  // GameState has access to all private members
-	// Note: C API functions in c_api.cpp access Player through GameState, which is a friend
+friend class GameState;  // GameState has access to all private members
+// Note: C API functions in c_api.cpp access Player through GameState, which is a friend
 
-	public:
-		uint32_t id;
-		std::string name;
-		Gender gender;  // Player's gender (for icons/graphics and pronouns in notifications)
-		PlayerType type;
-		int32_t iq;  // For computer players
-		
-		// Constructor
-		Player(class GameState* game_state_ref) : game_state(game_state_ref) {}
-		
-		// Move semantics (required by Fleet's unique_ptr)
-		Player(Player&&) = default;
-		Player& operator=(Player&&) = default;
-		
-		// Delete copy semantics (Fleet is not copyable)
-		Player(const Player&) = delete;
-		Player& operator=(const Player&) = delete;
+public:
+	uint32_t id;
+	std::string name;
+	Gender gender;  // Player's gender (for icons/graphics and pronouns in notifications)
+	PlayerType type;
+	int32_t iq;  // For computer players
+	
+	// Constructor
+	Player(class GameState* game_state_ref) : game_state(game_state_ref) {}
+	
+	// Move semantics (required by Fleet's unique_ptr)
+	Player(Player&&) = default;
+	Player& operator=(Player&&) = default;
+	
+	// Delete copy semantics (Fleet is not copyable)
+	Player(const Player&) = delete;
+	Player& operator=(const Player&) = delete;
 	
 	// ========================================================================
 	// Public Accessors
@@ -82,7 +82,6 @@ class Player
 	
 	/// Get this player's ideal temperature for planets
 	double get_ideal_temperature() const { return ideal_temperature; }
-	
 	/// Get this player's ideal gravity for planets
 	double get_ideal_gravity() const { return ideal_gravity; }
 	
@@ -169,17 +168,17 @@ class Player
 	// Fleet Management
 	// ========================================================================
 	
-		/// Create a new fleet for this player
-		/// Validates parameters, allocates fleet_id from GameState, and builds the fleet
-		[[nodiscard]] uint32_t create_fleet(uint32_t design_id, uint32_t ship_count, uint32_t planet_id);
-		
-		/// Validate fleet creation parameters
-		/// Returns true if all parameters are valid
-		[[nodiscard]] bool validate_fleet(uint32_t design_id, uint32_t ship_count, uint32_t planet_id) const;
-		
-		/// Build and add a fleet after validation
-		/// Called internally by create_fleet() after validation and fleet_id allocation
-		[[nodiscard]] uint32_t build_fleet(uint32_t fleet_id, uint32_t design_id, uint32_t ship_count, uint32_t planet_id);
+	/// Create a new fleet for this player
+	/// Validates parameters, allocates fleet_id from GameState, and builds the fleet
+	[[nodiscard]] uint32_t create_fleet(uint32_t design_id, uint32_t ship_count, uint32_t planet_id);
+	
+	/// Validate fleet creation parameters
+	/// Returns true if all parameters are valid
+	[[nodiscard]] bool validate_fleet(uint32_t design_id, uint32_t ship_count, uint32_t planet_id) const;
+	
+	/// Build and add a fleet after validation
+	/// Called internally by create_fleet() after validation and fleet_id allocation
+	[[nodiscard]] uint32_t build_fleet(uint32_t fleet_id, uint32_t design_id, uint32_t ship_count, uint32_t planet_id);
 	
 	/// Get a fleet by ID (mutable)
 	[[nodiscard]] Fleet* get_fleet(uint32_t fleet_id);
@@ -190,14 +189,14 @@ class Player
 	/// Delete a fleet
 	[[nodiscard]] bool delete_fleet(uint32_t fleet_id);
 	
-		/// Move a fleet to a destination planet
-		void move_fleet(uint32_t fleet_id, uint32_t destination_planet_id);
-		
-		/// Get all fleets currently in transit
-		[[nodiscard]] std::vector<Fleet*> get_fleets_in_transit();
-		
-		/// Get all fleets currently in transit (const version)
-		[[nodiscard]] const std::vector<const Fleet*> get_fleets_in_transit() const;
+	/// Move a fleet to a destination planet
+	void move_fleet(uint32_t fleet_id, uint32_t destination_planet_id);
+	
+	/// Get all fleets currently in transit
+	[[nodiscard]] std::vector<Fleet*> get_fleets_in_transit();
+	
+	/// Get all fleets currently in transit (const version)
+	[[nodiscard]] const std::vector<const Fleet*> get_fleets_in_transit() const;
 	
 	// ========================================================================
 	// Ship Design Management
@@ -215,13 +214,13 @@ class Player
 	/// Delete a ship design
 	[[nodiscard]] bool delete_ship_design(uint32_t design_id);
 
-	private:
-		// GameState reference for validation and fleet_id allocation
-		class GameState* game_state;
-		
-		// Resources
-		int64_t money_savings;  // Savings account
-		int64_t metal_reserve;
+private:
+	// GameState reference for validation and fleet_id allocation
+	class GameState* game_state;
+	
+	// Resources
+	int64_t money_savings;  // Savings account
+	int64_t metal_reserve;
 		
 	// Ideal planetary conditions (hidden from player)
 	double ideal_temperature;
@@ -231,7 +230,6 @@ class Player
 	int64_t money_income;  // Per turn
 	int64_t metal_income;  // Per turn
 	
-	
 	// Technology levels
 	TechnologyLevels tech;
 	// Income breakdown for current turn
@@ -240,16 +238,15 @@ class Player
 	MoneyAllocation allocation;
 	// Research progress (accumulated points per research stream)
 	PartialResearchProgress partial_research;
-	
 	// Colonized planets (owned by this player with allocation information)
 	std::vector<ColonizedPlanet> colonized_planets;
-	
-	// Fog of war: player's knowledge of the galaxy
+	// Player's knowledge of the galaxy
 	KnowledgeGalaxy* knowledge_galaxy;  // Owned by Player, initialized during game setup
 	
 	// Ship designs
 	std::vector<ShipDesign> ship_designs;      // All designs, ordered by creation (max 100)
 	uint32_t next_ship_design_id;                // Counter for unique design IDs (never resets)
+	
 	
 	// Fleets (groups of identical ships)
 	std::vector<Fleet> fleets;                 // All fleets owned by this player
