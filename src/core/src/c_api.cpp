@@ -346,15 +346,19 @@ int game_get_serialized_state_size(void* game)
 // ============================================================================
 // Ship Design Queries and Management
 // ============================================================================
-uint32_t game_create_ship_design(void* game, uint32_t player_id, const char* name, ShipType type, 
-                                 int32_t tech_range, int32_t tech_speed, int32_t tech_weapons, 
+uint32_t game_create_ship_design(void* game, uint32_t player_id, const char* name, ShipType type,
+                                 int32_t tech_range, int32_t tech_speed, int32_t tech_weapons,
                                  int32_t tech_shields, int32_t tech_miniaturization)
 {
 	if (!game || !name) 
 		{ return 0; }
 	
 	GameState* gameState = static_cast<GameState*>(game);
-	return gameState->create_ship_design(player_id, std::string(name), type, tech_range, tech_speed, 
+	Player* player = gameState->get_player(player_id);
+	if (!player)
+		{ return 0; }
+	
+	return player->create_ship_design(std::string(name), type, tech_range, tech_speed, 
 	                                    tech_weapons, tech_shields, tech_miniaturization);
 }
 
@@ -364,7 +368,11 @@ ErrorCode game_get_ship_design(void* game, uint32_t player_id, uint32_t design_i
 		return ErrorCode::INVALID_PARAMETER;
 	
 	GameState* gameState = static_cast<GameState*>(game);
-	const ShipDesign* design = gameState->get_ship_design(player_id, design_id);
+	const Player* player = gameState->get_player(player_id);
+	if (!player)
+		return ErrorCode::INVALID_PARAMETER;
+	
+	const ShipDesign* design = player->get_ship_design(design_id);
 	
 	if (!design)
 		return ErrorCode::SHIP_DESIGN_NOT_FOUND;
@@ -379,7 +387,11 @@ void game_get_player_ship_designs(void* game, uint32_t player_id, ShipDesign* ou
 		{ return; }
 	
 	GameState* gameState = static_cast<GameState*>(game);
-	const auto& designs = gameState->get_player_ship_designs(player_id);
+	const Player* player = gameState->get_player(player_id);
+	if (!player)
+		{ *outCount = 0; return; }
+	
+	const auto& designs = player->get_ship_designs();
 	
 	uint32_t count = std::min(static_cast<uint32_t>(designs.size()), maxCount);
 	for (uint32_t i = 0; i < count; ++i)
@@ -396,7 +408,11 @@ uint32_t game_get_num_player_ship_designs(void* game, uint32_t player_id)
 		{ return 0; }
 	
 	GameState* gameState = static_cast<GameState*>(game);
-	return static_cast<uint32_t>(gameState->get_player_ship_designs(player_id).size());
+	const Player* player = gameState->get_player(player_id);
+	if (!player)
+		{ return 0; }
+	
+	return static_cast<uint32_t>(player->get_ship_designs().size());
 }
 
 ErrorCode game_delete_ship_design(void* game, uint32_t player_id, uint32_t design_id)
@@ -405,7 +421,11 @@ ErrorCode game_delete_ship_design(void* game, uint32_t player_id, uint32_t desig
 		return ErrorCode::INVALID_PARAMETER;
 	
 	GameState* gameState = static_cast<GameState*>(game);
-	bool success = gameState->delete_ship_design(player_id, design_id);
+	Player* player = gameState->get_player(player_id);
+	if (!player)
+		return ErrorCode::INVALID_PARAMETER;
+	
+	bool success = player->delete_ship_design(design_id);
 	return success ? ErrorCode::SUCCESS : ErrorCode::SHIP_DESIGN_NOT_FOUND;
 }
 
@@ -415,6 +435,11 @@ ErrorCode game_build_ship_from_design(void* game, uint32_t player_id, uint32_t d
 		return ErrorCode::INVALID_PARAMETER;
 	
 	GameState* gameState = static_cast<GameState*>(game);
-	gameState->build_ship_from_design(player_id, design_id);
+	Player* player = gameState->get_player(player_id);
+	if (!player)
+		return ErrorCode::INVALID_PARAMETER;
+	
+	// TODO: Implement ship building logic
+	// This will deduct costs from player->money_savings and player->metal_reserve
 	return ErrorCode::SUCCESS;
 }

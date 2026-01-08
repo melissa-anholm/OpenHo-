@@ -643,65 +643,7 @@ void GameState::capture_and_distribute_player_public_info()
 // ============================================================================
 // Ship Design Management
 // ============================================================================
-uint32_t GameState::create_ship_design(uint32_t player_id, const std::string& name, ShipType type, 
-                                      int32_t tech_range, int32_t tech_speed, int32_t tech_weapons, 
-                                      int32_t tech_shields, int32_t tech_mini)
-{
-	Player* player = get_player(player_id);
-	if (!player) 
-		{ return 0; }
-	
-	// Delegate to Player
-	return player->create_ship_design(name, type, tech_range, tech_speed, tech_weapons, tech_shields, tech_mini);
-}
-
-const ShipDesign* GameState::get_ship_design(uint32_t player_id, uint32_t design_id) const
-{
-	const Player* player = get_player(player_id);
-	if (!player) 
-		{ return nullptr; }
-	
-	// Delegate to Player
-	return player->get_ship_design(design_id);
-}
-
-const std::vector<ShipDesign>& GameState::get_player_ship_designs(uint32_t player_id) const
-{
-	static const std::vector<ShipDesign> emptyVector;
-	
-	const Player* player = get_player(player_id);
-	if (!player)
-		{ return emptyVector; }
-	
-	// Delegate to Player
-	return player->get_ship_designs();
-}
-
-bool GameState::delete_ship_design(uint32_t player_id, uint32_t design_id)
-{
-	Player* player = get_player(player_id);
-	if (!player)
-		{ return false; }
-	
-	// Delegate to Player
-	return player->delete_ship_design(design_id);
-}
-
-void GameState::build_ship_from_design(uint32_t player_id, uint32_t design_id)
-{
-	Player* player = get_player(player_id);
-	if (!player)
-		{ return; }
-	
-	// Find the design
-	const ShipDesign* design = get_ship_design(player_id, design_id);
-	if (!design)
-		{ return; }
-	
-	// Building from the design
-	// (Implementation for actually creating the ship will go here)
-	// This will deduct costs from player->money_savings and player->metalReserve
-}
+// Ship design management methods removed - use Player methods directly
 
 // Research Processing!
 void GameState::process_research()
@@ -1025,7 +967,7 @@ ErrorCode GameState::check_player_build_fleet(uint32_t player_id, uint32_t desig
 		{ return ErrorCode::INVALID_PLAYER_ID; }
 	
 	// Check design exists and belongs to player
-	const ShipDesign* design = get_ship_design(player_id, design_id);
+	const ShipDesign* design = player->get_ship_design(design_id);
 	if (!design)
 		{ return ErrorCode::SHIP_DESIGN_NOT_FOUND; }
 	

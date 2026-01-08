@@ -124,8 +124,12 @@ uint32_t game_player_design_ship(
 	if (game_state->check_player_design_ship(player_id, std::string(name), static_cast<ShipType>(ship_type), tech_range, tech_speed, tech_weapons, tech_shields, tech_miniaturization) != ErrorCode::SUCCESS)
 		return 0;
 	
-	// Delegate to GameState
-	return game_state->create_ship_design(player_id, std::string(name), static_cast<ShipType>(ship_type), tech_range, tech_speed, tech_weapons, tech_shields, tech_miniaturization);
+	// Delegate to Player
+	Player* player = game_state->get_player(player_id);
+	if (!player)
+		return 0;
+	
+	return player->create_ship_design(std::string(name), static_cast<ShipType>(ship_type), tech_range, tech_speed, tech_weapons, tech_shields, tech_miniaturization);
 }
 
 // ============================================================================

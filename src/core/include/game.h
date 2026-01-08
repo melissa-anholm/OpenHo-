@@ -99,12 +99,8 @@ public:
 	/// Get full player info history (for resync after disconnection)
 	[[nodiscard]] const std::vector<PlayerPublicInfo>& get_full_player_info_history(uint32_t player_id) const;
 	
-	// Ship design management (delegates to Player)
-	[[nodiscard]] uint32_t create_ship_design(uint32_t player_id, const std::string& name, ShipType type, int32_t tech_range, int32_t tech_speed, int32_t tech_weapons, int32_t tech_shields, int32_t tech_miniaturization);
-	[[nodiscard]] const ShipDesign* get_ship_design(uint32_t player_id, uint32_t design_id) const;
-	[[nodiscard]] const std::vector<ShipDesign>& get_player_ship_designs(uint32_t player_id) const;
-	[[nodiscard]] bool delete_ship_design(uint32_t player_id, uint32_t design_id);
-	void build_ship_from_design(uint32_t player_id, uint32_t design_id);
+	// Ship design management - use Player methods directly
+	// Player::create_ship_design(), Player::get_ship_design(), Player::get_ship_designs(), Player::delete_ship_design()
 	
 	// Fleet management (delegates to Player)
 	[[nodiscard]] Fleet* get_fleet(uint32_t player_id, uint32_t fleet_id);
