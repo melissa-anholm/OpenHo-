@@ -205,14 +205,19 @@ namespace GameFormulas
 	/// @return The amount of temperature change (can be positive or negative)
 	double calculate_temperature_change(int64_t money_spent, double current_temperature, double target_temperature);
 	
-	/// Calculate the amount of metal that can be mined from a planet.
-	/// The amount of metal extracted depends on the money spent and how much
-	/// metal remains on the planet.
+	/// Calculate the amount of metal that can be mined from a given amount of money.
+	/// Mining efficiency: metal = 20 * sqrt(money)
 	/// 
-	/// @param money_spent The amount of money allocated to mining this turn
-	/// @param metal_remaining The amount of metal remaining on the planet
-	/// @return The amount of metal that can be extracted this turn
-	int64_t calculate_metal_mined(int64_t money_spent, int64_t metal_remaining);
+	/// @param money_spent The amount of money allocated to mining
+	/// @return The amount of metal that can be extracted
+	int64_t calculate_metal_mined(int64_t money_spent);
+	
+	/// Calculate the amount of money needed to mine a given amount of metal.
+	/// Inverse of calculate_metal_mined().
+	/// 
+	/// @param metal_collected The amount of metal to mine
+	/// @return The amount of money needed to extract that metal
+	int64_t calculate_money_to_mine(int64_t metal_collected);
 	
 	// ========================================================================
 	// Planet Mechanics Calculations

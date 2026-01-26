@@ -824,8 +824,11 @@ void GameState::process_planets()
 			planet->true_temperature += temperature_change;
 			
 			// MINING: Calculate metal extraction and update reserves
-			int64_t metal_extracted = GameFormulas::calculate_metal_mined(
-				mining_budget, planet->metal );
+			int64_t metal_extracted = GameFormulas::calculate_metal_mined(mining_budget);
+			
+			// Cap extraction to available metal on the planet
+			metal_extracted = std::min(metal_extracted, static_cast<int64_t>(planet->metal));
+			
 			planet->metal -= metal_extracted;
 			player.metal_reserve += metal_extracted;
 		}

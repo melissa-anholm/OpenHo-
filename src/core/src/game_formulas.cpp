@@ -214,17 +214,21 @@ namespace GameFormulas
 		return change;
 	}
 	
-	int64_t calculate_metal_mined(int64_t money_spent, int64_t metal_remaining)
+	int64_t calculate_metal_mined(int64_t money_spent)
 	{
-		// Placeholder: simple linear conversion
-		// Real formula will be implemented later
-		// For now: 1 money = 1 metal
-		int64_t metal_extracted = money_spent;
-		
-		// Cannot extract more metal than remains on the planet
-		metal_extracted = std::min(metal_extracted, metal_remaining);
-		
-		return metal_extracted;
+		// Mining efficiency: metal extracted = 20 * sqrt(money spent)
+		double metal_extracted = 20.0 * std::sqrt(static_cast<double>(money_spent));
+		return static_cast<int64_t>(metal_extracted);
+	}
+	
+	int64_t calculate_money_to_mine(int64_t metal_collected)
+	{
+		// Inverse of mining efficiency: money needed = (metal_collected / 20)^2
+		// Derived from: metal = 20 * sqrt(money)
+		// Solving for money: money = (metal / 20)^2
+		double metal_d = static_cast<double>(metal_collected);
+		double money_needed = (metal_d / 20.0) * (metal_d / 20.0);
+		return static_cast<int64_t>(money_needed);
 	}
 	
 	// ============================================================================
