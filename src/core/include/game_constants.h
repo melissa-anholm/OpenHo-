@@ -67,12 +67,9 @@ namespace GameConstants
 	// Money and Resources
 	// ========================================================================
 	
-	/// Interest rate applied to positive money savings each turn.
-	constexpr double Money_Interest_Rate_Positive = 0.15;
-	
-	/// Interest rate applied to negative money savings (debt) each turn.
-	/// This represents the cost of borrowing money.
-	constexpr double Money_Interest_Rate_Debt = 0.30;
+	// Interest rates removed - now calculated dynamically in GameFormulas::calculate_money_interest()
+	// Positive savings: 10 * sqrt(savings)
+	// Negative savings (debt): 0.15 * savings
 	
 	// ========================================================================
 	// Galaxy Construction / Planet Placement Abstract Parameters
