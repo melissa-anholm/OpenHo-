@@ -219,6 +219,7 @@ private:
 	void process_player_incomes();
 	void update_planet_incomes();
 	void process_money_allocation();
+	void apply_money_interest();
 	void process_research();
 	void process_research_stream(Player& player, TechStream stream, int64_t research_budget);
 	void process_planets();

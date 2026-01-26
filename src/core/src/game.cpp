@@ -207,6 +207,7 @@ void GameState::process_turn()
 	calculate_player_incomes();
 	update_planet_incomes();
 	process_money_allocation();
+	apply_money_interest();
 	process_research();
 	process_planets();
 	process_ships();
@@ -544,6 +545,21 @@ void GameState::process_money_allocation()
 		
 		// Allocate money according to allocation settings
 		// (This will be implemented in money_allocation.cpp)
+	}
+}
+
+void GameState::apply_money_interest()
+{
+	// Apply interest on savings to player income
+	// Positive savings earn interest, negative savings (debt) incur interest costs
+	// TODO: Handle negative income (when debt interest exceeds income)
+	// For now, interest is simply added to income. In the future, we may need to
+	// implement mechanics for players with negative total income.
+	
+	for (auto& player : players)
+	{
+		int64_t interest = GameFormulas::calculate_money_interest(player.money_savings);
+		player.money_income += interest;
 	}
 }
 
