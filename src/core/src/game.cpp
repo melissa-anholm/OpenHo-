@@ -532,19 +532,19 @@ void GameState::update_planet_incomes()
 
 void GameState::process_money_allocation()
 {
-	// Apply money allocation from each player
-	// This distributes the player's money to various purposes
+	// Distribute player income according to their allocation settings
+	// Income is allocated to: savings, research, and planet development
+	// Each portion is used directly for its purpose; nothing is left over
 	for (auto& player : players)
 	{
-		// Add income to money
-		player.money_savings += player.money_income;
+		// Calculate how much income goes to savings
+		int64_t savings_amount = Player::calculate_savings_amount(
+			player.allocation, player.money_income);
+		player.money_savings += savings_amount;
 		
-		// TODO: Add windfall income (special events, bonuses, etc.)
-		int64_t windfall = GameFormulas::calculate_windfall_income(player.id, this);
-		player.money_savings += windfall;
-		
-		// Allocate money according to allocation settings
-		// (This will be implemented in money_allocation.cpp)
+		// Note: Research and planet allocations are handled in their respective
+		// process functions (process_research and process_planets)
+		// They use player.money_income and the allocation fractions directly
 	}
 }
 
