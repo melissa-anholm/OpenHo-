@@ -825,9 +825,21 @@ void GameState::process_planets()
 			
 			// MINING: Calculate metal extraction and update reserves
 			int64_t metal_extracted = GameFormulas::calculate_metal_mined(mining_budget);
+			int64_t planet_metal_available = static_cast<int64_t>(planet->metal);
 			
-			// Cap extraction to available metal on the planet
-			metal_extracted = std::min(metal_extracted, static_cast<int64_t>(planet->metal));
+			// Check if there's insufficient metal on the planet
+			if (metal_extracted > planet_metal_available)
+			{
+				// Calculate the actual cost to mine all remaining metal
+				int64_t actual_cost = GameFormulas::calculate_money_to_mine(planet_metal_available);
+				
+				// Extract all available metal
+				metal_extracted = planet_metal_available;
+				
+				// Refund excess money to player savings
+				int64_t excess_money = mining_budget - actual_cost;
+				player.money_savings += excess_money;
+			}
 			
 			planet->metal -= metal_extracted;
 			player.metal_reserve += metal_extracted;
