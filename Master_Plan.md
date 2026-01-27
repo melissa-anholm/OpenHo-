@@ -1,6 +1,6 @@
 # OpenHo Master Plan
 
-**Last Updated:** January 3, 2026 (Session 5 - Extended - Continued)  
+**Last Updated:** January 26, 2026 (Session 13 - Economic Mechanics & Code Refactoring)  
 **Project Status:** Phase 2 - C++ Core Implementation & UI Architecture Planning (In Progress)
 
 ---
@@ -33,7 +33,7 @@ The project uses a command-line build system (no Xcode dependency) with CMake fo
 
 ### Phase 2: C++ Core Implementation (Current)
 
-**Overall Status:** Foundation layer complete, galaxy generation substantially complete, starting planet assignment complete, player perception formulas complete, C API validation layer implemented
+**Overall Status:** Foundation layer complete, galaxy generation substantially complete, starting planet assignment complete, player perception formulas complete, C API validation layer implemented, economic mechanics implemented
 
 **Deliverable:** Static library `libOpenHoCore.a` with deterministic game engine
 
@@ -300,6 +300,65 @@ The project uses a command-line build system (no Xcode dependency) with CMake fo
 
 ---
 
+#### Phase 2f: Economic Mechanics Implementation
+**Status:** ✅ COMPLETE (Session: Jan 26, 2026)
+
+**Objective:** Implement core economic formulas for interest, mining, terraforming, and income allocation
+
+**Completed (This Session):**
+
+**Interest System:**
+- ✅ Implemented interest calculation with dual rates:
+  - Negative savings (debt): 15% interest (0.15 × savings)
+  - Positive savings: Square root formula (10.0 × sqrt(savings))
+  - Removed old constant-based interest rates
+  - Interest applied to player income, not savings directly
+
+**Mining Mechanics:**
+- ✅ Implemented mining formula: `metal_extracted = 20.0 × sqrt(money_spent)`
+- ✅ Created inverse function: `money_needed = (metal / 20)²`
+- ✅ Mining depletes planet metal reserves
+- ✅ Added refund logic: when planet has insufficient metal, player is charged only for available metal and excess money is refunded to savings
+
+**Income Allocation System:**
+- ✅ Fixed critical bug where income was double-counted
+- ✅ Income now properly distributed according to allocation fractions:
+  - `savings_fraction` → added to money_savings
+  - `research_fraction` → used for research
+  - `planets_fraction` → used for mining/terraforming
+- ✅ Money for mining/terraforming comes from income allocation, not savings
+
+**Terraforming Mechanics:**
+- ✅ Implemented terraforming formula: `delta_temp = 0.0811 × sqrt(money_spent)` in Fahrenheit
+- ✅ Created inverse function for cost calculation
+- ✅ Added overshoot prevention: terraforming stops at ideal temperature
+- ✅ Refund logic for excess allocation
+- ✅ Temperature changes converted between Fahrenheit (formula) and Kelvin (internal storage)
+
+**Temperature Utilities Refactoring:**
+- ✅ Reorganized TemperatureUtils namespace in utility.h
+- ✅ Added clear distinction between absolute temperature and temperature change conversions
+- ✅ Added constants: `BEST_PERCEIVED_TEMPERATURE_K = 295.37223`, `_C = 22.22223`, `_F = 72.0`
+- ✅ Renamed offset constants for clarity:
+  - `CELSIUS_OFFSET` → `OFFSET_K_TO_C` (273.15)
+  - `FAHRENHEIT_OFFSET` → `OFFSET_C_TO_F` (32.0)
+- ✅ Added `OFFSET_K_TO_F = 459.67` for direct K-F conversions
+- ✅ Optimized K-F conversion functions to use direct offset instead of intermediate C conversion
+
+**Code Refactoring:**
+- ✅ Extracted terraforming logic into `process_planet_terraforming()` function
+- ✅ Extracted mining logic into `process_planet_mining()` function
+- ✅ Simplified `process_planets()` to coordinate planet processing
+- ✅ Improved code organization and maintainability
+- ✅ Each function has single responsibility
+
+**Recent Commits (Session 13):**
+1. `bce41d5` - Rename temperature offset constants for clarity
+2. `7894d22` - Add OFFSET_K_TO_F constant and optimize K-F conversions
+3. `5955b2f` - Refactor terraforming and mining into separate functions
+
+---
+
 ### Key Design Decisions
 
 **Player-GameState Relationship:**
@@ -324,512 +383,25 @@ The project uses a command-line build system (no Xcode dependency) with CMake fo
 - Monotonic with true values
 - Ensures consistent player experience across different ideal values
 
----
+**Temperature Unit Handling:**
+- Internal storage: Kelvin (absolute temperature)
+- Formulas: Fahrenheit (for game balance)
+- Conversions: Explicit, with clear function names distinguishing absolute vs. change
 
-### Recent Commits (Session 5 Extended - Continued)
-
-1. `e6710c6` - Refactor galaxy generation to use staged coordinate/parameter approach
-2. `bd27e5a` - Implement gravity perception formula and update gravity constants
-3. `fe7287b` - Implement player ideal temperature assignment and temperature perception formula
-4. `cffb6dd` - Implement per-player ideal_gravity assignment with START_OUTPOST randomization
-5. `69b8b8b` - Rename MASTER_PLAN.md to Master_Plan.md and update with Session 4 progress
-6. `586c644` - Implement Player C API wrapper and GameState validation layer
-7. `88d01a9` - Consolidate duplicate error codes
-8. `d4231f9` - Add validation methods to GameState and getter methods to Player
-9. `c5a14ae` - Update Missing_Implementation_List.md with corrected categorizations
+**Economic System:**
+- Interest applied to income, not savings directly
+- Income allocated by fractions before spending
+- Refunds for insufficient resources (metal, temperature overshoot)
+- Square root formulas for diminishing returns on mining/terraforming
 
 ---
 
-**This document is the single source of truth for the OpenHo project. It should be updated after each significant session to reflect progress and maintain accuracy for future sessions.**
+### Recent Commits (Session 13 - Economic Mechanics & Code Refactoring)
 
-
----
-
-### Session 6: Fleet Architecture Refactoring & Research Optimization (Jan 4, 2026)
-
-**Status:** ✅ COMPLETE
-
-**Objective:** Refactor fleet creation architecture for cleaner ownership semantics; optimize research processing with cost caching; plan fleet/knowledge map system
-
-**Completed:**
-
-#### 1. Fleet Creation Architecture Refactoring ✅
-- ✅ Eliminated redundant `GameState::find_suitable_home_planets()` function
-- ✅ Removed `GameState::create_fleet()` - Player now owns the entire creation process
-- ✅ Added `GameState* game_state` member to Player class
-- ✅ Split `Player::create_fleet()` into three methods:
-  - `validate_fleet()`: Validates design_id, ship_count, planet_id
-  - `build_fleet()`: Creates Fleet after validation and fleet_id allocation
-  - `create_fleet()`: Orchestrates both steps, requests fleet_id from GameState
-- ✅ Updated `GameState::initialize_players()` to pass `this` to Player constructor
-- ✅ Updated C API wrapper `game_player_build_fleet()` to call `Player::create_fleet()` directly
-- ✅ Cleaner architecture: Player initiates and owns fleet creation, GameState provides services (fleet_id allocation, planet lookup)
-
-**Benefits:**
-- Single source of truth for fleet creation logic
-- Clear ownership: Player owns Fleet objects and creation process
-- Straightforward call flow: no back-and-forth between Player and GameState
-- Easier to maintain and extend
-
-#### 2. RNG Seed Naming Refactoring ✅
-- ✅ Renamed `deterministicSeed` → `det_seed` (local variable)
-- ✅ Renamed `aiSeed` → `ai_seed` (local variable)
-- ✅ Renamed `get_deterministic_seed()` → `get_det_seed()`
-- ✅ Renamed `set_deterministic_seed()` → `set_det_seed()`
-- ✅ Renamed `get_ai_rng_seed()` → `get_ai_seed()`
-- ✅ Renamed `set_ai_rng_seed()` → `set_ai_seed()`
-- ✅ Updated C API function names accordingly
-- ✅ More consistent snake_case naming throughout
-
-#### 3. Research Cost Caching Optimization ✅
-- ✅ Added six `std::vector<int64_t>` cache vectors to GameState (one per tech stream)
-- ✅ Cache indexed directly by tech level: `research_cost_range[i]` = cost to reach level i
-- ✅ Implemented `initialize_research_cost_caches()`:
-  - Initializes with zeroes for starting levels (0 and 1)
-  - Pre-calculates costs for levels 2-21 (20 levels ahead)
-  - Reduces startup overhead
-- ✅ Implemented `ensure_research_costs_available(max_tech_level)`:
-  - Extends cache dynamically as players advance
-  - Extends by 20 levels at a time
-  - Prevents repeated calculations for high-level techs
-- ✅ Updated `process_research_stream()`:
-  - Removed repeated calls to `calculate_tech_*_advancement_cost()`
-  - Now looks up costs directly from cache vectors
-  - Calls `ensure_research_costs_available()` before advancement loop
-  - Checks cache bounds and extends if needed within loop
-
-**Benefits:**
-- O(1) lookup replaces function call overhead
-- Self-documenting: vector length shows max available tech level
-- Automatically scales as tech levels increase
-- Significant performance improvement for research-heavy turns
-
-#### 4. Fleet/Knowledge Map Architecture Planning ✅
-- ✅ Analyzed fleet storage options and their tradeoffs
-- ✅ Decided against storing Fleet pointers in Planet (dangling pointer risk)
-- ✅ Planned hybrid approach: Fleet IDs in Planet with safe getters
-- ✅ Designed future Player Knowledge Map system:
-  - Player maintains KnowledgePlanet structure for each real planet
-  - Stores player's known info about that planet
-  - Organizes player's own fleets by this knowledge structure
-  - Stores enemy fleet visibility info (updated each turn)
-  - Provides fast, UI-aligned queries
-- ✅ Identified this as future refactoring (not immediate)
-- ✅ Documented design for future implementation
-
-**Architecture Decision:**
-- **Immediate:** Simple Planet getters for fleet queries (safe, minimal complexity)
-- **Future:** Player Knowledge Map system (solves fleet lookup + fog of war + UI alignment)
-
-#### 5. Player Knowledge Map Architecture Design (Detailed) ✅
-
-**Game Mechanics Context:**
-- Players always have some information about all planets
-- Initial knowledge (game start): name, position, planet_id
-- Homeworld starts with full knowledge
-- Knowledge expands through exploration and colonization
-- All KnowledgePlanets initialized at game start (no gaps in vector)
-
-**Data Structure:**
-```cpp
-class KnowledgePlanet {
-    uint32_t real_planet_id;
-    Planet* real_planet;  // Points to GameState's Planet (set at init, never changes)
-    
-    // Known information (initially limited, expands over time)
-    std::string name;           // Always known
-    double x, y;                // Position - always known
-    double known_temperature;   // UNKNOWN initially, updated when explored
-    double known_gravity;       // UNKNOWN initially, updated when explored
-    int32_t known_metal;        // UNKNOWN initially, updated when explored
-    // ... other properties
-    
-    // Fleet information
-    std::vector<uint32_t> my_fleet_ids;           // Player's own fleets at this planet
-    std::vector<FleetVisibleInfo> enemy_fleets;   // Enemy fleets (updated each turn)
-    
-    // Colonization (optional)
-    std::unique_ptr<ColonizedPlanet> colonization;  // Non-null if player colonized this
-};
-
-class Player {
-private:
-    std::vector<KnowledgePlanet> knowledge_map;  // One per planet, indexed by planet_id
-    
-public:
-    // Access knowledge planets
-    KnowledgePlanet* get_knowledge_planet(uint32_t planet_id);
-    const KnowledgePlanet* get_knowledge_planet(uint32_t planet_id) const;
-    
-    // Get colonized planets (filtered from knowledge map)
-    std::vector<ColonizedPlanet*> get_colonized_planets();
-    std::vector<const ColonizedPlanet*> get_colonized_planets() const;
-    
-    // Get specific colonized planet
-    ColonizedPlanet* get_colonized_planet(uint32_t planet_id);
-    
-    // Fleet queries
-    std::vector<Fleet*> get_colonized_planet_fleets(uint32_t planet_id, GameState* game_state);
-    std::vector<Fleet*> get_all_fleets(GameState* game_state);
-};
-```
-
-**Ownership Structure:**
-```
-GameState
-  └─ Galaxy
-      └─ std::vector<Planet>  (all planets in the galaxy)
-
-Player
-  └─ std::vector<KnowledgePlanet>  (player's knowledge of all planets)
-      ├─ Planet* real_planet  (points to GameState's Planet)
-      └─ std::unique_ptr<ColonizedPlanet>  (if colonized)
-```
-
-**Key Design Decisions:**
-1. **Vector storage** - Direct indexing by planet_id, no unordered_map complexity
-2. **Planet pointer** - Safe because planets are never destroyed mid-game
-3. **Option 2 composition** - KnowledgePlanet contains optional ColonizedPlanet (not inheritance)
-4. **Single source of truth** - All player knowledge in one structure
-5. **No inheritance** - ColonizedPlanet is separate from Planet, not derived
-
-**Initialization (at game start):**
-- Create KnowledgePlanet for every planet in galaxy
-- Set real_planet pointer, name, position
-- Set initial knowledge to UNKNOWN for all properties except position
-- For homeworld: call `update_knowledge_from_planet()` to populate full knowledge
-- Create ColonizedPlanet for homeworld
-
-**Knowledge Updates:**
-- When exploring a planet: call `kp.update_knowledge_from_planet()`
-- When colonizing: create ColonizedPlanet in the KnowledgePlanet
-- Each turn: update enemy fleet visibility info
-
-**Benefits:**
-- ✅ Single source of truth for all player knowledge
-- ✅ Natural representation: colonized planets are KnowledgePlanets with extra data
-- ✅ UI-aligned: queries return exactly what UI needs
-- ✅ Fog of war ready: knowledge structure supports incomplete information
-- ✅ Fleet lookup: fast queries by planet
-- ✅ No dangling pointers: Planet pointers are safe
-- ✅ Clean iteration: simple vector iteration, no structured bindings needed
-
-**Future Implementation Notes:**
-- Migrate from current `std::vector<ColonizedPlanet>` storage
-- Update all code that iterates colonized planets
-- Add helper methods for common queries
-- Implement fog of war rules during knowledge updates
-
-**Recent Commits (Session 6):**
-1. `e87708c` - Fix syntax error in allocate_fleet_id() function declaration
-2. `f4d1a07` - Refactor fleet creation: Player now owns the process
-3. `576c5bd` - Implement research cost caching to eliminate repeated calculations
+1. `bce41d5` - Rename temperature offset constants: CELSIUS_OFFSET → OFFSET_K_TO_C, FAHRENHEIT_OFFSET → OFFSET_C_TO_F
+2. `7894d22` - Add OFFSET_K_TO_F constant and optimize K-F conversions directly
+3. `5955b2f` - Refactor terraforming and mining into separate functions for better code organization
 
 ---
 
 **This document is the single source of truth for the OpenHo project. It should be updated after each significant session to reflect progress and maintain accuracy for future sessions.**
-
-
----
-
-## Session 7: File Restructuring & KnowledgeGalaxy Implementation (January 5, 2026)
-
-**Status:** ✅ COMPLETE
-
-**Objective:** Reorganize codebase for clarity and implement KnowledgeGalaxy as the foundation for player galaxy knowledge system
-
-### Part 1: File Restructuring & Class Promotion
-
-**Completed:**
-- ✅ Created `colonized_planet.h/cpp` - Moved ColonizedPlanet class to dedicated files
-- ✅ Created `knowledge_planet.h/cpp` - Moved PlanetSnapshot (now KnowledgePlanet) to dedicated files
-- ✅ Updated `planet.h/cpp` - Now contains only Planet class
-- ✅ Promoted Planet to full class (was struct)
-- ✅ Promoted PlanetSnapshot to full class (was struct)
-- ✅ Updated all includes throughout codebase
-- ✅ CMakeLists.txt updated with new source files
-
-**Architecture Improvements:**
-- Clear separation of concerns: Planet, ColonizedPlanet, KnowledgePlanet in separate files
-- Better code organization for future maintenance
-- Foundation ready for KnowledgePlanet feature development
-
-### Part 2: PlanetSnapshot → KnowledgePlanet Refactoring
-
-**Completed:**
-- ✅ Added sentinel constants to enums.h:
-  - `OBSERVATION_YEAR_UNKNOWN = -1`
-  - `PROFITABILITY_UNKNOWN = -1`
-  - `PERCEIVED_VALUE_UNKNOWN = -1`
-- ✅ Refactored PlanetSnapshot constructor:
-  - Converted `partial_info()` static method to default constructor
-  - Constructor: `KnowledgePlanet(const Planet& planet, PlayerID player_id)`
-  - Initializes with partial info (id, name, coordinates only)
-  - All other fields set to appropriate unknown sentinel values
-- ✅ Kept `full_info()` as factory method for complete information snapshots
-- ✅ Added `nova_state` member (type: PlanetNovaState, initialized to PLANET_NORMAL)
-- ✅ Added `observe_planet()` method:
-  - Signature: `void observe_planet(const Planet& planet, const Player* observer, int32_t current_year)`
-  - Updates observable fields from current planet state
-  - Calculates apparent temperature and gravity based on observer's ideals
-  - Updates observation_year to current_year
-  - Does NOT modify nova_state
-  - Uses `const Player*` for read-only access
-- ✅ Resolved const member issue by removing const qualifiers:
-  - Fields `id`, `name`, `x`, `y`, `as_seen_by` no longer const
-  - Documented that these fields should not be modified after construction
-  - Allows vector storage without assignment operator issues
-- ✅ Renamed PlanetSnapshot → KnowledgePlanet throughout codebase
-- ✅ Updated Player to use `std::vector<KnowledgePlanet> planetKnowledge`
-
-**Key Design Decisions:**
-1. **Default constructor for partial info** - More intuitive than static factory method
-2. **Sentinel values at -1** - Consistent, easy to check for unknown state
-3. **Non-const fields with documentation** - Pragmatic approach, relies on convention
-4. **observe_planet() method** - Encapsulates knowledge update logic
-5. **nova_state independence** - Not updated by observations, managed separately
-
-### Part 3: KnowledgeGalaxy Implementation
-
-**Completed:**
-- ✅ Created `knowledge_galaxy.h` - KnowledgeGalaxy class definition
-- ✅ Created `knowledge_galaxy.cpp` - KnowledgeGalaxy implementation
-- ✅ Updated Player class:
-  - Replaced `std::vector<KnowledgePlanet> planetKnowledge`
-  - Added `KnowledgeGalaxy* knowledge_galaxy` member
-  - Added include for knowledge_galaxy.h
-- ✅ Updated CMakeLists.txt with knowledge_galaxy.cpp
-- ✅ Updated openho_core.h to include knowledge_galaxy.h
-
-**KnowledgeGalaxy Architecture:**
-
-```cpp
-class KnowledgeGalaxy {
-private:
-    const Galaxy* real_galaxy;  // Reference to real galaxy (for edge cases)
-    std::vector<KnowledgePlanet> planets;  // Indexed by planet_id
-    PlayerID player_id;
-
-public:
-    // Constructor - initializes with partial info for all planets
-    KnowledgeGalaxy(const Galaxy& galaxy, PlayerID player_id);
-    
-    // Accessors
-    KnowledgePlanet* get_planet(uint32_t planet_id);
-    const KnowledgePlanet* get_planet(uint32_t planet_id) const;
-    
-    size_t get_planet_count() const { return planets.size(); }
-    
-    // Update player's knowledge of a planet
-    void observe_planet(uint32_t planet_id, const Planet& real_planet, 
-                       const Player* observer, int32_t current_year);
-    
-    // Access to real galaxy (for edge cases)
-    const Planet* get_real_planet(uint32_t planet_id) const;
-};
-```
-
-**Key Features:**
-1. **Self-sufficient validation** - Uses player's knowledge for most game logic
-2. **Reference to real galaxy** - Available for edge cases, not primary validation path
-3. **Vector storage** - Direct indexing by planet_id for O(1) access
-4. **Initialization at game start** - Creates KnowledgePlanets for all planets with partial info
-5. **Extensible design** - Foundation for fog of war and future game logic
-
-**Ownership Structure:**
-```
-GameState
-  └─ Galaxy
-      └─ std::vector<Planet>  (all planets in the galaxy)
-
-Player
-  └─ KnowledgeGalaxy
-      └─ std::vector<KnowledgePlanet>  (player's knowledge of all planets)
-          ├─ const Galaxy* real_galaxy  (reference, for edge cases)
-          └─ KnowledgePlanet[i]
-              ├─ Planet* real_planet  (points to GameState's Planet)
-              ├─ Observable fields (temperature, gravity, metal, etc.)
-              ├─ Fleet information (my_fleet_ids, enemy_fleets)
-              └─ Optional ColonizedPlanet (if colonized)
-```
-
-### Session 7 Commits:
-
-1. `8243611` - Rename PlanetSnapshot to KnowledgePlanet
-   - Complete rename throughout codebase
-   - Updated class definitions, implementations, and references
-   
-2. `b22fdb9` - Implement KnowledgeGalaxy class for player galaxy knowledge
-   - Created knowledge_galaxy.h/cpp
-   - Updated Player to use KnowledgeGalaxy
-   - Updated build system and includes
-
-### Updated Future Plans:
-
-**Next Steps (Phase 2d - KnowledgePlanet Integration):**
-1. [ ] Integrate KnowledgeGalaxy initialization into GameState constructor
-2. [ ] Initialize homeworld with full knowledge
-3. [ ] Implement initial knowledge updates for all players
-4. [ ] Add helper methods to Player for common KnowledgeGalaxy queries
-5. [ ] Update game logic to use KnowledgeGalaxy for planet queries
-6. [ ] Implement fog of war rules for knowledge updates
-7. [ ] Add observation mechanics (exploration, colonization, etc.)
-8. [ ] Implement fleet visibility tracking in KnowledgePlanet
-
-**Phase 2e - Future Enhancements:**
-- [ ] Implement fog of war based on fleet positions
-- [ ] Add sensor range calculations for fleet observation
-- [ ] Implement knowledge decay/staleness tracking
-- [ ] Add knowledge sharing between allied players
-- [ ] Implement espionage/scouting mechanics
-
-### Benefits of Current Implementation:
-
-✅ **Clear architecture** - Separate files for each concept (Planet, ColonizedPlanet, KnowledgePlanet)  
-✅ **Self-sufficient player view** - KnowledgeGalaxy provides most validation independently  
-✅ **Extensible design** - Foundation for fog of war and game logic  
-✅ **Type safety** - Full classes instead of structs provide better encapsulation  
-✅ **Maintainability** - Well-organized codebase with clear responsibilities  
-✅ **Performance** - Vector indexing provides O(1) access by planet_id  
-✅ **Code compiles successfully** - All changes integrated and tested
-
-
-
----
-
-## Session 12 - FleetTransit Architecture & C API Improvements (January 5, 2026)
-
-**Status:** ✅ COMPLETE
-
-**Objective:** Implement turn-based fleet movement with FleetTransit architecture; improve C API structure and error handling
-
-### Major Accomplishments:
-
-#### 1. FleetTransit Architecture Implementation
-- ✅ Created `FleetTransit` struct to centralize all transit state:
-  - `uint32_t origin_planet_id` - Starting planet
-  - `uint32_t destination_planet_id` - Target planet
-  - `uint32_t departure_turn` - When fleet left
-  - `uint32_t arrival_turn` - When fleet arrives
-  - `double distance` - Pre-calculated distance
-  - `uint32_t turns_to_travel` - Travel time in turns
-  
-- ✅ Refactored `Fleet` class to use `std::unique_ptr<FleetTransit>`:
-  - Replaced scattered transit fields (in_transit, origin_planet, destination_planet, etc.)
-  - Added move semantics (move constructor, move assignment)
-  - Deleted copy semantics (enforces exclusive ownership)
-  - Added `move_to()` method for initiating fleet movement
-
-- ✅ Implemented **space_planet pattern** for in-transit fleets:
-  - Each player's `KnowledgeGalaxy` owns its own `space_real_planet` (virtual Planet)
-  - Each player has corresponding `space_knowledge_planet` (KnowledgePlanet view)
-  - In-transit fleets stored in player's space_real_planet
-  - Prevents accidental battles between players' in-transit fleets
-  - Clean isolation of each player's transit state
-
-#### 2. Fleet Movement Implementation
-- ✅ Implemented `Fleet::move_to()` method:
-  - Takes non-const KnowledgeGalaxy reference
-  - Creates FleetTransit with origin, destination, dates, distance
-  - Removes fleet from current_planet's my_fleets
-  - Adds fleet to space_real_planet's my_fleets
-  - Updates current_planet to point to space_real_planet
-  - Uses distance matrix for O(1) distance lookups
-
-- ✅ Implemented `GameState::process_ships()` for fleet arrivals:
-  - Iterates through all players' in-transit fleets
-  - Checks if arrival_turn <= current_turn
-  - Moves arrived fleets from space_real_planet to destination
-  - Destroys FleetTransit instance (resets unique_ptr)
-  - Integrated into turn processing pipeline
-
-#### 3. Move Semantics Cascade
-- ✅ Added move semantics to `Fleet` class
-- ✅ Added move semantics to `Player` class (required by Fleet vectors)
-- ✅ Added move semantics to `KnowledgePlanet` class (required by unique_ptr)
-- ✅ Updated all vector push_back operations to use std::move()
-- ✅ Deleted copy constructors/assignment operators where appropriate
-
-#### 4. Fleet Management Infrastructure
-- ✅ Added `my_fleets` vector to both `Planet` and `KnowledgePlanet`
-- ✅ Implemented `add_my_fleet()` and `remove_my_fleet()` methods
-- ✅ Added proper includes (#include <vector>, #include <algorithm>)
-- ✅ Fixed all compilation errors related to move semantics
-
-#### 5. C API Improvements
-- ✅ **Removed `game_get_player()`** - Struct-copying function that conflicted with non-copyable Player
-  - Forces UI to use specific accessor functions instead
-  - Cleaner, thinner communication layer
-
-- ✅ **Removed all dangerous `memset` calls** on non-trivial types:
-  - Replaced `memset(out, 0, sizeof(Planet))` with `*out = Planet()`
-  - Replaced `memset(out, 0, sizeof(ShipDesign))` with `*out = ShipDesign()`
-  - Replaced `memset(out, 0, sizeof(MoneyAllocation))` with proper construction
-  - Eliminates undefined behavior and potential memory leaks
-
-- ✅ **Added error codes to functions that can fail:**
-  - `game_get_planet()` - returns ErrorCode
-  - `game_get_planet_perceived_values()` - returns ErrorCode
-  - `game_get_ship_design()` - returns ErrorCode
-  - `game_get_money_allocation()` - returns ErrorCode
-  - `game_set_money_allocation()` - returns ErrorCode
-  - `game_delete_ship_design()` - returns ErrorCode
-  - `game_build_ship_from_design()` - returns ErrorCode
-  - `game_process_turn()` - returns ErrorCode
-
-- ✅ **Established consistent error handling pattern:**
-  - All functions validate inputs (return INVALID_PARAMETER if null)
-  - All functions return specific error codes (PLANET_NOT_FOUND, SHIP_DESIGN_NOT_FOUND, etc.)
-  - All functions return SUCCESS on successful completion
-  - Added #include error_codes.h to openho_core.h
-
-### Architecture Decisions:
-
-**Why space_planet is player-specific:**
-- Each player has their own virtual space planet (not shared)
-- Prevents accidental battles between different players' in-transit fleets
-- Cleaner isolation and no synchronization issues
-- Each player's KnowledgeGalaxy is truly independent
-
-**Why unique_ptr for FleetTransit:**
-- Enforces exclusive ownership of transit state
-- Automatic cleanup when fleet arrives
-- Clear semantics: nullptr means not in transit
-- Prevents accidental copies of complex transit data
-
-**Why Player is non-copyable:**
-- Natural consequence of Fleet being non-copyable
-- Each player is a unique entity in the game
-- Prevents subtle bugs from accidental copies
-- Forces explicit move semantics where needed
-
-### Commits:
-1. `bb2e391` - Refactor fleet movement to Fleet::move_to() with distance matrix integration (remote)
-2. `03ac378` - Improve C API structure and error handling (local)
-
-### Compilation Status:
-✅ **Clean build** - No errors, only pre-existing warnings about memset on non-trivial types (now fixed)
-
-### Testing Needed:
-- [ ] Unit tests for fleet movement scenarios
-- [ ] End-to-end movement with multiple players
-- [ ] Verify distance calculations and arrival dates
-- [ ] Test fleet cleanup on arrival
-- [ ] Verify space planet isolation between players
-- [ ] Test C API error codes with invalid inputs
-
-### Future Enhancements:
-- [ ] Implement fleet interception mechanics
-- [ ] Add waypoint support for multi-leg journeys
-- [ ] Implement fleet combat during transit
-- [ ] Add fleet fuel consumption during movement
-- [ ] Implement fleet visibility during transit
-- [ ] Add fleet status queries (ETA, fuel, etc.)
-
-### Key Takeaways:
-- **Architectural clarity** - FleetTransit centralizes all movement state
-- **Type safety** - unique_ptr enforces proper ownership semantics
-- **Player isolation** - Each player's space planet prevents cross-player issues
-- **API consistency** - C API now has uniform error handling
-- **Code quality** - Removed dangerous patterns (memset on non-trivial types)
-- **Performance** - O(1) distance lookups via pre-computed matrix

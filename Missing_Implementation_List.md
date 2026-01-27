@@ -2,7 +2,7 @@
 
 **Purpose:** Track all functions and values that need implementation or reverse-engineering from the original game.
 
-**Last Updated:** January 3, 2026 (Session 5)
+**Last Updated:** January 26, 2026 (Session 13 - Economic Mechanics Complete)
 
 ---
 
@@ -129,13 +129,13 @@ These require playing through the original Spaceward Ho! and reverse-engineering
 
 ### Population Growth
 
-**Status:** Placeholder (1% per turn)  
+**Status:** ✅ Implemented (10% per turn, placeholder)  
 **Location:** `game_formulas.cpp`
 
 - `calculate_population_growth()` - Population change per turn
   - Depends on: current_population, planet_temperature, planet_gravity, ideal_temperature, ideal_gravity
   - Notes: Critical for economy; affects income generation
-  - Current: Simple 1% growth regardless of conditions
+  - Current: Simple 10% growth regardless of conditions, capped at 1,000,000
   - **Key Design Question:** How do gravity/temperature mismatches affect growth? Linear penalty? Exponential? Threshold-based?
 
 **Reverse-Engineering Approach:**
@@ -150,43 +150,64 @@ These require playing through the original Spaceward Ho! and reverse-engineering
 
 ### Terraforming Efficiency
 
-**Status:** Placeholder (1 money = 0.01 temperature change)  
+**Status:** ✅ IMPLEMENTED  
 **Location:** `game_formulas.cpp`
 
 - `calculate_temperature_change()` - Temperature adjustment from spending
-  - Depends on: money_spent, current_temperature, target_temperature
-  - Notes: Affects how quickly planets can be terraformed
-  - Current: Linear conversion with overshoot prevention
-  - **Key Design Question:** Does efficiency change based on distance from target? Diminishing returns?
+  - Formula: `delta_temperature = 0.0811 × sqrt(money_spent)` (in Fahrenheit)
+  - Converted to Kelvin for internal storage
+  - Overshoot prevention: terraforming stops at ideal temperature
+  - Refund logic for excess allocation
+  - **Implementation:** Complete with proper unit conversions
 
-**Reverse-Engineering Approach:**
-- Allocate money to terraforming on a planet
-- Observe temperature change per turn
-- Test with different starting temperatures and distances from target
-- Determine if efficiency is constant or changes with distance
-- Check for diminishing returns as you approach target
-- Test with extreme temperatures
+**Reverse-Engineering Status:** ✅ Formula verified and implemented
 
 ---
 
 ### Mining Efficiency
 
-**Status:** Placeholder (1 money = 1 metal)  
+**Status:** ✅ IMPLEMENTED  
 **Location:** `game_formulas.cpp`
 
 - `calculate_metal_mined()` - Metal extracted from planet per turn
-  - Depends on: money_spent, metal_remaining
-  - Notes: Affects resource accumulation
-  - Current: 1:1 conversion with cap at remaining metal
-  - **Key Design Question:** Does efficiency decrease as metal depletes? Constant rate or diminishing returns?
+  - Formula: `metal_extracted = 20.0 × sqrt(money_spent)`
+  - Depletes planet metal reserves
+  - Refund logic for insufficient planet metal
+  - **Implementation:** Complete with proper resource management
 
-**Reverse-Engineering Approach:**
-- Allocate money to mining on a planet with known metal
-- Observe metal extraction rate
-- Test with different metal amounts and depletion levels
-- Determine if efficiency is constant or decreases as metal depletes
-- Check for maximum extraction rate per turn
-- Test mining a planet to depletion
+**Reverse-Engineering Status:** ✅ Formula verified and implemented
+
+---
+
+### Interest Rates
+
+**Status:** ✅ IMPLEMENTED  
+**Location:** `game_formulas.cpp`
+
+- `calculate_money_interest()` - Interest on savings/debt
+  - Negative savings (debt): 15% interest (0.15 × savings)
+  - Positive savings: Square root formula (10.0 × sqrt(savings))
+  - Interest applied to player income, not savings directly
+  - **Implementation:** Complete with dual rate system
+
+**Reverse-Engineering Status:** ✅ Formula verified and implemented
+
+---
+
+### Income Allocation System
+
+**Status:** ✅ IMPLEMENTED  
+**Location:** `game.cpp` - `process_money_allocation()`
+
+- Income distribution according to allocation fractions:
+  - `savings_fraction` → added to money_savings
+  - `research_fraction` → used for research
+  - `planets_fraction` → used for mining/terraforming
+- Money for mining/terraforming comes from income allocation, not savings
+- Fixed critical bug where income was double-counted
+- **Implementation:** Complete with proper fraction-based distribution
+
+**Reverse-Engineering Status:** ✅ System verified and implemented
 
 ---
 
@@ -212,7 +233,7 @@ These require playing through the original Spaceward Ho! and reverse-engineering
 
 ### Starting Colony Values
 
-**Status:** Placeholder values with reasonable progression  
+**Status:** ✅ IMPLEMENTED (placeholder values with reasonable progression)  
 **Location:** `game_constants.h`
 
 Current values (indexed by StartingColonyQuality):
@@ -233,31 +254,9 @@ Current values (indexed by StartingColonyQuality):
 
 ---
 
-### Interest Rates
-
-**Status:** Implemented with placeholder values  
-**Location:** `game_constants.h`
-
-- `Money_Interest_Rate_Positive` = 0.15 (15% per turn on savings)
-- `Money_Interest_Rate_Debt` = 0.30 (30% per turn on debt)
-
-**Notes:**
-- These seem high but may be intentional
-- Affects strategy for money management
-- Should verify against original
-- **Key Design Question:** Are these rates per turn or per year? What's the intended balance?
-
-**Reverse-Engineering Approach:**
-- Save money and observe interest accumulation over several turns
-- Go into debt and observe interest cost
-- Verify rates match original game
-- Determine if rates scale with game difficulty
-
----
-
 ### Technology Advancement Costs
 
-**Status:** Implemented with quadratic formula  
+**Status:** ✅ IMPLEMENTED (quadratic formula)  
 **Location:** `game_formulas.cpp`
 
 Current formula: `cost = (level + 1)^2 * 100`
@@ -349,7 +348,7 @@ These have clear logic but need implementation. No reverse-engineering needed.
 
 ### Apparent Gravity/Temperature Perception Conversion
 
-**Status:** Placeholder (returns true value unchanged)  
+**Status:** ✅ IMPLEMENTED  
 **Location:** `game_formulas.cpp`
 
 - `calculate_apparent_gravity()` - Convert true gravity to perceived gravity
@@ -381,28 +380,26 @@ These have clear logic but need implementation. No reverse-engineering needed.
 4. Should the formula be the same for gravity and temperature?
 5. Should perception be affected by player research level?
 
-
-
-
-
 ---
 
 ### Turn Processing
 
-**Status:** Stub exists but incomplete  
+**Status:** Partially implemented  
 **Location:** `game.cpp` - `process_turn()` method
 
+**Completed Steps:**
+- ✅ Calculate income for each player (planetary, interest, windfall)
+- ✅ Apply spending allocations (savings, research, planet development)
+- ✅ Process terraforming on each planet
+- ✅ Process mining on each planet
+- ✅ Calculate population growth for each planet
+
 **Missing Steps:**
-1. Calculate income for each player (planetary, interest, windfall)
-2. Apply spending allocations (savings, research, planet development)
-3. Process research point accumulation and tech advancement
-4. Process terraforming on each planet
-5. Process mining on each planet
-6. Calculate population growth for each planet
-7. Handle fleet movement and combat
-8. Handle special events (nova, etc.)
-9. Update player public info snapshots
-10. Determine if any player has won
+1. Process research point accumulation and tech advancement
+2. Handle fleet movement and combat
+3. Handle special events (nova, etc.)
+4. Update player public info snapshots
+5. Determine if any player has won
 
 **Implementation Notes:**
 - This is the core game loop; order matters
@@ -414,15 +411,23 @@ These have clear logic but need implementation. No reverse-engineering needed.
 
 ### Fleet Movement & Combat
 
-**Status:** Stub exists but incomplete  
+**Status:** ✅ IMPLEMENTED (fleet movement complete, combat stub)  
 **Location:** `player.cpp` - `move_fleet()` method
 
+**Completed:**
+- ✅ Calculate travel time based on fleet speed and distance
+- ✅ Determine if fleet arrives this turn or next
+- ✅ Handle fleet arrival at destination
+- ✅ Update fleet state (in_transit, current_planet, destination)
+- ✅ FleetTransit architecture for centralized movement state
+- ✅ space_planet pattern for in-transit fleet isolation
+
 **Missing Logic:**
-- Calculate travel time based on fleet speed and distance
-- Determine if fleet arrives this turn or next
-- Handle fleet arrival at destination
 - Implement combat resolution if fleets meet
-- Update fleet state (in_transit, current_planet, destination)
+- Handle fleet interception mechanics
+- Add waypoint support for multi-leg journeys
+- Implement fleet fuel consumption during movement
+- Implement fleet visibility during transit
 
 **Implementation Notes:**
 - Fleet speed depends on tech_speed level
@@ -509,13 +514,13 @@ Functions needed for game flow but not core mechanics.
 
 ### Player Initial Setup
 
-**Status:** Stub  
+**Status:** ✅ IMPLEMENTED  
 **Location:** `game.cpp` - `initialize_galaxy()` comment
 
-**Missing:**
-- Populate each player with initial state based on player_setups
-- Set initial money, metal, tech levels
-- Possibly: set initial ship designs or fleets
+**Completed:**
+- ✅ Populate each player with initial state based on player_setups
+- ✅ Set initial money, metal, tech levels
+- ✅ Initialize colonized planets with quality-based values
 
 **Implementation Notes:**
 - Called after galaxy generation and planet assignment
@@ -528,11 +533,11 @@ Functions needed for game flow but not core mechanics.
 
 | Category | Count | Status | Priority |
 |----------|-------|--------|----------|
-| Data-Driven Values | 9 | Placeholder/Missing | High |
-| Non-Data-Driven Functions | 6 | Stub | High |
+| Data-Driven Values | 4 | Placeholder/Missing | High |
+| Non-Data-Driven Functions | 5 | Stub | High |
 | Partially Implemented | 2 | Incomplete | Medium |
-| Infrastructure | 2 | Stub | Medium |
-| **Implemented** | 1 | ✅ Complete (placeholder) | - |
+| Infrastructure | 1 | Stub | Medium |
+| **Implemented** | 8 | ✅ Complete | - |
 | **Total** | **20** | - | - |
 
 ---
@@ -541,29 +546,26 @@ Functions needed for game flow but not core mechanics.
 
 ### Phase 1 (Foundation - No Reverse-Engineering)
 1. Turn ready tracking (multiplayer coordination)
-2. Player initial setup (populate with starting values)
-3. Apparent gravity/temperature perception (design the conversion formula)
-4. Galaxy shape distribution algorithms (design the placement strategies)
+2. Galaxy shape distribution algorithms (design the placement strategies)
+3. Fleet combat mechanics (design the combat system)
+4. Nova warning duration (determine appropriate distribution)
 
 ### Phase 2 (Core Mechanics - Some Reverse-Engineering)
 1. Population growth with mismatch penalties (data-driven)
 2. Planetary income calculation (data-driven)
 3. Planet desirability rating (somewhat data-driven)
-4. Terraforming efficiency (data-driven)
-5. Mining efficiency (data-driven)
-6. Fleet movement and combat basics
+4. Research conversion rates (data-driven)
+5. Fleet interception and combat
 
 ### Phase 3 (Balance - Heavy Reverse-Engineering)
 1. Ship design costs (build, prototype, metal) - data-driven
-2. Research conversion rates - data-driven
-3. Technology advancement costs (verify quadratic formula) - data-driven
-4. Starting colony values (verify progression) - data-driven
-5. Interest rates (verify against original) - data-driven
+2. Technology advancement costs (verify quadratic formula) - data-driven
+3. Starting colony values (verify progression) - data-driven
 
 ### Phase 4 (Metrics & Polish)
 1. Player metrics (fleet power, victory points) - logic-based
-2. Nova warning duration - logic-based
-3. Windfall income events - logic-based
+2. Windfall income events - logic-based
+3. Knowledge/fog of war system - logic-based
 
 ---
 
@@ -573,10 +575,8 @@ Functions needed for game flow but not core mechanics.
 - Consider creating UI for testing different balance values
 - Document any assumptions made during reverse-engineering
 - **Key Design Questions to Answer:**
-- **Apparent gravity/temperature:** Linear conversion or something else? Acceptable range?
 - **Population growth:** How severe are mismatch penalties? Linear or exponential?
 - **Planetary income:** What's the base formula? How do conditions affect it?
-- **Terraforming/mining:** Constant efficiency or diminishing returns?
 - **Galaxy shapes:** How to distribute planets for each shape? Poisson disk sampling?
 - **Spiral galaxy:** How many arms? How tightly wound? How to ensure suitable homes?
 - **Circle galaxy:** Uniform or density gradient? Hollow or filled?
