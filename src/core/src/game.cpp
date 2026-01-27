@@ -817,10 +817,50 @@ void GameState::process_planets()
 			int64_t mining_budget = static_cast<int64_t>(
 				planet_budget * colonized.get_mining_fraction() );
 			
-			// TERRAFORMING: Calculate and apply temperature change
-			double temperature_change = GameFormulas::calculate_temperature_change(
-				terraforming_budget, planet->true_temperature, player.ideal_temperature );
-				
+			// TERRAFORMING: Calculate temperature change and handle overshoot
+			double temperature_magnitude = GameFormulas::calculate_temperature_change(terraforming_budget);
+			double temperature_change = 0.0;
+			int64_t actual_terraforming_cost = terraforming_budget;
+			
+			// Determine direction and check for overshoot
+			if (planet->true_temperature < player.ideal_temperature)
+			{
+				// Moving towards higher temperature
+				double distance_to_ideal = player.ideal_temperature - planet->true_temperature;
+				if (temperature_magnitude > distance_to_ideal)
+				{
+					// Would overshoot - use only what's needed
+					temperature_change = distance_to_ideal;
+					actual_terraforming_cost = GameFormulas::calculate_money_to_terraform(distance_to_ideal);
+				}
+				else
+				{
+					temperature_change = temperature_magnitude;
+				}
+			}
+			else if (planet->true_temperature > player.ideal_temperature)
+			{
+				// Moving towards lower temperature
+				double distance_to_ideal = planet->true_temperature - player.ideal_temperature;
+				if (temperature_magnitude > distance_to_ideal)
+				{
+					// Would overshoot - use only what's needed
+					temperature_change = -distance_to_ideal;
+					actual_terraforming_cost = GameFormulas::calculate_money_to_terraform(distance_to_ideal);
+				}
+				else
+				{
+					temperature_change = -temperature_magnitude;
+				}
+			}
+			
+			// Refund excess terraforming money to player savings
+			int64_t excess_terraforming = terraforming_budget - actual_terraforming_cost;
+			if (excess_terraforming > 0)
+			{
+				player.money_savings += excess_terraforming;
+			}
+			
 			planet->true_temperature += temperature_change;
 			
 			// MINING: Calculate metal extraction and update reserves

@@ -196,14 +196,21 @@ namespace GameFormulas
 	// ========================================================================
 	
 	/// Calculate the temperature change from terraforming spending.
-	/// The amount of temperature change depends on the money spent and how far
-	/// the current temperature is from the target temperature.
+	/// Returns the magnitude of temperature change without considering direction or overshoot.
+	/// Direction and overshoot prevention are handled by the caller.
+	/// Formula: temperature_change = 0.01 * money_spent
 	/// 
 	/// @param money_spent The amount of money allocated to terraforming this turn
-	/// @param current_temperature The planet's current temperature
-	/// @param target_temperature The player's ideal temperature
-	/// @return The amount of temperature change (can be positive or negative)
-	double calculate_temperature_change(int64_t money_spent, double current_temperature, double target_temperature);
+	/// @return The magnitude of temperature change
+	double calculate_temperature_change(int64_t money_spent);
+	
+	/// Calculate the amount of money needed to produce a given temperature change.
+	/// Inverse of calculate_temperature_change().
+	/// Formula: money_needed = temperature_change / 0.01
+	/// 
+	/// @param temperature_change The desired temperature change in degrees
+	/// @return The amount of money needed to produce that temperature change
+	int64_t calculate_money_to_terraform(double temperature_change);
 	
 	/// Calculate the amount of metal that can be mined from a given amount of money.
 	/// Mining efficiency: metal = 20 * sqrt(money)

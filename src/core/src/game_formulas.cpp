@@ -187,31 +187,20 @@ namespace GameFormulas
 	// ============================================================================
 	// Terraforming and Mining Calculations
 	// ============================================================================
-	double calculate_temperature_change(int64_t money_spent, double current_temperature, double target_temperature)
+	double calculate_temperature_change(int64_t money_spent)
 	{
-		// Placeholder: simple linear conversion
-		// Real formula will be implemented later
-		// For now: 1 money = 0.01 temperature change
+		// Terraforming efficiency: temperature_change = 0.01 * money_spent
+		// Direction and overshoot prevention are handled by the caller
 		double change = money_spent * 0.01;
-		
-		// Ensure we don't overshoot the target
-		if (current_temperature < target_temperature)
-		{
-			// Moving towards higher temperature
-			change = std::min(change, target_temperature - current_temperature);
-		}
-		else if (current_temperature > target_temperature)
-		{
-			// Moving towards lower temperature
-			change = -std::min(change, current_temperature - target_temperature);
-		}
-		else
-		{
-			// Already at target
-			change = 0.0;
-		}
-		
 		return change;
+	}
+	
+	int64_t calculate_money_to_terraform(double temperature_change)
+	{
+		// Inverse of calculate_temperature_change()
+		// money_needed = temperature_change / 0.01
+		int64_t money_needed = static_cast<int64_t>(std::round(temperature_change / 0.01));
+		return money_needed;
 	}
 	
 	int64_t calculate_metal_mined(int64_t money_spent)
