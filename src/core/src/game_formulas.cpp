@@ -1,6 +1,6 @@
 #include "game_formulas.h"
 #include "game_constants.h"
-#include "game.h"
+#include "utility.h"
 #include <cmath>
 
 namespace GameFormulas
@@ -189,17 +189,31 @@ namespace GameFormulas
 	// ============================================================================
 	double calculate_temperature_change(int64_t money_spent)
 	{
-		// Terraforming efficiency: temperature_change = 0.01 * money_spent
-		// Direction and overshoot prevention are handled by the caller
-		double change = money_spent * 0.01;
-		return change;
+		// Terraforming efficiency formula (in Fahrenheit):
+		// delta_temperature_fahrenheit = 0.0811 * sqrt(money_spent)
+		// This is converted to Kelvin for internal storage
+		double delta_fahrenheit = 0.0811 * std::sqrt(static_cast<double>(money_spent));
+		
+		// Convert Fahrenheit temperature change to Kelvin
+		// Temperature CHANGES are the same in Fahrenheit and Celsius
+		// Fahrenheit to Kelvin conversion for changes: delta_K = delta_F * (5/9)
+		double delta_kelvin = delta_fahrenheit * (5.0 / 9.0);
+		
+		return delta_kelvin;
 	}
 	
-	int64_t calculate_money_to_terraform(double temperature_change)
+	int64_t calculate_money_to_terraform(double temperature_change_kelvin)
 	{
 		// Inverse of calculate_temperature_change()
-		// money_needed = temperature_change / 0.01
-		int64_t money_needed = static_cast<int64_t>(std::round(temperature_change / 0.01));
+		// Input: temperature_change in Kelvin
+		// Convert Kelvin change to Fahrenheit change
+		double delta_fahrenheit = temperature_change_kelvin * (9.0 / 5.0);
+		
+		// Solve for money: delta_fahrenheit = 0.0811 * sqrt(money)
+		// money = (delta_fahrenheit / 0.0811)^2
+		double money_needed_double = (delta_fahrenheit / 0.0811) * (delta_fahrenheit / 0.0811);
+		int64_t money_needed = static_cast<int64_t>(std::round(money_needed_double));
+		
 		return money_needed;
 	}
 	
