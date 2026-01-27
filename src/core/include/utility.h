@@ -25,6 +25,7 @@ namespace TemperatureUtils
 	constexpr double OFFSET_K_TO_C = 273.15;
 	constexpr double FAHRENHEIT_FACTOR = 9.0 / 5.0;
 	constexpr double OFFSET_C_TO_F = 32.0;
+	constexpr double OFFSET_K_TO_F = 459.67;  // 273.15 * 9/5 - 32
 	
 	// Best perceived temperature (ideal temperature for colonization)
 	// This is the temperature at which planets are most desirable for colonization
@@ -45,8 +46,7 @@ namespace TemperatureUtils
 	
 	inline double convert_temp_absolute_K_to_F(double temp_k)
 	{
-		double celsius = convert_temp_absolute_K_to_C(temp_k);
-		return celsius * FAHRENHEIT_FACTOR + OFFSET_C_TO_F;
+		return temp_k * FAHRENHEIT_FACTOR - OFFSET_K_TO_F;
 	}
 	
 	inline double convert_temp_absolute_C_to_K(double temp_c)
@@ -66,8 +66,7 @@ namespace TemperatureUtils
 	
 	inline double convert_temp_absolute_F_to_K(double temp_f)
 	{
-		double celsius = convert_temp_absolute_F_to_C(temp_f);
-		return convert_temp_absolute_C_to_K(celsius);
+		return (temp_f + OFFSET_K_TO_F) / FAHRENHEIT_FACTOR;
 	}
 	
 	// ========================================================================
