@@ -22,9 +22,9 @@ namespace TemperatureUtils
 {
 	// Physical constants
 	constexpr double ABSOLUTE_ZERO_K = 0.0;
-	constexpr double CELSIUS_OFFSET = 273.15;
+	constexpr double OFFSET_K_TO_C = 273.15;
 	constexpr double FAHRENHEIT_FACTOR = 9.0 / 5.0;
-	constexpr double FAHRENHEIT_OFFSET = 32.0;
+	constexpr double OFFSET_C_TO_F = 32.0;
 	
 	// Best perceived temperature (ideal temperature for colonization)
 	// This is the temperature at which planets are most desirable for colonization
@@ -40,28 +40,28 @@ namespace TemperatureUtils
 	
 	inline double convert_temp_absolute_K_to_C(double temp_k)
 	{
-		return temp_k - CELSIUS_OFFSET;
+		return temp_k - OFFSET_K_TO_C;
 	}
 	
 	inline double convert_temp_absolute_K_to_F(double temp_k)
 	{
 		double celsius = convert_temp_absolute_K_to_C(temp_k);
-		return celsius * FAHRENHEIT_FACTOR + FAHRENHEIT_OFFSET;
+		return celsius * FAHRENHEIT_FACTOR + OFFSET_C_TO_F;
 	}
 	
 	inline double convert_temp_absolute_C_to_K(double temp_c)
 	{
-		return temp_c + CELSIUS_OFFSET;
+		return temp_c + OFFSET_K_TO_C;
 	}
 	
 	inline double convert_temp_absolute_C_to_F(double temp_c)
 	{
-		return temp_c * FAHRENHEIT_FACTOR + FAHRENHEIT_OFFSET;
+		return temp_c * FAHRENHEIT_FACTOR + OFFSET_C_TO_F;
 	}
 	
 	inline double convert_temp_absolute_F_to_C(double temp_f)
 	{
-		return (temp_f - FAHRENHEIT_OFFSET) / FAHRENHEIT_FACTOR;
+		return (temp_f - OFFSET_C_TO_F) / FAHRENHEIT_FACTOR;
 	}
 	
 	inline double convert_temp_absolute_F_to_K(double temp_f)
