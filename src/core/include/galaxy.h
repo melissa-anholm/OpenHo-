@@ -88,8 +88,8 @@ struct Galaxy
 		const GalaxyGenerationParams& params,
 		class GameState* game_state);
 	
-	// Phase 2: Select home planet coordinates from all coordinates
-	std::vector<PlanetCoord> select_home_planet_coordinates(
+	// Phase 2: Select home planet coordinates from all coordinates (random selection)
+	std::vector<PlanetCoord> select_home_planets_random(
 		const std::vector<PlanetCoord>& all_coords,
 		uint32_t n_home_planets,
 		class GameState* game_state);

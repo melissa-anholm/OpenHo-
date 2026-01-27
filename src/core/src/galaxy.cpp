@@ -14,7 +14,7 @@ Galaxy::Galaxy(const GalaxyGenerationParams& params, GameState* game_state)
 	std::vector<PlanetCoord> all_coords = generate_planet_coordinates(params, game_state);
 	
 	// Phase 2: Select home planet coordinates
-	std::vector<PlanetCoord> home_coords = select_home_planet_coordinates(all_coords, params.n_players, game_state);
+	std::vector<PlanetCoord> home_coords = select_home_planets_random(all_coords, params.n_players, game_state);
 	
 	// Phase 3: Generate planet names
 	const std::vector<std::string> planet_names = generate_planet_names(all_coords.size(), game_state);
@@ -78,7 +78,7 @@ std::vector<PlanetCoord> Galaxy::generate_planet_coordinates(
 	}
 }
 
-std::vector<PlanetCoord> Galaxy::select_home_planet_coordinates(
+std::vector<PlanetCoord> Galaxy::select_home_planets_random(
 	const std::vector<PlanetCoord>& all_coords,
 	uint32_t n_home_planets,
 	GameState* game_state)
