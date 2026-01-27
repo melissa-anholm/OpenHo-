@@ -2,7 +2,7 @@
 
 **Purpose:** Track all functions and values that need implementation or reverse-engineering from the original game.
 
-**Last Updated:** January 26, 2026 (Session 13 - Economic Mechanics Complete)
+**Last Updated:** January 26, 2026 (Session 14 - Galaxy Shapes & Poisson Sampling Complete)
 
 ---
 
@@ -46,10 +46,10 @@
 
 ### Non-Data-Driven Functions (Clear Logic, Need Implementation) - 5 items
 
-- [ ] [Galaxy Shape Distribution Algorithms](#galaxy-shape-distribution-algorithms) - Stub (4 shapes)
+- [x] [Galaxy Shape Distribution Algorithms](#galaxy-shape-distribution-algorithms) - PARTIALLY IMPLEMENTED (2 of 4 shapes)
+  - [x] Circle galaxy distribution - IMPLEMENTED
+  - [x] Ring galaxy distribution - IMPLEMENTED
   - [ ] Spiral galaxy distribution
-  - [ ] Circle galaxy distribution
-  - [ ] Ring galaxy distribution
   - [ ] Cluster galaxy distribution
 - [ ] [Turn Processing](#turn-processing) - Partially implemented (5 missing steps)
 - [ ] [Fleet Movement & Combat](#fleet-movement--combat) - Partially implemented (combat stub)
@@ -69,9 +69,9 @@
 ### Summary
 
 **Total Items:** 20 functions/systems  
-**Implemented:** 11 (55%)  
-**Partially Implemented:** 3 (15%)  
-**Placeholder/Stub:** 6 (30%)
+**Implemented:** 12 (60%)  
+**Partially Implemented:** 4 (20%)  
+**Placeholder/Stub:** 4 (20%)
 
 ---
 
@@ -215,49 +215,60 @@ These have clear logic but need implementation. No reverse-engineering needed.
 
 ### Galaxy Shape Distribution Algorithms
 
-**Status:** Placeholder (all currently use random distribution)  
-**Location:** `galaxy.cpp`
+**Status:** PARTIALLY IMPLEMENTED (Circle and Ring complete, Spiral and Cluster pending)  
+**Location:** `galaxy.cpp`, `utility.h/cpp`
 
-**Functions needing implementation:**
+**Completed (Session 14):**
 
-- `initialize_planets_spiral()` - Spiral arm galaxy distribution
-  - Current: Falls back to random distribution
-  - Design question: How many spiral arms? How tight? How to distribute planets along arms?
-  - Notes: Should ensure suitable home planets are distributed across arms
+- [x] `generate_coordinates_circle()` - Circular disk galaxy distribution - IMPLEMENTED
+  - Uses Bridson's Poisson disk sampling for uniform distribution
+  - Radius calculated from active area: sqrt(active_area / pi)
+  - Active area = gal_size^2 where gal_size = sqrt(n_planets) * (5.0 + 6.4/density)
+  - Maintains same planet density as random galaxy
+  - Home planets randomly distributed among all planets
+
+- [x] `generate_coordinates_ring()` - Ring/torus galaxy distribution - IMPLEMENTED
+  - Uses Bridson's Poisson disk sampling within annular region
+  - Outer radius randomly selected from calculated range
+  - Inner radius calculated to maintain correct active area
+  - Supports inner/outer ratio constraints (50%-80%)
+  - Maintains same active area as circle galaxy for consistent density
+
+**Remaining (Next Session):**
+
+- [ ] `generate_coordinates_spiral()` - Spiral arm galaxy distribution
+  - Design: Logarithmic spiral with N arms (N = number of players)
+  - Each player's home planet at end of one arm
+  - Central bulge: circle-shaped arrangement of planets
+  - TODO: Implement home planet selection for spiral (one per arm end)
   - TODO: Rework min planets/homeworld assignment strategy for spiral shape
 
-- `initialize_planets_circle()` - Circular disk galaxy distribution
-  - Current: Falls back to random distribution
-  - Design question: Uniform circle or concentrated toward center? Poisson disk sampling?
-  - Notes: Mentioned using Bridson's algorithm for Poisson disk sampling
-  - Suggested approach: Uniform distribution within a circular boundary
-
-- `initialize_planets_ring()` - Ring/torus galaxy distribution
-  - Current: Falls back to random distribution
-  - Design question: How wide is the ring? How to distribute planets around it?
-  - Notes: Should create a visible ring structure
-  - Suggested approach: Generate points at varying radii within a ring band
-
-- `initialize_planets_cluster()` - Clustered galaxy distribution
-  - Current: Falls back to random distribution
-  - Design question: How many clusters? How tight? How to distribute planets within clusters?
-  - Notes: Should create distinct clusters of planets
+- [ ] `generate_coordinates_cluster()` - Clustered galaxy distribution
+  - Design: N clusters (N = number of players) arranged in ring around center
+  - Clusters similarly sized, each with player's home planet
+  - TODO: Implement home planet selection for cluster (one per cluster)
   - TODO: Rework min planets/homeworld assignment strategy for cluster shape
-  - Suggested approach: Generate cluster centers, then place planets around each center
 
-**Implementation Considerations:**
-- All must respect minimum distance constraints between planets
-- All must use DeterministicRNG for reproducible results
-- All must handle placement failures gracefully
-- All should ensure suitable home planets are available (especially spiral and cluster)
-- Consider using Poisson disk sampling for uniform distribution within shapes
+**Implementation Infrastructure:**
+- Region abstract base class with virtual methods (utility.h)
+- CircleRegion and RingRegion implementations
+- Bridson's Poisson disk sampling algorithm (O(N) complexity)
+- Spatial grid acceleration for efficient neighbor checking
+- DeterministicRNG for reproducible results
+- Failure logging for debugging insufficient planet generation
 
-**Design Questions to Answer:**
-1. **Spiral:** How many arms? Logarithmic or Archimedean spiral? How tightly wound?
-2. **Circle:** Uniform throughout? Density gradient? Hollow or filled?
-3. **Ring:** Inner and outer radius? Width of ring? Density variation?
-4. **Cluster:** Number of clusters? Cluster size? Overlap between clusters?
-5. **All:** Should distribution ensure suitable home planets are spread across the shape?
+**Design Decisions:**
+- Active area approach ensures consistent planet density across shapes
+- Poisson sampling guarantees minimum distance between planets
+- Ring galaxies support randomized inner/outer radii within small range
+- Home planet selection is shape-specific (random for circle, TBD for spiral/cluster)
+
+**Next Steps for Spiral & Cluster:**
+1. Implement logarithmic spiral arm generation
+2. Implement cluster generation with ring arrangement
+3. Implement shape-specific home planet selection methods
+4. Handle gravity mismatch for START_OUTPOST quality colonies
+5. Implement error handling when insufficient suitable planets
 
 ---
 
