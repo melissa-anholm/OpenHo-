@@ -13,6 +13,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # Source files
 set(CORE_SOURCES
+	src/utility.cpp
 	src/rng.cpp
 	src/types.cpp
 	src/galaxy.cpp

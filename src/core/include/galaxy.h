@@ -139,4 +139,21 @@ struct Galaxy
 		class GameState* game_state);
 };
 
+// ============================================================================
+// Galaxy Generation Failure Logging
+// ============================================================================
+
+/**
+ * Log galaxy generation failure to a file.
+ * Creates a detailed report of what was requested vs. what was generated.
+ * 
+ * @param params The galaxy generation parameters that were requested
+ * @param generated_coords The coordinates that were successfully generated
+ * @param log_filename Path to write the log file to
+ */
+void log_galaxy_generation_failure(
+	const GalaxyGenerationParams& params,
+	const std::vector<PlanetCoord>& generated_coords,
+	const std::string& log_filename);
+
 #endif // OPENHO_GALAXY_H

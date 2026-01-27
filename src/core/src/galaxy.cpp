@@ -5,6 +5,7 @@
 #include "game_constants.h"
 #include <cmath>
 #include <iostream>
+#include <fstream>
 #include <set>
 
 Galaxy::Galaxy(const GalaxyGenerationParams& params, GameState* game_state)
@@ -232,16 +233,50 @@ std::vector<PlanetCoord> Galaxy::generate_coordinates_circle(
 	const GalaxyGenerationParams& params,
 	GameState* game_state)
 {
-	// TODO: Implement circle coordinate generation
-	return std::vector<PlanetCoord>();
+	DeterministicRNG& rng = game_state->get_rng();
+	
+	// Calculate active area (same formula as random galaxy, but without the 0.85 reduction factor)
+	// active_area = gal_size^2 where gal_size = sqrt(n_planets) * (5.0 + 6.4/density)
+	double gal_size = std::sqrt(double(params.n_planets)) * 
+	                  (GameConstants::Galaxy_Size_Scale_Base + GameConstants::Galaxy_Size_Scale_Density / params.density);
+	double active_area = gal_size * gal_size;
+	
+	// Calculate circle radius from active area: area = pi * r^2
+	double radius = std::sqrt(active_area / M_PI);
+	
+	// Create circle region and generate coordinates using Poisson disk sampling
+	CircleRegion circle(radius);
+	return poisson_disk_sampling(circle, GameConstants::min_planet_distance, params.n_planets, rng);
 }
 
 std::vector<PlanetCoord> Galaxy::generate_coordinates_ring(
 	const GalaxyGenerationParams& params,
 	GameState* game_state)
 {
-	// TODO: Implement ring coordinate generation
-	return std::vector<PlanetCoord>();
+	DeterministicRNG& rng = game_state->get_rng();
+	
+	// Calculate active area (same formula as random galaxy, but without the 0.85 reduction factor)
+	double gal_size = std::sqrt(double(params.n_planets)) * 
+	                  (GameConstants::Galaxy_Size_Scale_Base + GameConstants::Galaxy_Size_Scale_Density / params.density);
+	double active_area = gal_size * gal_size;
+	
+	// Calculate outer radius range based on inner/outer ratio constraints
+	// If R_inner = 0.5 * R_outer: active_area = pi * (R_outer^2 - 0.25*R_outer^2) = 0.75*pi*R_outer^2
+	// If R_inner = 0.8 * R_outer: active_area = pi * (R_outer^2 - 0.64*R_outer^2) = 0.36*pi*R_outer^2
+	double r_outer_min = std::sqrt(active_area / (0.75 * M_PI));
+	double r_outer_max = std::sqrt(active_area / (0.36 * M_PI));
+	
+	// Randomly select outer radius within calculated range
+	double r_outer = r_outer_min + rng.nextDouble() * (r_outer_max - r_outer_min);
+	
+	// Calculate inner radius to achieve correct active area
+	// active_area = pi * (r_outer^2 - r_inner^2)
+	// r_inner = sqrt(r_outer^2 - active_area/pi)
+	double r_inner = std::sqrt(r_outer * r_outer - active_area / M_PI);
+	
+	// Create ring region and generate coordinates using Poisson disk sampling
+	RingRegion ring(r_inner, r_outer);
+	return poisson_disk_sampling(ring, GameConstants::min_planet_distance, params.n_planets, rng);
 }
 
 std::vector<PlanetCoord> Galaxy::generate_coordinates_cluster(
@@ -443,4 +478,76 @@ void Galaxy::compute_distance_matrix()
 double Galaxy::get_distance(uint32_t from_id, uint32_t to_id) const
 {
 	return distance_matrix.at(from_id).at(to_id);
+}
+
+// ============================================================================
+// Galaxy Generation Failure Logging
+// ============================================================================
+
+void log_galaxy_generation_failure(
+	const GalaxyGenerationParams& params,
+	const std::vector<PlanetCoord>& generated_coords,
+	const std::string& log_filename)
+{
+	std::ofstream log_file(log_filename);
+	if (!log_file.is_open())
+	{
+		std::cerr << "ERROR: Could not open log file: " << log_filename << std::endl;
+		return;
+	}
+	
+	// Write header
+	log_file << "===============================================================================\n";
+	log_file << "GALAXY GENERATION FAILURE REPORT\n";
+	log_file << "===============================================================================\n\n";
+	
+	// Write summary
+	log_file << "SUMMARY\n";
+	log_file << "-------\n";
+	log_file << "Requested planets: " << params.n_planets << "\n";
+	log_file << "Generated planets: " << generated_coords.size() << "\n";
+	log_file << "Shortfall: " << (params.n_planets - generated_coords.size()) << " planets\n";
+	log_file << "Success rate: " << (100.0 * generated_coords.size() / params.n_planets) << "%\n\n";
+	
+	// Write parameters
+	log_file << "GALAXY GENERATION PARAMETERS\n";
+	log_file << "----------------------------\n";
+	log_file << "Number of planets requested: " << params.n_planets << "\n";
+	log_file << "Number of players: " << params.n_players << "\n";
+	log_file << "Density parameter: " << params.density << "\n";
+	
+	// Convert shape enum to string
+	std::string shape_name;
+	switch (params.shape)
+	{
+		case GALAXY_RANDOM: shape_name = "RANDOM"; break;
+		case GALAXY_SPIRAL: shape_name = "SPIRAL"; break;
+		case GALAXY_CIRCLE: shape_name = "CIRCLE"; break;
+		case GALAXY_RING: shape_name = "RING"; break;
+		case GALAXY_CLUSTER: shape_name = "CLUSTER"; break;
+		case GALAXY_GRID: shape_name = "GRID"; break;
+		default: shape_name = "UNKNOWN"; break;
+	}
+	log_file << "Galaxy shape: " << shape_name << "\n";
+	log_file << "Random seed: " << params.seed << "\n\n";
+	
+	// Write generated coordinates
+	log_file << "GENERATED PLANET COORDINATES\n";
+	log_file << "----------------------------\n";
+	log_file << "Total generated: " << generated_coords.size() << "\n\n";
+	
+	for (size_t i = 0; i < generated_coords.size(); ++i)
+	{
+		log_file << "Planet " << (i + 1) << ": (" 
+		         << generated_coords[i].first << ", " 
+		         << generated_coords[i].second << ")\n";
+	}
+	
+	log_file << "\n===============================================================================\n";
+	log_file << "END OF REPORT\n";
+	log_file << "===============================================================================\n";
+	
+	log_file.close();
+	
+	std::cerr << "Galaxy generation failure logged to: " << log_filename << std::endl;
 }

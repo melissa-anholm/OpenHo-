@@ -7,10 +7,14 @@
 #include <algorithm>
 #include <map>
 #include <cmath>
+#include <utility>
 
 // Forward declarations
 class DeterministicRNG;
 class Planet;
+
+// Type definitions
+using PlanetCoord = std::pair<double, double>;  // (x, y)
 
 // ============================================================================
 // Temperature Conversion Utilities
@@ -301,5 +305,112 @@ private:
 	double max_coord_;
 	std::map<std::pair<int, int>, std::vector<PlanetRecord>> cells_;
 };
+
+// ============================================================================
+// Poisson Disk Sampling for Uniform Planet Distribution
+// ============================================================================
+
+/**
+ * Abstract base class for regions used in Poisson disk sampling.
+ * Defines the interface that all region types must implement.
+ */
+class Region
+{
+public:
+	virtual ~Region() = default;
+	
+	/**
+	 * Check if a point is within this region.
+	 * @param x X coordinate
+	 * @param y Y coordinate
+	 * @return true if point is in region, false otherwise
+	 */
+	virtual bool contains(double x, double y) const = 0;
+	
+	/**
+	 * Generate a random point uniformly within this region.
+	 * @param rng Reference to deterministic RNG
+	 * @return Random point in region
+	 */
+	virtual PlanetCoord random_point(class DeterministicRNG& rng) const = 0;
+};
+
+/**
+ * Circular region for Poisson disk sampling.
+ */
+class CircleRegion : public Region
+{
+public:
+	/**
+	 * Initialize a circular region.
+	 * @param radius Radius of the circle
+	 */
+	explicit CircleRegion(double radius)
+		: radius_(radius)
+	{
+	}
+	
+	bool contains(double x, double y) const override
+	{
+		double dist_sq = x * x + y * y;
+		return dist_sq <= radius_ * radius_;
+	}
+	
+	PlanetCoord random_point(DeterministicRNG& rng) const override;
+	
+	double get_radius() const { return radius_; }
+	
+private:
+	double radius_;
+};
+
+/**
+ * Annular (ring) region for Poisson disk sampling.
+ */
+class RingRegion : public Region
+{
+public:
+	/**
+	 * Initialize a ring region.
+	 * @param inner_radius Inner radius of the ring
+	 * @param outer_radius Outer radius of the ring
+	 */
+	RingRegion(double inner_radius, double outer_radius)
+		: inner_radius_(inner_radius), outer_radius_(outer_radius)
+	{
+	}
+	
+	bool contains(double x, double y) const override
+	{
+		double dist_sq = x * x + y * y;
+		double dist = std::sqrt(dist_sq);
+		return dist >= inner_radius_ && dist <= outer_radius_;
+	}
+	
+	PlanetCoord random_point(DeterministicRNG& rng) const override;
+	
+	double get_inner_radius() const { return inner_radius_; }
+	double get_outer_radius() const { return outer_radius_; }
+	
+private:
+	double inner_radius_;
+	double outer_radius_;
+};
+
+/**
+ * Poisson disk sampling algorithm for uniform planet distribution.
+ * Generates points that maintain a minimum distance from each other.
+ * 
+ * @param region The region in which to sample points
+ * @param min_distance Minimum required distance between points
+ * @param target_points Target number of points to generate (approximately)
+ * @param rng Reference to deterministic RNG
+ * @return Vector of generated planet coordinates
+ */
+std::vector<PlanetCoord> poisson_disk_sampling(
+	const Region& region,
+	double min_distance,
+	uint32_t target_points,
+	class DeterministicRNG& rng);
 
 #endif  // OPENHO_UTILITY_H
