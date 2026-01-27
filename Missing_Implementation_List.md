@@ -6,12 +6,44 @@
 
 ---
 
-## Table of Contents
+## Table of Contents & Implementation Checklist
 
-1. [Data-Driven Values (Require Reverse-Engineering)](#data-driven-values)
-2. [Non-Data-Driven Functions (Clear Logic, Need Implementation)](#non-data-driven-functions)
-3. [Partially Implemented (Need Completion)](#partially-implemented)
-4. [Infrastructure/Setup (Needed for Game Flow)](#infrastructure-setup)
+### Data-Driven Values (Require Reverse-Engineering) - 5 items
+
+- [ ] [Planet Desirability Rating](#planet-desirability-rating) - Placeholder
+- [ ] [Planetary Income Calculation](#planetary-income-calculation) - Placeholder
+- [ ] [Ship Design Costs](#ship-design-costs) - Placeholder (3 functions)
+- [ ] [Player Metrics](#player-metrics) - Placeholder (2 functions)
+- [ ] [Population Growth](#population-growth) - Placeholder (ignores conditions)
+
+### Non-Data-Driven Functions (Clear Logic, Need Implementation) - 5 items
+
+- [ ] [Galaxy Shape Distribution Algorithms](#galaxy-shape-distribution-algorithms) - Stub (4 shapes)
+  - [ ] Spiral galaxy distribution
+  - [ ] Circle galaxy distribution
+  - [ ] Ring galaxy distribution
+  - [ ] Cluster galaxy distribution
+- [ ] [Apparent Gravity/Temperature Perception](#apparent-gravitytemperature-perception) - IMPLEMENTED
+- [ ] [Turn Processing](#turn-processing) - Partially implemented (5 missing steps)
+- [ ] [Fleet Movement & Combat](#fleet-movement--combat) - Partially implemented (combat stub)
+- [ ] [Nova Warning Duration](#nova-warning-duration) - Placeholder
+
+### Partially Implemented (Need Completion) - 3 items
+
+- [ ] [Ship Design Creation](#ship-design-creation) - Incomplete (3 missing steps)
+- [ ] [Fleet Creation](#fleet-creation) - Incomplete (3 missing steps)
+- [ ] [Player Initial Setup](#player-initial-setup) - Incomplete (9 missing steps)
+
+### Infrastructure/Setup (Needed for Game Flow) - 1 item
+
+- [ ] [Turn Ready Tracking](#turn-ready-tracking) - Stub (2 functions)
+
+### Summary
+
+**Total Items:** 20 functions/systems  
+**Implemented:** 6 (30%)  
+**Partially Implemented:** 3 (15%)  
+**Placeholder/Stub:** 11 (55%)
 
 ---
 
