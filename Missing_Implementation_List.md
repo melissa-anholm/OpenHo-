@@ -129,13 +129,14 @@ These require playing through the original Spaceward Ho! and reverse-engineering
 
 ### Population Growth
 
-**Status:** ✅ Implemented (10% per turn, placeholder)  
+**Status:** Placeholder (10% per turn, ignores planet conditions)  
 **Location:** `game_formulas.cpp`
 
 - `calculate_population_growth()` - Population change per turn
   - Depends on: current_population, planet_temperature, planet_gravity, ideal_temperature, ideal_gravity
   - Notes: Critical for economy; affects income generation
   - Current: Simple 10% growth regardless of conditions, capped at 1,000,000
+  - Parameters for planet conditions are accepted but completely unused
   - **Key Design Question:** How do gravity/temperature mismatches affect growth? Linear penalty? Exponential? Threshold-based?
 
 **Reverse-Engineering Approach:**
@@ -514,18 +515,32 @@ Functions needed for game flow but not core mechanics.
 
 ### Player Initial Setup
 
-**Status:** ✅ IMPLEMENTED  
-**Location:** `game.cpp` - `initialize_galaxy()` comment
+**Status:** Partially implemented (players created, but resources not initialized)  
+**Location:** `game.cpp` - `initialize_players()` and `start_first_turn()` methods
 
 **Completed:**
-- ✅ Populate each player with initial state based on player_setups
-- ✅ Set initial money, metal, tech levels
-- ✅ Initialize colonized planets with quality-based values
+- ✅ Create player objects with ID, name, gender, type
+- ✅ Assign ideal_temperature from truncated Gaussian distribution
+- ✅ Placeholder for ideal_gravity (set to 0.0, assigned later in assign_planets_random)
+- ✅ Assign gender-appropriate names to computer players from TextAssets
+- ✅ Call capture_and_distribute_player_public_info() in start_first_turn()
+
+**What's Missing:**
+- Initialize player money_savings with starting colony income value
+- Initialize player metal_reserve with starting colony metal value
+- Initialize player colonized_planets with homeworld (after planet assignment)
+- Initialize player technology levels (all start at 1)
+- Initialize player research allocation fractions
+- Initialize player money allocation fractions
+- Initialize KnowledgeGalaxy for each player
+- Populate homeworld with starting population and metal
+- Set up initial income calculation for first turn
 
 **Implementation Notes:**
 - Called after galaxy generation and planet assignment
-- Uses starting colony values from game_constants.h
-- Sets up player for first turn
+- Uses starting colony values from game_constants.h (indexed by StartingColonyQuality)
+- Should set up player for first turn with proper initial state
+- Currently only creates player objects; resource initialization is incomplete
 
 ---
 
@@ -533,11 +548,11 @@ Functions needed for game flow but not core mechanics.
 
 | Category | Count | Status | Priority |
 |----------|-------|--------|----------|
-| Data-Driven Values | 4 | Placeholder/Missing | High |
+| Data-Driven Values | 5 | Placeholder/Missing | High |
 | Non-Data-Driven Functions | 5 | Stub | High |
-| Partially Implemented | 2 | Incomplete | Medium |
+| Partially Implemented | 3 | Incomplete | Medium |
 | Infrastructure | 1 | Stub | Medium |
-| **Implemented** | 8 | ✅ Complete | - |
+| **Implemented** | 6 | ✅ Complete | - |
 | **Total** | **20** | - | - |
 
 ---
