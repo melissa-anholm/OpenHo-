@@ -817,74 +817,108 @@ void GameState::process_planets()
 			int64_t mining_budget = static_cast<int64_t>(
 				planet_budget * colonized.get_mining_fraction() );
 			
-			// TERRAFORMING: Calculate temperature change and handle overshoot
-			double temperature_magnitude = GameFormulas::calculate_temperature_change(terraforming_budget);
-			double temperature_change = 0.0;
-			int64_t actual_terraforming_cost = terraforming_budget;
+			// Process terraforming for this planet
+			process_planet_terraforming(player, planet, terraforming_budget);
 			
-			// Determine direction and check for overshoot
-			if (planet->true_temperature < player.ideal_temperature)
-			{
-				// Moving towards higher temperature
-				double distance_to_ideal = player.ideal_temperature - planet->true_temperature;
-				if (temperature_magnitude > distance_to_ideal)
-				{
-					// Would overshoot - use only what's needed
-					temperature_change = distance_to_ideal;
-					actual_terraforming_cost = GameFormulas::calculate_money_to_terraform(distance_to_ideal);
-				}
-				else
-				{
-					temperature_change = temperature_magnitude;
-				}
-			}
-			else if (planet->true_temperature > player.ideal_temperature)
-			{
-				// Moving towards lower temperature
-				double distance_to_ideal = planet->true_temperature - player.ideal_temperature;
-				if (temperature_magnitude > distance_to_ideal)
-				{
-					// Would overshoot - use only what's needed
-					temperature_change = -distance_to_ideal;
-					actual_terraforming_cost = GameFormulas::calculate_money_to_terraform(distance_to_ideal);
-				}
-				else
-				{
-					temperature_change = -temperature_magnitude;
-				}
-			}
-			
-			// Refund excess terraforming money to player savings
-			int64_t excess_terraforming = terraforming_budget - actual_terraforming_cost;
-			if (excess_terraforming > 0)
-			{
-				player.money_savings += excess_terraforming;
-			}
-			
-			planet->true_temperature += temperature_change;
-			
-			// MINING: Calculate metal extraction and update reserves
-			int64_t metal_extracted = GameFormulas::calculate_metal_mined(mining_budget);
-			int64_t planet_metal_available = static_cast<int64_t>(planet->metal);
-			
-			// Check if there's insufficient metal on the planet
-			if (metal_extracted > planet_metal_available)
-			{
-				// Calculate the actual cost to mine all remaining metal
-				int64_t actual_cost = GameFormulas::calculate_money_to_mine(planet_metal_available);
-				
-				// Extract all available metal
-				metal_extracted = planet_metal_available;
-				
-				// Refund excess money to player savings
-				int64_t excess_money = mining_budget - actual_cost;
-				player.money_savings += excess_money;
-			}
-			
-			planet->metal -= metal_extracted;
-			player.metal_reserve += metal_extracted;
+			// Process mining for this planet
+			process_planet_mining(player, planet, mining_budget);
 		}
 	}
+}
+
+// ============================================================================
+// Planet Processing Helper Functions
+// ============================================================================
+void GameState::process_planet_terraforming(Player& player, Planet* planet, int64_t terraforming_budget)
+{
+	// Skip if no budget allocated to terraforming
+	if (terraforming_budget <= 0)
+		{ return; }
+	
+	// Skip if planet is already at ideal temperature
+	if (planet->true_temperature == player.ideal_temperature)
+		{ return; }
+	
+	// Calculate the maximum temperature change possible with this budget
+	double temperature_magnitude = GameFormulas::calculate_temperature_change(terraforming_budget);
+	double temperature_change = 0.0;
+	int64_t actual_terraforming_cost = terraforming_budget;
+	
+	// Determine direction and check for overshoot
+	if (planet->true_temperature < player.ideal_temperature)
+	{
+		// Moving towards higher temperature (heating up)
+		double distance_to_ideal = player.ideal_temperature - planet->true_temperature;
+		if (temperature_magnitude > distance_to_ideal)
+		{
+			// Would overshoot - use only what's needed to reach ideal temperature
+			temperature_change = distance_to_ideal;
+			actual_terraforming_cost = GameFormulas::calculate_money_to_terraform(distance_to_ideal);
+		}
+		else
+		{
+			// Safe to apply full temperature change
+			temperature_change = temperature_magnitude;
+		}
+	}
+	else if (planet->true_temperature > player.ideal_temperature)
+	{
+		// Moving towards lower temperature (cooling down)
+		double distance_to_ideal = planet->true_temperature - player.ideal_temperature;
+		if (temperature_magnitude > distance_to_ideal)
+		{
+			// Would overshoot - use only what's needed to reach ideal temperature
+			temperature_change = -distance_to_ideal;
+			actual_terraforming_cost = GameFormulas::calculate_money_to_terraform(distance_to_ideal);
+		}
+		else
+		{
+			// Safe to apply full temperature change
+			temperature_change = -temperature_magnitude;
+		}
+	}
+	
+	// Refund excess terraforming money to player savings
+	int64_t excess_terraforming = terraforming_budget - actual_terraforming_cost;
+	if (excess_terraforming > 0)
+	{
+		player.money_savings += excess_terraforming;
+	}
+	
+	// Apply the temperature change to the planet
+	planet->true_temperature += temperature_change;
+}
+
+void GameState::process_planet_mining(Player& player, Planet* planet, int64_t mining_budget)
+{
+	// Skip if no budget allocated to mining
+	if (mining_budget <= 0)
+		{ return; }
+	
+	// Calculate metal extraction with the allocated budget
+	int64_t metal_extracted = GameFormulas::calculate_metal_mined(mining_budget);
+	int64_t planet_metal_available = static_cast<int64_t>(planet->metal);
+	
+	// Check if there's insufficient metal on the planet
+	if (metal_extracted > planet_metal_available)
+	{
+		// Calculate the actual cost to mine all remaining metal
+		int64_t actual_cost = GameFormulas::calculate_money_to_mine(planet_metal_available);
+		
+		// Extract all available metal
+		metal_extracted = planet_metal_available;
+		
+		// Refund excess money to player savings
+		int64_t excess_money = mining_budget - actual_cost;
+		if (excess_money > 0)
+		{
+			player.money_savings += excess_money;
+		}
+	}
+	
+	// Update planet and player resources
+	planet->metal -= metal_extracted;
+	player.metal_reserve += metal_extracted;
 }
 
 

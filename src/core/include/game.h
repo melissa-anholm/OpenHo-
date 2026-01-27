@@ -223,6 +223,11 @@ private:
 	void process_research();
 	void process_research_stream(Player& player, TechStream stream, int64_t research_budget);
 	void process_planets();
+	
+	// Planet processing helper functions
+	void process_planet_terraforming(Player& player, Planet* planet, int64_t terraforming_budget);
+	void process_planet_mining(Player& player, Planet* planet, int64_t mining_budget);
+	
 	void process_ships();
 	void process_novae();
 	
