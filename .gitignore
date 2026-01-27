@@ -4,3 +4,6 @@ build/
 *.a
 *.o
 *.so
+HoDats_Upgrade3.numbers
+HoDats_Upgrade6.numbers
+build_log.txt
