@@ -195,9 +195,7 @@ namespace GameFormulas
 		double delta_fahrenheit = 0.0811 * std::sqrt(static_cast<double>(money_spent));
 		
 		// Convert Fahrenheit temperature change to Kelvin
-		// Temperature CHANGES are the same in Fahrenheit and Celsius
-		// Fahrenheit to Kelvin conversion for changes: delta_K = delta_F * (5/9)
-		double delta_kelvin = delta_fahrenheit * (5.0 / 9.0);
+		double delta_kelvin = TemperatureUtils::convert_temp_change_F_to_K(delta_fahrenheit);
 		
 		return delta_kelvin;
 	}
@@ -207,7 +205,7 @@ namespace GameFormulas
 		// Inverse of calculate_temperature_change()
 		// Input: temperature_change in Kelvin
 		// Convert Kelvin change to Fahrenheit change
-		double delta_fahrenheit = temperature_change_kelvin * (9.0 / 5.0);
+		double delta_fahrenheit = TemperatureUtils::convert_temp_change_K_to_F(temperature_change_kelvin);
 		
 		// Solve for money: delta_fahrenheit = 0.0811 * sqrt(money)
 		// money = (delta_fahrenheit / 0.0811)^2

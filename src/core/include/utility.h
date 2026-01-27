@@ -20,40 +20,93 @@ class Planet;
 
 namespace TemperatureUtils
 {
+	// Physical constants
 	constexpr double ABSOLUTE_ZERO_K = 0.0;
 	constexpr double CELSIUS_OFFSET = 273.15;
 	constexpr double FAHRENHEIT_FACTOR = 9.0 / 5.0;
+	constexpr double FAHRENHEIT_OFFSET = 32.0;
 	
-	inline double celsius_from_kelvin(double temp_k)
+	// Best perceived temperature (ideal temperature for colonization)
+	// This is the temperature at which planets are most desirable for colonization
+	constexpr double BEST_PERCEIVED_TEMPERATURE_K = 288.15;  // 15°C / 59°F
+	constexpr double BEST_PERCEIVED_TEMPERATURE_C = 15.0;
+	constexpr double BEST_PERCEIVED_TEMPERATURE_F = 59.0;
+	
+	// ========================================================================
+	// Absolute Temperature Conversions
+	// These functions convert absolute temperatures between scales
+	// ========================================================================
+	
+	inline double convert_temp_absolute_K_to_C(double temp_k)
 	{
 		return temp_k - CELSIUS_OFFSET;
 	}
 	
-	inline double fahrenheit_from_kelvin(double temp_k)
+	inline double convert_temp_absolute_K_to_F(double temp_k)
 	{
-		double celsius = celsius_from_kelvin(temp_k);
-		return celsius * FAHRENHEIT_FACTOR + 32.0;
+		double celsius = convert_temp_absolute_K_to_C(temp_k);
+		return celsius * FAHRENHEIT_FACTOR + FAHRENHEIT_OFFSET;
 	}
 	
-	inline double kelvin_from_celsius(double temp_c)
+	inline double convert_temp_absolute_C_to_K(double temp_c)
 	{
 		return temp_c + CELSIUS_OFFSET;
 	}
 	
-	inline double kelvin_from_fahrenheit(double temp_f)
+	inline double convert_temp_absolute_C_to_F(double temp_c)
 	{
-		double celsius = (temp_f - 32.0) / FAHRENHEIT_FACTOR;
-		return kelvin_from_celsius(celsius);
+		return temp_c * FAHRENHEIT_FACTOR + FAHRENHEIT_OFFSET;
 	}
 	
-	inline double fahrenheit_from_celsius(double temp_c)
+	inline double convert_temp_absolute_F_to_C(double temp_f)
 	{
-		return temp_c * FAHRENHEIT_FACTOR + 32.0;
+		return (temp_f - FAHRENHEIT_OFFSET) / FAHRENHEIT_FACTOR;
 	}
 	
-	inline double celsius_from_fahrenheit(double temp_f)
+	inline double convert_temp_absolute_F_to_K(double temp_f)
 	{
-		return (temp_f - 32.0) / FAHRENHEIT_FACTOR;
+		double celsius = convert_temp_absolute_F_to_C(temp_f);
+		return convert_temp_absolute_C_to_K(celsius);
+	}
+	
+	// ========================================================================
+	// Temperature Change Conversions
+	// These functions convert temperature CHANGES (deltas) between scales
+	// Note: Offsets don't apply to changes, only scaling factors do
+	// ========================================================================
+	
+	inline double convert_temp_change_C_to_K(double delta_c)
+	{
+		// Celsius and Kelvin have the same scale, so changes are identical
+		return delta_c;
+	}
+	
+	inline double convert_temp_change_K_to_C(double delta_k)
+	{
+		// Celsius and Kelvin have the same scale, so changes are identical
+		return delta_k;
+	}
+	
+	inline double convert_temp_change_F_to_C(double delta_f)
+	{
+		return delta_f / FAHRENHEIT_FACTOR;
+	}
+	
+	inline double convert_temp_change_C_to_F(double delta_c)
+	{
+		return delta_c * FAHRENHEIT_FACTOR;
+	}
+	
+	inline double convert_temp_change_F_to_K(double delta_f)
+	{
+		// F -> C (divide by 9/5), then C -> K (no change)
+		return delta_f / FAHRENHEIT_FACTOR;
+	}
+	
+	inline double convert_temp_change_K_to_F(double delta_k)
+	{
+		// K -> C (no change), then C -> F (multiply by 9/5)
+		return delta_k * FAHRENHEIT_FACTOR;
 	}
 }  // namespace TemperatureUtils
 
