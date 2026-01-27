@@ -28,9 +28,10 @@ namespace TemperatureUtils
 	
 	// Best perceived temperature (ideal temperature for colonization)
 	// This is the temperature at which planets are most desirable for colonization
-	constexpr double BEST_PERCEIVED_TEMPERATURE_K = 288.15;  // 15°C / 59°F
-	constexpr double BEST_PERCEIVED_TEMPERATURE_C = 15.0;
-	constexpr double BEST_PERCEIVED_TEMPERATURE_F = 59.0;
+	// Value: 295.37223 K (approximately 72°F / 22.22°C)
+	constexpr double BEST_PERCEIVED_TEMPERATURE_K = 295.37223;
+	constexpr double BEST_PERCEIVED_TEMPERATURE_C = 22.22223;  // 295.37223 - 273.15
+	constexpr double BEST_PERCEIVED_TEMPERATURE_F = 72.0;
 	
 	// ========================================================================
 	// Absolute Temperature Conversions
