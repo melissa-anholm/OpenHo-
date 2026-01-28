@@ -405,12 +405,46 @@ private:
  * @param min_distance Minimum required distance between points
  * @param target_points Target number of points to generate (approximately)
  * @param rng Reference to deterministic RNG
+ * @param existing_coords Optional existing coordinates to avoid (default: none)
  * @return Vector of generated planet coordinates
  */
 std::vector<PlanetCoord> poisson_disk_sampling(
 	const Region& region,
 	double min_distance,
 	uint32_t target_points,
-	class DeterministicRNG& rng);
+	class DeterministicRNG& rng,
+	const std::vector<PlanetCoord>& existing_coords = {});
+
+// ============================================================================
+// Spiral Galaxy Helper Functions
+// ============================================================================
+
+/**
+ * Calculate the arc length of a Fermat spiral segment using Pythagorean approximation.
+ * For Fermat's spiral r = a*sqrt(theta), the arc length is approximated as:
+ * arc_length ≈ sqrt((r_outer - r_inner)^2 + (r_avg * delta_theta)^2)
+ * 
+ * @param a Spiral tightness parameter
+ * @param theta_inner Starting angle (radians)
+ * @param theta_outer Ending angle (radians)
+ * @return Approximate arc length along the spiral
+ */
+double fermat_spiral_arc_length(
+	double a,
+	double theta_inner,
+	double theta_outer);
+
+/**
+ * Generate a point on a Fermat spiral at a given angle.
+ * 
+ * @param a Spiral tightness parameter
+ * @param theta Angle (radians)
+ * @param arm_angle The angular offset of this arm (radians)
+ * @return (x, y) coordinates on the spiral
+ */
+PlanetCoord fermat_spiral_point(
+	double a,
+	double theta,
+	double arm_angle);
 
 #endif  // OPENHO_UTILITY_H

@@ -52,7 +52,8 @@ std::vector<PlanetCoord> poisson_disk_sampling(
 	const Region& region,
 	double min_distance,
 	uint32_t target_points,
-	DeterministicRNG& rng)
+	DeterministicRNG& rng,
+	const std::vector<PlanetCoord>& existing_coords)
 {
 	std::vector<PlanetCoord> output;
 	std::vector<PlanetCoord> active;
@@ -69,6 +70,11 @@ std::vector<PlanetCoord> poisson_disk_sampling(
 		int cell_y = static_cast<int>(p.second / cell_size);
 		grid[{cell_x, cell_y}].push_back(p);
 	};
+	
+	// Pre-populate grid with existing coordinates to avoid
+	for (const auto& existing : existing_coords) {
+		add_to_grid(existing);
+	}
 	
 	// Lambda to check if position is valid (far enough from all existing points)
 	auto is_valid = [&](const PlanetCoord& p) -> bool {
@@ -143,4 +149,49 @@ std::vector<PlanetCoord> poisson_disk_sampling(
 	}
 	
 	return output;
+}
+
+// ============================================================================
+// Spiral Galaxy Helper Functions Implementation
+// ============================================================================
+
+double fermat_spiral_arc_length(
+	double a,
+	double theta_inner,
+	double theta_outer)
+{
+	// For Fermat's spiral r = a*sqrt(theta)
+	// Calculate average radius between theta_inner and theta_outer
+	double r_inner = a * std::sqrt(theta_inner);
+	double r_outer = a * std::sqrt(theta_outer);
+	double r_avg = (r_inner + r_outer) / 2.0;
+	
+	// Calculate delta theta
+	double delta_theta = theta_outer - theta_inner;
+	
+	// Pythagorean approximation: arc_length ≈ sqrt((r_outer - r_inner)^2 + (r_avg * delta_theta)^2)
+	double radial_component = r_outer - r_inner;
+	double tangential_component = r_avg * delta_theta;
+	
+	double arc_length = std::sqrt(radial_component * radial_component + 
+	                               tangential_component * tangential_component);
+	
+	return arc_length;
+}
+
+PlanetCoord fermat_spiral_point(
+	double a,
+	double theta,
+	double arm_angle)
+{
+	// For Fermat's spiral: r = a*sqrt(theta)
+	double r = a * std::sqrt(theta);
+	
+	// Rotate by arm_angle
+	double angle = theta + arm_angle;
+	
+	double x = r * std::cos(angle);
+	double y = r * std::sin(angle);
+	
+	return {x, y};
 }

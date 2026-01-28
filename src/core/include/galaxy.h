@@ -94,6 +94,14 @@ struct Galaxy
 		uint32_t n_home_planets,
 		class GameState* game_state);
 	
+	// Phase 2b: Select home planet coordinates for spiral galaxies
+	std::vector<PlanetCoord> select_home_planets_spiral(
+		const std::vector<PlanetCoord>& all_coords,
+		uint32_t n_home_planets,
+		double a,
+		double delta_theta,
+		class GameState* game_state);
+	
 	// Phase 3: Generate planet parameters for all coordinates
 	void generate_planet_parameters(
 		const std::vector<PlanetCoord>& all_coords,
