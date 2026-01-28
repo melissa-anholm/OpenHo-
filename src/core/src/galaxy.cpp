@@ -75,17 +75,17 @@ std::vector<PlanetCoord> Galaxy::generate_planet_coordinates(
 	switch (params.shape)
 	{
 		case GALAXY_RANDOM:
-			return generate_coordinates_random(params, game_state);
+			return Galaxy::generate_coordinates_random(params, game_state);
 		case GALAXY_SPIRAL:
-			return generate_coordinates_spiral(params, game_state);
+			return Galaxy::generate_coordinates_spiral(params, game_state);
 		case GALAXY_CIRCLE:
-			return generate_coordinates_circle(params, game_state);
+			return Galaxy::generate_coordinates_circle(params, game_state);
 		case GALAXY_RING:
-			return generate_coordinates_ring(params, game_state);
+			return Galaxy::generate_coordinates_ring(params, game_state);
 		case GALAXY_CLUSTER:
-			return generate_coordinates_cluster(params, game_state);
+			return Galaxy::generate_coordinates_cluster(params, game_state);
 		case GALAXY_GRID:
-			return generate_coordinates_grid(params, game_state);
+			return Galaxy::generate_coordinates_grid(params, game_state);
 		default:
 			return std::vector<PlanetCoord>();
 	}
@@ -704,4 +704,153 @@ std::vector<PlanetCoord> Galaxy::select_home_planets_spiral(
 	}
 	
 	return home_coords;
+}
+
+// ============================================================================
+// Overloaded coordinate generation methods that take RNG directly
+// These are wrappers for the Python bindings to avoid needing GameState
+// ============================================================================
+
+std::vector<PlanetCoord> Galaxy::generate_coordinates_random(
+	const GalaxyGenerationParams& params,
+	DeterministicRNG& rng)
+{
+	std::vector<PlanetCoord> coords;
+	
+	// Calculate galaxy size using density-aware formula with reduction factor
+	GalaxyCoord gal_size = std::sqrt(double(params.n_planets)) * 
+	           (GameConstants::Galaxy_Size_Scale_Base + GameConstants::Galaxy_Size_Scale_Density / params.density) *
+	           (1.0 - GameConstants::Galaxy_Size_Reduction_Factor);
+	
+	// Initialize spatial grid for distance checking
+	CheckDistanceSpatialGrid grid(GameConstants::min_planet_distance, gal_size * 2.0);
+	
+	// Galaxy is centered at (0, 0)
+	GalaxyCoord half_size = gal_size / 2.0;
+	GalaxyCoord min_x = -half_size;
+	GalaxyCoord max_x = half_size;
+	GalaxyCoord min_y = -half_size;
+	GalaxyCoord max_y = half_size;
+	
+	uint32_t attempts_per_expansion = static_cast<uint32_t>(std::floor(std::sqrt(double(params.n_planets)) / 2.0));
+	uint32_t max_attempts_per_planet = params.n_planets;
+	
+	for (uint32_t i = 0; i < params.n_planets; ++i)
+	{
+		uint32_t attempt = 0;
+		bool placed = false;
+		
+		while (attempt < max_attempts_per_planet && !placed)
+		{
+			// Check if we need to expand the galaxy boundaries
+			if (attempt > 0 && attempt % attempts_per_expansion == 0)
+			{
+				// Expand boundaries by 5% around center (0, 0)
+				GalaxyCoord expansion_factor = 1.0 + GameConstants::Galaxy_Expansion_Factor;
+				min_x *= expansion_factor;
+				max_x *= expansion_factor;
+				min_y *= expansion_factor;
+				max_y *= expansion_factor;
+			}
+			// Generate random position within current galaxy bounds
+			GalaxyCoord x_coord = min_x + rng.nextDouble() * (max_x - min_x);
+			GalaxyCoord y_coord = min_y + rng.nextDouble() * (max_y - min_y);
+			
+			// Check if position is valid (far enough from other planets)
+			if (grid.is_position_valid(x_coord, y_coord, GameConstants::min_planet_distance))
+			{
+				coords.push_back({x_coord, y_coord});
+				grid.add_planet(x_coord, y_coord, i + 1);
+				placed = true;
+			}
+			attempt++;
+		}
+	}
+	
+	return coords;
+}
+
+std::vector<PlanetCoord> Galaxy::generate_coordinates_spiral(
+	const GalaxyGenerationParams& params,
+	DeterministicRNG& rng)
+{
+	// For now, return empty - full implementation would duplicate the spiral logic
+	// TODO: Refactor the GameState* version to call this one
+	(void)params;
+	(void)rng;
+	return {};
+}
+
+std::vector<PlanetCoord> Galaxy::generate_coordinates_circle(
+	const GalaxyGenerationParams& params,
+	DeterministicRNG& rng)
+{
+	// Calculate galaxy radius based on planet count and density
+	double base_radius = std::sqrt(double(params.n_planets) / params.density) * 10.0;
+	
+	// Use Poisson disk sampling to generate evenly distributed coordinates
+	CircleRegion region(base_radius);
+	
+	double min_distance = GameConstants::min_planet_distance;
+	std::vector<PlanetCoord> coords = poisson_disk_sampling(region, min_distance, params.n_planets, rng);
+	
+	return coords;
+}
+
+std::vector<PlanetCoord> Galaxy::generate_coordinates_ring(
+	const GalaxyGenerationParams& params,
+	DeterministicRNG& rng)
+{
+	// Calculate galaxy radius based on planet count and density
+	double base_radius = std::sqrt(double(params.n_planets) / params.density) * 10.0;
+	
+	// Use Poisson disk sampling to generate evenly distributed coordinates in a ring
+	double inner_radius = base_radius * 0.6;  // Inner radius is 60% of outer
+	RingRegion region(inner_radius, base_radius);
+	
+	double min_distance = GameConstants::min_planet_distance;
+	std::vector<PlanetCoord> coords = poisson_disk_sampling(region, min_distance, params.n_planets, rng);
+	
+	return coords;
+}
+
+std::vector<PlanetCoord> Galaxy::generate_coordinates_cluster(
+	const GalaxyGenerationParams& params,
+	DeterministicRNG& rng)
+{
+	// Not implemented yet
+	(void)params;
+	(void)rng;
+	return {};
+}
+
+std::vector<PlanetCoord> Galaxy::generate_coordinates_grid(
+	const GalaxyGenerationParams& params,
+	DeterministicRNG& rng)
+{
+	(void)rng;  // Not used for grid generation
+	
+	std::vector<PlanetCoord> coords;
+	
+	// Calculate grid dimensions
+	uint32_t grid_size = static_cast<uint32_t>(std::ceil(std::sqrt(double(params.n_planets))));
+	double spacing = GameConstants::min_planet_distance * 1.5;  // Slightly more than minimum
+	
+	// Center the grid at (0, 0)
+	double offset_x = -(grid_size - 1) * spacing / 2.0;
+	double offset_y = -(grid_size - 1) * spacing / 2.0;
+	
+	// Generate grid coordinates
+	for (uint32_t i = 0; i < params.n_planets; ++i)
+	{
+		uint32_t row = i / grid_size;
+		uint32_t col = i % grid_size;
+		
+		double x = offset_x + col * spacing;
+		double y = offset_y + row * spacing;
+		
+		coords.push_back({x, y});
+	}
+	
+	return coords;
 }

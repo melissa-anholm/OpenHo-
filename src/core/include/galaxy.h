@@ -111,29 +111,54 @@ struct Galaxy
 	
 	// Shape-specific coordinate generation methods
 	// Each method generates planet coordinates according to its shape pattern
-	std::vector<PlanetCoord> generate_coordinates_random(
+	static std::vector<PlanetCoord> generate_coordinates_random(
 		const GalaxyGenerationParams& params,
 		class GameState* game_state);
 	
-	std::vector<PlanetCoord> generate_coordinates_spiral(
+	static std::vector<PlanetCoord> generate_coordinates_spiral(
 		const GalaxyGenerationParams& params,
 		class GameState* game_state);
 	
-	std::vector<PlanetCoord> generate_coordinates_circle(
+	static std::vector<PlanetCoord> generate_coordinates_circle(
 		const GalaxyGenerationParams& params,
 		class GameState* game_state);
 	
-	std::vector<PlanetCoord> generate_coordinates_ring(
+	static std::vector<PlanetCoord> generate_coordinates_ring(
 		const GalaxyGenerationParams& params,
 		class GameState* game_state);
 	
-	std::vector<PlanetCoord> generate_coordinates_cluster(
+	static std::vector<PlanetCoord> generate_coordinates_cluster(
 		const GalaxyGenerationParams& params,
 		class GameState* game_state);
 	
-	std::vector<PlanetCoord> generate_coordinates_grid(
+	static std::vector<PlanetCoord> generate_coordinates_grid(
 		const GalaxyGenerationParams& params,
 		class GameState* game_state);
+	
+	// Overloaded versions that take RNG directly (for Python wrapper)
+	static std::vector<PlanetCoord> generate_coordinates_random(
+		const GalaxyGenerationParams& params,
+		class DeterministicRNG& rng);
+	
+	static std::vector<PlanetCoord> generate_coordinates_spiral(
+		const GalaxyGenerationParams& params,
+		class DeterministicRNG& rng);
+	
+	static std::vector<PlanetCoord> generate_coordinates_circle(
+		const GalaxyGenerationParams& params,
+		class DeterministicRNG& rng);
+	
+	static std::vector<PlanetCoord> generate_coordinates_ring(
+		const GalaxyGenerationParams& params,
+		class DeterministicRNG& rng);
+	
+	static std::vector<PlanetCoord> generate_coordinates_cluster(
+		const GalaxyGenerationParams& params,
+		class DeterministicRNG& rng);
+	
+	static std::vector<PlanetCoord> generate_coordinates_grid(
+		const GalaxyGenerationParams& params,
+		class DeterministicRNG& rng);
 	
 	// Legacy planet initialization methods (deprecated, kept for reference)
 	void initialize_planets_random(

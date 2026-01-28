@@ -13,103 +13,6 @@
 // Using C-style buffer to avoid C++ static initialization issues on macOS 10.14
 static char last_error_message[1024] = {0};
 
-// Helper function to generate coordinates for a specific shape
-// This avoids needing to create a full Galaxy object
-static std::vector<PlanetCoord> generate_coords_for_shape(
-	const GalaxyGenerationParams& params,
-	DeterministicRNG& rng)
-{
-	std::vector<PlanetCoord> coords;
-	
-	switch (params.shape)
-	{
-		case GALAXY_RANDOM:
-		{
-			// Random distribution within a circle
-			double max_radius = 100.0;
-			for (uint32_t i = 0; i < params.n_planets; ++i)
-			{
-				// Use rejection sampling to get uniform distribution in circle
-				double x, y;
-				do {
-					x = rng.nextDoubleRange(-max_radius, max_radius);
-					y = rng.nextDoubleRange(-max_radius, max_radius);
-				} while (x*x + y*y > max_radius*max_radius);
-				
-				coords.push_back({x, y});
-			}
-			break;
-		}
-		
-		case GALAXY_CIRCLE:
-		{
-			// Uniform distribution within a circle
-			double max_radius = 100.0;
-			for (uint32_t i = 0; i < params.n_planets; ++i)
-			{
-				// Use rejection sampling
-				double x, y;
-				do {
-					x = rng.nextDoubleRange(-max_radius, max_radius);
-					y = rng.nextDoubleRange(-max_radius, max_radius);
-				} while (x*x + y*y > max_radius*max_radius);
-				
-				coords.push_back({x, y});
-			}
-			break;
-		}
-		
-		case GALAXY_RING:
-		{
-			// Ring/annulus distribution
-			double outer_radius = 100.0;
-			double inner_radius = 60.0;
-			for (uint32_t i = 0; i < params.n_planets; ++i)
-			{
-				// Use rejection sampling for ring
-				double x, y;
-				do {
-					x = rng.nextDoubleRange(-outer_radius, outer_radius);
-					y = rng.nextDoubleRange(-outer_radius, outer_radius);
-					double r_sq = x*x + y*y;
-					if (r_sq >= inner_radius*inner_radius && r_sq <= outer_radius*outer_radius)
-						break;
-				} while (true);
-				
-				coords.push_back({x, y});
-			}
-			break;
-		}
-		
-		case GALAXY_GRID:
-		{
-			// Regular grid pattern
-			uint32_t grid_size = static_cast<uint32_t>(std::ceil(std::sqrt(params.n_planets)));
-			double spacing = 20.0;
-			double offset = -(grid_size - 1) * spacing / 2.0;
-			
-			for (uint32_t i = 0; i < params.n_planets; ++i)
-			{
-				uint32_t row = i / grid_size;
-				uint32_t col = i % grid_size;
-				double x = offset + col * spacing;
-				double y = offset + row * spacing;
-				coords.push_back({x, y});
-			}
-			break;
-		}
-		
-		case GALAXY_SPIRAL:
-		case GALAXY_CLUSTER:
-		default:
-			// For unimplemented shapes, return empty vector
-			// The full implementation in galaxy.cpp handles these
-			break;
-	}
-	
-	return coords;
-}
-
 extern "C" {
 
 double* generate_galaxy_coords(GalaxyParamsC params, uint32_t* out_count)
@@ -164,16 +67,41 @@ double* generate_galaxy_coords(GalaxyParamsC params, uint32_t* out_count)
 			params.seed
 		);
 		
-		// Create RNG
+		// Create RNG directly (no GameState needed!)
 		DeterministicRNG rng(params.seed, params.seed);
 		
-		// Generate coordinates directly without creating Galaxy object
-		std::vector<PlanetCoord> coords = generate_coords_for_shape(cpp_params, rng);
+		// Call the actual C++ coordinate generation methods with RNG overloads
+		std::vector<PlanetCoord> coords;
 		
-		// Check if shape is implemented
+		switch (cpp_shape)
+		{
+			case GALAXY_RANDOM:
+				coords = Galaxy::generate_coordinates_random(cpp_params, rng);
+				break;
+			case GALAXY_SPIRAL:
+				coords = Galaxy::generate_coordinates_spiral(cpp_params, rng);
+				break;
+			case GALAXY_CIRCLE:
+				coords = Galaxy::generate_coordinates_circle(cpp_params, rng);
+				break;
+			case GALAXY_RING:
+				coords = Galaxy::generate_coordinates_ring(cpp_params, rng);
+				break;
+			case GALAXY_CLUSTER:
+				coords = Galaxy::generate_coordinates_cluster(cpp_params, rng);
+				break;
+			case GALAXY_GRID:
+				coords = Galaxy::generate_coordinates_grid(cpp_params, rng);
+				break;
+			default:
+				strncpy(last_error_message, "Unknown galaxy shape", sizeof(last_error_message) - 1);
+				return nullptr;
+		}
+		
+		// Check if generation succeeded
 		if (coords.empty() && params.n_planets > 0)
 		{
-			strncpy(last_error_message, "Galaxy shape not yet implemented in Python wrapper", sizeof(last_error_message) - 1);
+			strncpy(last_error_message, "Galaxy coordinate generation failed (returned empty)", sizeof(last_error_message) - 1);
 			return nullptr;
 		}
 		
