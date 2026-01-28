@@ -20,17 +20,19 @@ C++ Implementation (galaxy.cpp)
 
 ### 1. C API Layer (Stable Interface)
 
-**`src/core/include/openho_galaxy_api.h`**
+**`python/openho_galaxy_api.h`**
 - C-compatible header file
 - Defines `GalaxyParamsC` struct and `GalaxyShapeC` enum
 - Functions: `generate_galaxy_coords()`, `free_galaxy_coords()`, `get_last_error()`
 - This API is designed to remain stable even when C++ implementation changes
+- Lives in the python/ directory to keep the wrapper self-contained
 
-**`src/core/src/openho_galaxy_api.cpp`**
+**`python/openho_galaxy_api.cpp`**
 - Implementation of the C API
 - Creates a minimal GameState-like object for RNG access
 - Handles all C++ ↔ C type conversions
 - Provides error handling with thread-local error messages
+- Lives in the python/ directory to keep the wrapper self-contained
 
 ### 2. Python Bindings
 
@@ -69,8 +71,8 @@ C++ Implementation (galaxy.cpp)
 ### 4. Core Library Modifications
 
 **`src/core/CMakeLists.txt`** (modified)
-- Added `openho_galaxy_api.cpp` to source list
-- Added `POSITION_INDEPENDENT_CODE ON` property to enable linking into shared libraries
+- Added `POSITION_INDEPENDENT_CODE ON` property to enable linking into shared libraries (e.g., Python extensions)
+- No other changes to core library - wrapper is self-contained in python/ directory
 
 ## Build Status
 

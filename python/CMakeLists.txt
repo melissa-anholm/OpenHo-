@@ -27,14 +27,18 @@ find_package(Boost REQUIRED COMPONENTS random)
 # Build the core library first
 add_subdirectory(../src/core ${CMAKE_CURRENT_BINARY_DIR}/core)
 
-# Create Python extension module
-pybind11_add_module(openho_galaxy openho_galaxy_bindings.cpp)
+# Create Python extension module (includes C API wrapper)
+pybind11_add_module(openho_galaxy 
+	openho_galaxy_bindings.cpp
+	openho_galaxy_api.cpp
+)
 
 # Link against the core library
 target_link_libraries(openho_galaxy PRIVATE OpenHoCore Boost::random)
 
 # Include directories
 target_include_directories(openho_galaxy PRIVATE
+	${CMAKE_CURRENT_SOURCE_DIR}  # For openho_galaxy_api.h
 	../src/core/include
 	${Boost_INCLUDE_DIRS}
 )
