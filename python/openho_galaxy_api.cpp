@@ -8,8 +8,9 @@
 #include <string>
 #include <exception>
 
-// Thread-local error message storage
-static thread_local std::string last_error_message;
+// Error message storage
+// Note: Not thread-safe, but Python GIL provides synchronization
+static std::string last_error_message;
 
 extern "C" {
 
