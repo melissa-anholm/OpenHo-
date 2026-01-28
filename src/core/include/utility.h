@@ -8,9 +8,9 @@
 #include <map>
 #include <cmath>
 #include <utility>
+#include "rng.h"
 
 // Forward declarations
-class DeterministicRNG;
 class Planet;
 
 // Type definitions
