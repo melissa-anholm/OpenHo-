@@ -1,6 +1,6 @@
 # OpenHo Master Plan
 
-**Last Updated:** January 26, 2026 (Session 13 - Economic Mechanics & Code Refactoring)  
+**Last Updated:** January 27, 2026 (Session 15 - Galaxy Shapes & Spiral Implementation)  
 **Project Status:** Phase 2 - C++ Core Implementation & UI Architecture Planning (In Progress)
 
 ---
@@ -202,9 +202,20 @@ The project uses a command-line build system (no Xcode dependency) with CMake fo
 - [x] Ensure circle and ring galaxies maintain same active area as random galaxy
 - [x] Implement Region abstract base class with CircleRegion and RingRegion
 
+**Completed (Session 15 - Jan 27, 2026 - Spiral Galaxy Implementation):**
+- [x] Implement Fermat spiral galaxy distribution algorithm with N arms
+- [x] Implement spiral parameter selection (angular span, tightness, ratio)
+- [x] Implement arc length calculation using Pythagorean approximation
+- [x] Implement spiral arm generation with Poisson-like distribution
+- [x] Implement central core generation with existing coordinate avoidance
+- [x] Implement home planet selection for spiral galaxies (one per arm end)
+- [x] Modify Poisson disk sampling to accept and avoid existing coordinates
+- [x] Add spiral helper functions (fermat_spiral_arc_length, fermat_spiral_point)
+
 **Remaining (Next Session):**
-- [ ] Implement spiral galaxy distribution algorithm (logarithmic spiral with N arms)
 - [ ] Implement cluster galaxy distribution algorithm (N clusters in ring arrangement)
+- [ ] Test spiral galaxy generation with various parameters
+- [ ] Integrate spiral home planet selection into Galaxy constructor
 - [ ] Handle gravity mismatch for START_OUTPOST quality colonies
 - [ ] Implement error handling when insufficient suitable planets
 

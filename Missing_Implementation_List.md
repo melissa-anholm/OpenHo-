@@ -2,7 +2,7 @@
 
 **Purpose:** Track all functions and values that need implementation or reverse-engineering from the original game.
 
-**Last Updated:** January 26, 2026 (Session 14 - Galaxy Shapes & Poisson Sampling Complete)
+**Last Updated:** January 27, 2026 (Session 15 - Spiral Galaxy Implementation Complete)
 
 ---
 
@@ -46,10 +46,10 @@
 
 ### Non-Data-Driven Functions (Clear Logic, Need Implementation) - 5 items
 
-- [x] [Galaxy Shape Distribution Algorithms](#galaxy-shape-distribution-algorithms) - PARTIALLY IMPLEMENTED (2 of 4 shapes)
+- [x] [Galaxy Shape Distribution Algorithms](#galaxy-shape-distribution-algorithms) - PARTIALLY IMPLEMENTED (3 of 4 shapes)
   - [x] Circle galaxy distribution - IMPLEMENTED
   - [x] Ring galaxy distribution - IMPLEMENTED
-  - [ ] Spiral galaxy distribution
+  - [x] Spiral galaxy distribution - IMPLEMENTED
   - [ ] Cluster galaxy distribution
 - [ ] [Turn Processing](#turn-processing) - Partially implemented (5 missing steps)
 - [ ] [Fleet Movement & Combat](#fleet-movement--combat) - Partially implemented (combat stub)
@@ -69,9 +69,9 @@
 ### Summary
 
 **Total Items:** 20 functions/systems  
-**Implemented:** 12 (60%)  
+**Implemented:** 13 (65%)  
 **Partially Implemented:** 4 (20%)  
-**Placeholder/Stub:** 4 (20%)
+**Placeholder/Stub:** 3 (15%)
 
 ---
 
@@ -81,123 +81,83 @@ These require playing through the original Spaceward Ho! and reverse-engineering
 
 ### Planet Desirability Rating
 
-**Status:** Placeholder (all planets get desirability 3)  
-**Location:** `planet.h` / `planet.cpp` (ColonizedPlanet class)
+**Status:** Placeholder  
+**Location:** `game_formulas.cpp`
 
-- `ColonizedPlanet::recalculate_desirability()` - Overall suitability rating for a planet
-  - Depends on: apparent_gravity, apparent_temperature, metal_remaining, population (if colonized), etc.
-  - Notes: Used by UI to display planet attractiveness; recalculated when colonized and each turn
-  - Current: Placeholder returns 3 (all planets maximally desirable)
-  - **Key Design Question:** What factors contribute to desirability? How are they weighted?
-  - **Implementation Notes:** Infrastructure in place; ready for real formula when reverse-engineered
-
-**Usage Pattern:**
-1. **Exploration:** Calculate on-the-fly for UI display (not stored)
-2. **Colonization:** Calculate and store with ColonizedPlanet object
-3. **Turn Processing:** Recalculate each turn as part of planet processing
-
-**Factors to Consider:**
-- Gravity mismatch (via apparent_gravity)
-- Temperature mismatch (via apparent_temperature)
-- Metal availability (affects long-term value)
-- Population (if colonized; affects current productivity)
-- Existing infrastructure (if colonized)
-- Distance from other planets (strategic value)
-- Proximity to enemy planets (defensive value)
+**Current Implementation:**
+- Returns 0 (stub)
 
 **Reverse-Engineering Approach:**
-- Play original game and observe planet ratings
-- Test with various gravity/temperature combinations
-- Test with different metal amounts
-- Determine if rating is numeric (0-100), star-based (1-5), or descriptive
-- Identify which factors are most important
-- Determine if rating changes based on player tech level or research
-
-**Implementation Notes:**
-- Should return a consistent numeric value (e.g., 0-100 or 0.0-1.0)
-- Must account for player's ideal_gravity and ideal_temperature
-- May need to consider player's current tech levels
-- Should be deterministic (same inputs = same output)
-- Consider if desirability should change as player researches new tech
+- Observe which planets players prefer to colonize
+- Test planets with various gravity/temperature combinations
+- Determine weighting factors for gravity vs. temperature
+- Check if metal deposits affect desirability
+- Test extreme values to find breaking points
 
 ---
 
 ### Planetary Income Calculation
 
-**Status:** Placeholder (returns 0)  
+**Status:** Placeholder  
 **Location:** `game_formulas.cpp`
 
-- `calculate_planetary_income()` - Total income from all owned planets
-  - Depends on: population, mining allocation, terraforming progress, planet conditions, etc.
-  - Notes: Critical for economy; affects all other calculations
-  - Current: Always returns 0
+**Current Implementation:**
+- Returns 0 (stub)
 
 **Reverse-Engineering Approach:**
-- Create planets with different populations and allocations
+- Create colonies with known population and resources
 - Observe income generated per turn
-- Test with different mining/terraforming splits
-- Determine if income is linear with population or other formula
-- Check if planet conditions (gravity/temperature mismatch) affect income
-- Determine base income per population unit
-
-### Ship Design Costs
-
-**Status:** Placeholder (returns 1 for all)  
-**Location:** `game_formulas.cpp`
-
-- `calculate_ship_design_build_cost()` - Cost to build each ship of a design
-  - Depends on: tech_range, tech_speed, tech_weapons, tech_shields, tech_mini
-  - Notes: Should scale with technology levels, likely non-linear
-  
-- `calculate_ship_design_prototype_cost()` - One-time cost for first ship of new design
-  - Depends on: same tech parameters
-  - Notes: Typically much higher than build cost
-  
-- `calculate_ship_design_metal_cost()` - Metal required per ship
-  - Depends on: same tech parameters
-  - Notes: Separate from money cost
-
-**Reverse-Engineering Approach:**
-- Create ships with varying tech levels in original game
-- Note the costs displayed
-- Build multiple ships and compare prototype vs. build costs
-- Determine if costs are linear, quadratic, exponential, or other formula
+- Test with various planet conditions (gravity, temperature)
+- Determine if income scales linearly or non-linearly with population
+- Check if planet conditions affect income multiplier
+- Test with different technology levels
 
 ---
 
-### Player Metrics (Public Information)
+### Ship Design Costs
 
-**Status:** Placeholder (returns 1)  
+**Status:** Placeholder (3 functions)  
 **Location:** `game_formulas.cpp`
 
-- `calculate_player_fleet_power()` - Combat strength metric
-  - Depends on: all ships owned by player
-  - Notes: Visible to all players; used for diplomacy/threat assessment
-  - Logic: Sum combat values of all ships (likely based on weapons/shields tech)
-  
-- `calculate_player_victory_points()` - Overall progress metric
-  - Depends on: planets owned, ships built, tech levels, population, etc.
-  - Notes: Visible to all players; determines winner in some game modes
-  - Logic: Weighted sum of various factors
+**Functions Needed:**
+1. `calculate_ship_design_cost()` - Cost to design a new ship type
+2. `calculate_ship_build_cost()` - Cost to build one ship of a design
+3. `calculate_ship_upgrade_cost()` - Cost to upgrade a ship design
 
-**Implementation Notes:**
-- Fleet power: Iterate through all player's fleets, sum ship combat values
-- Victory points: Determine weighting for planets, population, tech levels, ships
-- Both are primarily UI/display metrics, not core game mechanics
+**Reverse-Engineering Approach:**
+- Create new ship designs and observe costs
+- Build ships and track resource consumption
+- Upgrade designs and record cost changes
+- Determine if costs scale with ship capabilities
+- Test extreme ship configurations
+
+---
+
+### Player Metrics
+
+**Status:** Placeholder (2 functions)  
+**Location:** `game_formulas.cpp`
+
+**Functions Needed:**
+1. `calculate_player_score()` - Overall player ranking
+2. `calculate_player_victory_points()` - Victory condition tracking
+
+**Reverse-Engineering Approach:**
+- Play through a game and track score changes
+- Observe what actions increase/decrease score
+- Determine weighting of different achievements
+- Check if score affects game balance or AI behavior
 
 ---
 
 ### Population Growth
 
-**Status:** Placeholder (10% per turn, ignores planet conditions)  
+**Status:** Placeholder (ignores planet conditions)  
 **Location:** `game_formulas.cpp`
 
-- `calculate_population_growth()` - Population change per turn
-  - Depends on: current_population, planet_temperature, planet_gravity, ideal_temperature, ideal_gravity
-  - Notes: Critical for economy; affects income generation
-  - Current: Simple 10% growth regardless of conditions, capped at 1,000,000
-  - Parameters for planet conditions are accepted but completely unused
-  - **Key Design Question:** How do gravity/temperature mismatches affect growth? Linear penalty? Exponential? Threshold-based?
+**Current Implementation:**
+- Returns 10% growth regardless of gravity/temperature mismatch
+- Accepts parameters but doesn't use them
 
 **Reverse-Engineering Approach:**
 - Create planets with various gravity/temperature mismatches
@@ -215,7 +175,7 @@ These have clear logic but need implementation. No reverse-engineering needed.
 
 ### Galaxy Shape Distribution Algorithms
 
-**Status:** PARTIALLY IMPLEMENTED (Circle and Ring complete, Spiral and Cluster pending)  
+**Status:** PARTIALLY IMPLEMENTED (Circle, Ring, and Spiral complete; Cluster pending)  
 **Location:** `galaxy.cpp`, `utility.h/cpp`
 
 **Completed (Session 14):**
@@ -234,14 +194,23 @@ These have clear logic but need implementation. No reverse-engineering needed.
   - Supports inner/outer ratio constraints (50%-80%)
   - Maintains same active area as circle galaxy for consistent density
 
-**Remaining (Next Session):**
+**Completed (Session 15):**
 
-- [ ] `generate_coordinates_spiral()` - Spiral arm galaxy distribution
-  - Design: Logarithmic spiral with N arms (N = number of players)
-  - Each player's home planet at end of one arm
-  - Central bulge: circle-shaped arrangement of planets
-  - TODO: Implement home planet selection for spiral (one per arm end)
-  - TODO: Rework min planets/homeworld assignment strategy for spiral shape
+- [x] `generate_coordinates_spiral()` - Fermat spiral arm galaxy distribution - IMPLEMENTED
+  - Uses Fermat spiral (r = a√θ) instead of logarithmic for better radial tangent
+  - N spiral arms (N = number of players), evenly spaced angularly
+  - Randomized parameters:
+    - Angular span: [π/4, π]
+    - Spiral tightness: a = 100.0 / √(Δθ)
+    - Outer/core ratio: [2.0, 6.0]
+  - Arc length calculation using Pythagorean approximation
+  - Central core with Poisson sampling, avoiding arm coordinates
+  - Overlap between arms and core: max(6.0, 0.15 × core_radius)
+  - Home planet selection: one per arm at calculated arm end
+  - Implemented `select_home_planets_spiral()` function
+  - Modified Poisson disk sampling to accept existing coordinates
+
+**Remaining (Next Session):**
 
 - [ ] `generate_coordinates_cluster()` - Clustered galaxy distribution
   - Design: N clusters (N = number of players) arranged in ring around center
@@ -256,19 +225,20 @@ These have clear logic but need implementation. No reverse-engineering needed.
 - Spatial grid acceleration for efficient neighbor checking
 - DeterministicRNG for reproducible results
 - Failure logging for debugging insufficient planet generation
+- Spiral helper functions: fermat_spiral_arc_length(), fermat_spiral_point()
 
 **Design Decisions:**
 - Active area approach ensures consistent planet density across shapes
 - Poisson sampling guarantees minimum distance between planets
 - Ring galaxies support randomized inner/outer radii within small range
-- Home planet selection is shape-specific (random for circle, TBD for spiral/cluster)
+- Spiral galaxies use Fermat spiral for better geometric properties
+- Home planet selection is shape-specific (random for circle/ring, arm-end for spiral)
 
-**Next Steps for Spiral & Cluster:**
-1. Implement logarithmic spiral arm generation
-2. Implement cluster generation with ring arrangement
-3. Implement shape-specific home planet selection methods
-4. Handle gravity mismatch for START_OUTPOST quality colonies
-5. Implement error handling when insufficient suitable planets
+**Next Steps for Cluster:**
+1. Implement cluster generation with ring arrangement
+2. Implement shape-specific home planet selection for clusters
+3. Handle gravity mismatch for START_OUTPOST quality colonies
+4. Implement error handling when insufficient suitable planets
 
 ---
 
@@ -278,106 +248,65 @@ These have clear logic but need implementation. No reverse-engineering needed.
 **Location:** `game_formulas.cpp`
 
 - `calculate_apparent_gravity()` - Convert true gravity to perceived gravity
-  - Depends on: ideal_gravity, true_gravity
-  - Notes: Used for planet desirability calculations
-  - Current: IMPLEMENTED - Linear formula: perceived = (best_perceived_gravity / ideal_gravity) * true_gravity
-  - Formula: Both measurements agree at zero gravity (0g → 0g); perceived gravity is monotonic with both true_gravity and ideal_gravity
-  
+  - Formula: `apparent = 100 * true_gravity` (linear scaling)
+  - Returns value as percentage (100 = Earth normal)
+
 - `calculate_apparent_temperature()` - Convert true temperature to perceived temperature
-  - Depends on: ideal_temperature, true_temperature
-  - Notes: Used for planet desirability calculations
-  - Current: IMPLEMENTED - Linear formula: perceived = (best_perceived_temp / ideal_temp) * true_temp
-  - Formula: Both measurements agree on absolute zero (0K); perceived temperature is monotonic with both true_temperature and ideal_temperature
-
-**Implementation Considerations:**
-- These functions determine how "suitable" a planet appears to a player
-- The conversion formula affects planet desirability and player strategy
-- Effects on actual game mechanics (population growth, income) are handled separately
-- Consider if perception should be:
-  - Linear (e.g., penalty proportional to mismatch)
-  - Non-linear (e.g., exponential penalty for large mismatches)
-  - Threshold-based (e.g., acceptable range with sharp penalty outside)
-  - Asymmetric (e.g., different penalties for too hot vs. too cold)
-
-**Design Questions to Answer:**
-1. Should perception be linear or non-linear?
-2. Should there be an "acceptable range" where planets are perceived as ideal?
-3. How severe should the penalty be for mismatches?
-4. Should the formula be the same for gravity and temperature?
-5. Should perception be affected by player research level?
+  - Formula: `apparent = true_temperature - ideal_temperature` (linear offset)
+  - Returns difference in Kelvin
+  - Negative values = too cold, Positive = too hot
 
 ---
 
 ### Turn Processing
 
-**Status:** Partially implemented  
-**Location:** `game.cpp` - `process_turn()` method
+**Status:** Partially implemented (5 missing steps)  
+**Location:** `game.cpp`
 
-**Completed Steps:**
-- [x] Calculate income for each player (planetary, interest, windfall)
-- [x] Apply spending allocations (savings, research, planet development)
-- [x] Process terraforming on each planet
-- [x] Process mining on each planet
-- [x] Calculate population growth for each planet
+**Completed:**
+- [x] Income calculation and allocation
+- [x] Mining efficiency processing
+- [x] Terraforming efficiency processing
+- [x] Population growth (placeholder)
 
-**Missing Steps:**
-1. Process research point accumulation and tech advancement
-2. Handle fleet movement and combat
-3. Handle special events (nova, etc.)
-4. Update player public info snapshots
-5. Determine if any player has won
-
-**Implementation Notes:**
-- This is the core game loop; order matters
-- Income should be calculated before spending allocations
-- Population growth affects next turn's income
-- Tech advancement should check if research points are sufficient
+**Missing:**
+- [ ] Fleet movement and combat
+- [ ] Research point accumulation and tech advancement
+- [ ] Nova events and warnings
+- [ ] Diplomacy/trade events
+- [ ] End-of-turn cleanup and state updates
 
 ---
 
 ### Fleet Movement & Combat
 
-**Status:** Partially implemented (fleet movement complete, combat stub)  
-**Location:** `player.cpp` - `move_fleet()` method
+**Status:** Partially implemented (combat stub)  
+**Location:** `game.cpp`
 
 **Completed:**
-- [x] Calculate travel time based on fleet speed and distance
-- [x] Determine if fleet arrives this turn or next
-- [x] Handle fleet arrival at destination
-- [x] Update fleet state (in_transit, current_planet, destination)
-- [x] FleetTransit architecture for centralized movement state
-- [x] space_planet pattern for in-transit fleet isolation
+- [x] Fleet movement calculation (distance-based)
+- [x] Fleet arrival detection
 
-**Missing Logic:**
-- Implement combat resolution if fleets meet
-- Handle fleet interception mechanics
-- Add waypoint support for multi-leg journeys
-- Implement fleet fuel consumption during movement
-- Implement fleet visibility during transit
-
-**Implementation Notes:**
-- Fleet speed depends on tech_speed level
-- Distance calculation uses Euclidean distance
-- Combat only occurs if fleets from different players meet
-- Need to track partial movement (fleet in transit between turns)
+**Missing:**
+- [ ] Combat resolution (currently returns stub)
+- [ ] Damage calculation
+- [ ] Fleet retreat logic
+- [ ] Casualty handling
+- [ ] Victory/defeat determination
 
 ---
 
 ### Nova Warning Duration
 
-**Status:** Placeholder (returns 1)  
+**Status:** Placeholder  
 **Location:** `game_formulas.cpp`
 
-- `calculate_planet_nova_warning_duration()` - Turns until planet destroyed
-  - Depends on: DeterministicRNG
-  - Notes: Determines how long a planet has before being destroyed
-  - Current: Always returns 1
-  - Logic: Generate random duration from appropriate distribution
+**Current Implementation:**
+- Returns 0 (stub)
 
-**Implementation Notes:**
-- Use DeterministicRNG to generate random value
-- Determine appropriate distribution (uniform range? Poisson? other?)
-- Ensure reproducible results for multiplayer games
+**Expected Behavior:**
+- Determine how many turns a nova warning is visible before the nova occurs
+- Likely based on distance from nova star or other factors
 
 ---
 
@@ -386,167 +315,118 @@ These have clear logic but need implementation. No reverse-engineering needed.
 **Status:** Placeholder (1:1 conversion)  
 **Location:** `game_formulas.cpp`
 
-- `convert_money_to_research_points()` - Money → Research points
-  - Depends on: money_allocated
-  - Notes: Affects technology advancement speed
-  - Current: Simple 1:1 conversion
-  - **Key Design Question:** Is conversion always 1:1, or do different tech streams have different rates?
+**Current Implementation:**
+- 1 research point = 1 technology level increase (1:1 ratio)
 
 **Reverse-Engineering Approach:**
-- Allocate money to research different streams
-- Observe research point accumulation
-- Check if conversion rate is consistent across streams
-- Determine if there are diminishing returns
-- Check if conversion rate changes with tech level
+- Play through research in original game
+- Observe how many research points needed for each tech level
+- Determine if conversion rate changes with game progression
+- Check if different tech trees have different costs
 
 ---
 
-## Partially Implemented
+## Partially Implemented Functions
 
-Functions that exist but need completion or refinement.
+These have some implementation but are missing key steps.
 
 ### Ship Design Creation
 
-**Status:** Method exists but cost calculation stubbed  
-**Location:** `player.cpp` - `create_ship_design()`
+**Status:** Incomplete (3 missing steps)  
+**Location:** `game.cpp`
 
-**What's Done:**
-- Design name validation
-- Tech level validation
-- Design storage
+**Completed:**
+- [x] Basic ShipDesign object creation
+- [x] Design ID allocation
 
-**What's Missing:**
-- Calculate prototype cost (depends on ship_design_prototype_cost formula)
-- Validate player has enough money for prototype cost
-- Deduct money from player savings
-- Possibly: validate metal cost for first ship
-
-**Implementation Notes:**
-- Prototype cost is one-time; subsequent ships use build cost
-- May need to handle partial design creation if insufficient funds
+**Missing:**
+- [ ] Validate design parameters (armor, weapons, engines, etc.)
+- [ ] Calculate design cost
+- [ ] Add design to player's available designs
 
 ---
 
 ### Fleet Creation
 
-**Status:** Method exists but cost calculation stubbed  
-**Location:** `player.cpp` - `create_fleet()`
+**Status:** Incomplete (3 missing steps)  
+**Location:** `game.cpp`
 
-**What's Done:**
-- Fleet ID allocation
-- Fleet storage
-- Basic validation
+**Completed:**
+- [x] Basic Fleet object creation
+- [x] Fleet ID allocation
 
-**What's Missing:**
-- Calculate build cost for requested ship count (uses ship_design_build_cost formula)
-- Calculate metal cost for requested ship count (uses ship_design_metal_cost formula)
-- Validate player has both money and metal
-- Deduct resources from player
-- Handle partial fleet creation if insufficient resources
-
-**Implementation Notes:**
-- Both money and metal must be available
-- Build cost is per-ship; metal cost is per-ship
-- May need to handle case where player can only build partial fleet
+**Missing:**
+- [ ] Validate fleet parameters (location, design, quantity)
+- [ ] Deduct resources from colony
+- [ ] Add fleet to player's fleet list
 
 ---
 
 ### Player Initial Setup
 
-**Status:** Partially implemented (players created, but resources not initialized)  
-**Location:** `game.cpp` - `initialize_players()` and `start_first_turn()` methods
+**Status:** Incomplete (9 missing steps)  
+**Location:** `game.cpp`
 
 **Completed:**
-- [x] Create player objects with ID, name, gender, type
-- [x] Assign ideal_temperature from truncated Gaussian distribution
-- [x] Placeholder for ideal_gravity (set to 0.0, assigned later in assign_planets_random)
-- [x] Assign gender-appropriate names to computer players from TextAssets
-- [x] Call capture_and_distribute_player_public_info() in start_first_turn()
+- [x] Player object creation
+- [x] Basic property initialization
 
-**What's Missing:**
-- Initialize player money_savings with starting colony income value
-- Initialize player metal_reserve with starting colony metal value
-- Initialize player colonized_planets with homeworld (after planet assignment)
-- Initialize player technology levels (all start at 1)
-- Initialize player research allocation fractions
-- Initialize player money allocation fractions
-- Initialize KnowledgeGalaxy for each player
-- Populate homeworld with starting population and metal
-- Set up initial income calculation for first turn
-
-**Implementation Notes:**
-- Called after galaxy generation and planet assignment
-- Uses starting colony values from game_constants.h (indexed by StartingColonyQuality)
-- Should set up player for first turn with proper initial state
-- Currently only creates player objects; resource initialization is incomplete
+**Missing:**
+- [ ] Initialize money_savings and metal_reserve
+- [ ] Initialize colonized_planets with homeworld
+- [ ] Initialize all technology levels
+- [ ] Initialize research and money allocation fractions
+- [ ] Initialize KnowledgeGalaxy
+- [ ] Set up initial income calculation
+- [ ] Assign starting colony values based on quality
+- [ ] Initialize fleet list
+- [ ] Initialize ship design list
 
 ---
 
 ## Infrastructure/Setup
 
-Functions needed for game flow but not core mechanics.
-
 ### Turn Ready Tracking
 
-**Status:** Stub  
+**Status:** Stub (2 functions)  
 **Location:** `gamestate_c_api_extensions.cpp`
 
-**Missing:**
-- `game_mark_player_turn_ready(player_id)` - Mark player as done with turn
-- `game_all_players_ready()` - Check if all players have finished turn
-- Internal tracking of which players are ready
+**Functions:**
+1. `game_mark_player_turn_ready()` - Mark player as ready for next turn
+2. `game_get_player_turn_ready_status()` - Check if player is ready
 
-**Purpose:** Multiplayer turn coordination
+**Current Implementation:**
+- Both functions are stubs (return without doing anything)
 
-**Implementation Notes:**
-- Need to track ready state for each player
-- Reset ready flags at start of each turn
-- Used by UI to know when to call process_turn()
-
----
-
-## Summary Table
-
-| Category | Count | Status | Priority |
-|----------|-------|--------|----------|
-| Data-Driven Values | 5 | Placeholder/Missing | High |
-| Non-Data-Driven Functions | 5 | Stub/Partial | High |
-| Partially Implemented | 3 | Incomplete | Medium |
-| Infrastructure | 1 | Stub | Medium |
-| **Implemented** | 6 | ✅ Complete | - |
-| **Total** | **20** | - | - |
+**Expected Behavior:**
+- Track which players have completed their turn actions
+- Allow game to advance to next turn when all players are ready
+- Support for simultaneous turn processing
 
 ---
 
-## Recommended Implementation Order
+## Implementation Priority
 
-### Phase 1 (Foundation - No Reverse-Engineering)
-1. Turn ready tracking (multiplayer coordination)
-2. Galaxy shape distribution algorithms (design the placement strategies)
-3. Fleet combat mechanics (design the combat system)
-4. Nova warning duration (determine appropriate distribution)
+Based on game flow dependencies:
 
-### Phase 2 (Core Mechanics - Some Reverse-Engineering)
-1. Population growth with mismatch penalties (data-driven)
-2. Planetary income calculation (data-driven)
-3. Planet desirability rating (somewhat data-driven)
-4. Research conversion rates (data-driven)
-5. Fleet interception and combat
+1. **CRITICAL (Blocks Game Loop):**
+   - Player Initial Setup (9 missing steps)
+   - Turn Ready Tracking (2 functions)
 
-### Phase 3 (Balance - Heavy Reverse-Engineering)
-1. Ship design costs (build, prototype, metal) - data-driven
-2. Technology advancement costs (verify quadratic formula) - data-driven
-3. Starting colony values (verify progression) - data-driven
+2. **HIGH (Core Gameplay):**
+   - Population Growth (needs proper formula)
+   - Planetary Income Calculation (needed for economy)
+   - Fleet Movement & Combat (core mechanic)
 
-### Phase 4 (Metrics & Polish)
-1. Player metrics (fleet power, victory points) - logic-based
-2. Windfall income events - logic-based
-3. Knowledge/fog of war system - logic-based
+3. **MEDIUM (Enhances Gameplay):**
+   - Ship Design Creation (3 missing steps)
+   - Fleet Creation (3 missing steps)
+   - Research Conversion (needs proper formula)
 
----
+4. **LOW (Polish/Balance):**
+   - Planet Desirability Rating (AI decision-making)
+   - Player Metrics (scoring/rankings)
+   - Nova Warning Duration (event system)
+   - Ship Design Costs (economy balance)
+   - Cluster Galaxy (shape variety)
 
-**Notes for Next Session:**
-- Consider creating a "Game Balance" document with reverse-engineered values as you discover them
-- May want to set up testing harness to verify formulas
-- Consider creating UI for testing different balance values
-- Document any assumptions made during reverse-engineering
