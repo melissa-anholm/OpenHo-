@@ -146,13 +146,13 @@ def main():
 	# Example 1: Single galaxy visualization
 	print("Example 1: Visualizing a CIRCLE galaxy")
 	print("-" * 70)
-	visualize_single_galaxy(n_planets=200, shape='CIRCLE', seed=42)
+	visualize_single_galaxy(n_planets=200, shape='CIRCLE')
 	print()
 	
 	# Example 2: Compare all shapes
 	print("Example 2: Comparing different galaxy shapes")
 	print("-" * 70)
-	compare_galaxy_shapes(n_planets=150, seed=42)
+	compare_galaxy_shapes(n_planets=150)
 	print()
 	
 	# Example 3: Explore density effects
