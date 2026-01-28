@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/opt/local/bin/python3.9
 """
 OpenHo Galaxy Visualization Example
 
@@ -38,7 +38,7 @@ def visualize_single_galaxy(n_planets=200, n_players=4, density=0.5, shape='RAND
 	print(f"Generated {len(coords)} planet coordinates")
 	
 	# Create visualization
-	plt.figure(figsize=(10, 10))
+	plt.figure(figsize=(8, 8))
 	plt.scatter(coords[:, 0], coords[:, 1], s=20, alpha=0.6, c='blue', edgecolors='black', linewidth=0.5)
 	plt.title(f'{shape} Galaxy ({len(coords)} planets, density={density})', fontsize=16)
 	plt.xlabel('X Coordinate')
@@ -65,7 +65,7 @@ def compare_galaxy_shapes(n_planets=150, n_players=4, density=0.5, seed=None):
 	"""
 	shapes = ['RANDOM', 'CIRCLE', 'RING', 'GRID']
 	
-	fig, axes = plt.subplots(2, 2, figsize=(14, 14))
+	fig, axes = plt.subplots(2, 2, figsize=(8, 8))
 	axes = axes.flatten()
 	
 	for idx, shape in enumerate(shapes):
@@ -113,7 +113,7 @@ def explore_density_effects(n_planets=150, n_players=4, shape='RANDOM', seed=42)
 	"""
 	densities = [0.2, 0.4, 0.6, 0.8]
 	
-	fig, axes = plt.subplots(2, 2, figsize=(14, 14))
+	fig, axes = plt.subplots(2, 2, figsize=(8, 8))
 	axes = axes.flatten()
 	
 	for idx, density in enumerate(densities):
