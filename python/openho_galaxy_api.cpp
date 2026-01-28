@@ -12,6 +12,103 @@
 // Note: Not thread-safe, but Python GIL provides synchronization
 static std::string last_error_message;
 
+// Helper function to generate coordinates for a specific shape
+// This avoids needing to create a full Galaxy object
+static std::vector<PlanetCoord> generate_coords_for_shape(
+	const GalaxyGenerationParams& params,
+	DeterministicRNG& rng)
+{
+	std::vector<PlanetCoord> coords;
+	
+	switch (params.shape)
+	{
+		case GALAXY_RANDOM:
+		{
+			// Random distribution within a circle
+			double max_radius = 100.0;
+			for (uint32_t i = 0; i < params.n_planets; ++i)
+			{
+				// Use rejection sampling to get uniform distribution in circle
+				double x, y;
+				do {
+					x = rng.nextDoubleRange(-max_radius, max_radius);
+					y = rng.nextDoubleRange(-max_radius, max_radius);
+				} while (x*x + y*y > max_radius*max_radius);
+				
+				coords.push_back({x, y});
+			}
+			break;
+		}
+		
+		case GALAXY_CIRCLE:
+		{
+			// Uniform distribution within a circle
+			double max_radius = 100.0;
+			for (uint32_t i = 0; i < params.n_planets; ++i)
+			{
+				// Use rejection sampling
+				double x, y;
+				do {
+					x = rng.nextDoubleRange(-max_radius, max_radius);
+					y = rng.nextDoubleRange(-max_radius, max_radius);
+				} while (x*x + y*y > max_radius*max_radius);
+				
+				coords.push_back({x, y});
+			}
+			break;
+		}
+		
+		case GALAXY_RING:
+		{
+			// Ring/annulus distribution
+			double outer_radius = 100.0;
+			double inner_radius = 60.0;
+			for (uint32_t i = 0; i < params.n_planets; ++i)
+			{
+				// Use rejection sampling for ring
+				double x, y;
+				do {
+					x = rng.nextDoubleRange(-outer_radius, outer_radius);
+					y = rng.nextDoubleRange(-outer_radius, outer_radius);
+					double r_sq = x*x + y*y;
+					if (r_sq >= inner_radius*inner_radius && r_sq <= outer_radius*outer_radius)
+						break;
+				} while (true);
+				
+				coords.push_back({x, y});
+			}
+			break;
+		}
+		
+		case GALAXY_GRID:
+		{
+			// Regular grid pattern
+			uint32_t grid_size = static_cast<uint32_t>(std::ceil(std::sqrt(params.n_planets)));
+			double spacing = 20.0;
+			double offset = -(grid_size - 1) * spacing / 2.0;
+			
+			for (uint32_t i = 0; i < params.n_planets; ++i)
+			{
+				uint32_t row = i / grid_size;
+				uint32_t col = i % grid_size;
+				double x = offset + col * spacing;
+				double y = offset + row * spacing;
+				coords.push_back({x, y});
+			}
+			break;
+		}
+		
+		case GALAXY_SPIRAL:
+		case GALAXY_CLUSTER:
+		default:
+			// For unimplemented shapes, return empty vector
+			// The full implementation in galaxy.cpp handles these
+			break;
+	}
+	
+	return coords;
+}
+
 extern "C" {
 
 double* generate_galaxy_coords(GalaxyParamsC params, uint32_t* out_count)
@@ -66,33 +163,18 @@ double* generate_galaxy_coords(GalaxyParamsC params, uint32_t* out_count)
 			params.seed
 		);
 		
-		// Create a minimal RNG for coordinate generation
-		// Use the same seed for both deterministic and AI RNG (doesn't matter for coord generation)
+		// Create RNG
 		DeterministicRNG rng(params.seed, params.seed);
 		
-		// Create a minimal temporary GameState-like object
-		// We need to create a TextAssets object for the Galaxy constructor
-		class MinimalGameState
+		// Generate coordinates directly without creating Galaxy object
+		std::vector<PlanetCoord> coords = generate_coords_for_shape(cpp_params, rng);
+		
+		// Check if shape is implemented
+		if (coords.empty() && params.n_planets > 0)
 		{
-		public:
-			DeterministicRNG* rng_ptr;
-			TextAssets* text_assets;
-			
-			DeterministicRNG& get_rng() { return *rng_ptr; }
-		};
-		
-		MinimalGameState minimal_state;
-		minimal_state.rng_ptr = &rng;
-		minimal_state.text_assets = new TextAssets();
-		
-		// Create Galaxy object (temporary, just to access the generation method)
-		Galaxy galaxy(cpp_params, reinterpret_cast<GameState*>(&minimal_state));
-		
-		// Generate coordinates using the Galaxy method
-		std::vector<PlanetCoord> coords = galaxy.generate_planet_coordinates(cpp_params, reinterpret_cast<GameState*>(&minimal_state));
-		
-		// Clean up
-		delete minimal_state.text_assets;
+			last_error_message = "Galaxy shape not yet implemented in Python wrapper";
+			return nullptr;
+		}
 		
 		// Allocate C array for output
 		size_t coord_count = coords.size();
