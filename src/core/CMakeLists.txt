@@ -30,10 +30,14 @@ set(CORE_SOURCES
 	src/c_api.cpp
 	src/player_c_api.cpp
 	src/gamestate_c_api_extensions.cpp
+	src/openho_galaxy_api.cpp
 )
 
 # Create the static library
 add_library(OpenHoCore STATIC ${CORE_SOURCES})
+
+# Enable position-independent code for linking into shared libraries
+set_target_properties(OpenHoCore PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # Link Boost
 target_link_libraries(OpenHoCore PUBLIC Boost::random)
