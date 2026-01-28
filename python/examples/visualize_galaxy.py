@@ -10,7 +10,7 @@ import openho_galaxy as og
 import matplotlib.pyplot as plt
 import numpy as np
 
-def visualize_single_galaxy(n_planets=200, n_players=4, density=0.5, shape='RANDOM', seed=42):
+def visualize_single_galaxy(n_planets=200, n_players=4, density=0.5, shape='RANDOM', seed=None):
 	"""
 	Generate and visualize a single galaxy.
 	
@@ -30,7 +30,10 @@ def visualize_single_galaxy(n_planets=200, n_players=4, density=0.5, shape='RAND
 	print(f"Generating {shape} galaxy with {n_planets} planets...")
 	
 	# Generate coordinates
-	coords = og.generate_coordinates(n_planets, n_players, density, shape, seed)
+	if seed is not None:
+		coords = og.generate_coordinates(n_planets, n_players, density, shape, seed)
+	else:
+		coords = og.generate_coordinates(n_planets, n_players, density, shape)
 	
 	print(f"Generated {len(coords)} planet coordinates")
 	
@@ -45,7 +48,7 @@ def visualize_single_galaxy(n_planets=200, n_players=4, density=0.5, shape='RAND
 	plt.tight_layout()
 	plt.show()
 
-def compare_galaxy_shapes(n_planets=150, n_players=4, density=0.5, seed=42):
+def compare_galaxy_shapes(n_planets=150, n_players=4, density=0.5, seed=None):
 	"""
 	Generate and compare all available galaxy shapes.
 	
@@ -69,7 +72,10 @@ def compare_galaxy_shapes(n_planets=150, n_players=4, density=0.5, seed=42):
 		print(f"Generating {shape} galaxy...")
 		
 		try:
-			coords = og.generate_coordinates(n_planets, n_players, density, shape, seed)
+			if seed is not None:
+				coords = og.generate_coordinates(n_planets, n_players, density, shape, seed)
+			else:
+				coords = og.generate_coordinates(n_planets, n_players, density, shape)
 			
 			ax = axes[idx]
 			ax.scatter(coords[:, 0], coords[:, 1], s=15, alpha=0.6, c='blue', edgecolors='black', linewidth=0.5)

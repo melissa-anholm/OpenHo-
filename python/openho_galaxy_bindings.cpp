@@ -4,6 +4,7 @@
 #include "openho_galaxy_api.h"
 #include <stdexcept>
 #include <string>
+#include <chrono>
 
 namespace py = pybind11;
 
@@ -34,10 +35,21 @@ py::array_t<double> generate_coordinates(
 	uint32_t n_players,
 	double density,
 	const std::string& shape,
-	uint64_t seed)
+	py::object seed_obj = py::none())
 {
 	// Convert shape string to enum
 	int32_t shape_enum = shape_string_to_enum(shape);
+	
+	// Handle seed parameter - if None, generate random seed
+	uint64_t seed;
+	if (seed_obj.is_none()) {
+		// Generate random seed from current time
+		auto now = std::chrono::high_resolution_clock::now();
+		auto duration = now.time_since_epoch();
+		seed = std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count();
+	} else {
+		seed = seed_obj.cast<uint64_t>();
+	}
 	
 	// Create C parameters
 	GalaxyParamsC params;
@@ -88,7 +100,7 @@ PYBIND11_MODULE(openho_galaxy, m)
 	      py::arg("n_players"),
 	      py::arg("density"),
 	      py::arg("shape"),
-	      py::arg("seed"),
+	      py::arg("seed") = py::none(),
 	      R"pbdoc(
 	      Generate galaxy planet coordinates.
 	      
@@ -102,8 +114,9 @@ PYBIND11_MODULE(openho_galaxy, m)
 	          Planet distribution density (0.0-1.0)
 	      shape : str
 	          Galaxy shape: 'RANDOM', 'SPIRAL', 'CIRCLE', 'RING', 'CLUSTER', or 'GRID'
-	      seed : int
-	          Random seed for reproducible generation
+      seed : int, optional
+          Random seed for reproducible generation. If not provided, a random seed
+          based on current time will be used.
 	      
 	      Returns
 	      -------
