@@ -28,7 +28,8 @@ find_package(Boost REQUIRED COMPONENTS random)
 add_subdirectory(../src/core ${CMAKE_CURRENT_BINARY_DIR}/core)
 
 # Create Python extension module (includes C API wrapper)
-pybind11_add_module(openho_galaxy 
+# Use MODULE to avoid GIL management issues on macOS 10.14
+pybind11_add_module(openho_galaxy MODULE
 	openho_galaxy_bindings.cpp
 	openho_galaxy_api.cpp
 )
