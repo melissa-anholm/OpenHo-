@@ -10,7 +10,8 @@
 
 // Error message storage
 // Note: Not thread-safe, but Python GIL provides synchronization
-static std::string last_error_message;
+// Using C-style buffer to avoid C++ static initialization issues on macOS 10.14
+static char last_error_message[1024] = {0};
 
 // Helper function to generate coordinates for a specific shape
 // This avoids needing to create a full Galaxy object
@@ -114,12 +115,12 @@ extern "C" {
 double* generate_galaxy_coords(GalaxyParamsC params, uint32_t* out_count)
 {
 	// Clear previous error
-	last_error_message.clear();
+	last_error_message[0] = '\0';
 	
 	// Validate output pointer
 	if (out_count == nullptr)
 	{
-		last_error_message = "out_count parameter cannot be NULL";
+		strncpy(last_error_message, "out_count parameter cannot be NULL", sizeof(last_error_message) - 1);
 		return nullptr;
 	}
 	
@@ -131,25 +132,25 @@ double* generate_galaxy_coords(GalaxyParamsC params, uint32_t* out_count)
 		// Validate parameters
 		if (params.n_planets == 0)
 		{
-			last_error_message = "n_planets must be greater than 0";
+			strncpy(last_error_message, "n_planets must be greater than 0", sizeof(last_error_message) - 1);
 			return nullptr;
 		}
 		
 		if (params.n_players == 0)
 		{
-			last_error_message = "n_players must be greater than 0";
+			strncpy(last_error_message, "n_players must be greater than 0", sizeof(last_error_message) - 1);
 			return nullptr;
 		}
 		
 		if (params.density <= 0.0 || params.density > 1.0)
 		{
-			last_error_message = "density must be in range (0.0, 1.0]";
+			strncpy(last_error_message, "density must be in range (0.0, 1.0]", sizeof(last_error_message) - 1);
 			return nullptr;
 		}
 		
 		if (params.shape < GALAXY_SHAPE_RANDOM || params.shape > GALAXY_SHAPE_GRID)
 		{
-			last_error_message = "Invalid galaxy shape";
+			strncpy(last_error_message, "Invalid galaxy shape", sizeof(last_error_message) - 1);
 			return nullptr;
 		}
 		
@@ -172,7 +173,7 @@ double* generate_galaxy_coords(GalaxyParamsC params, uint32_t* out_count)
 		// Check if shape is implemented
 		if (coords.empty() && params.n_planets > 0)
 		{
-			last_error_message = "Galaxy shape not yet implemented in Python wrapper";
+			strncpy(last_error_message, "Galaxy shape not yet implemented in Python wrapper", sizeof(last_error_message) - 1);
 			return nullptr;
 		}
 		
@@ -192,12 +193,12 @@ double* generate_galaxy_coords(GalaxyParamsC params, uint32_t* out_count)
 	}
 	catch (const std::exception& e)
 	{
-		last_error_message = std::string("Exception: ") + e.what();
+		snprintf(last_error_message, sizeof(last_error_message), "Exception: %s", e.what());
 		return nullptr;
 	}
 	catch (...)
 	{
-		last_error_message = "Unknown error occurred";
+		strncpy(last_error_message, "Unknown error occurred", sizeof(last_error_message) - 1);
 		return nullptr;
 	}
 }
@@ -212,11 +213,11 @@ void free_galaxy_coords(double* coords)
 
 const char* get_last_error()
 {
-	if (last_error_message.empty())
+	if (last_error_message[0] == '\0')
 	{
 		return nullptr;
 	}
-	return last_error_message.c_str();
+	return last_error_message;
 }
 
 } // extern "C"
