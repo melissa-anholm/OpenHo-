@@ -871,13 +871,20 @@ std::vector<PlanetCoord> Galaxy::generate_coordinates_circle(
 	const GalaxyGenerationParams& params,
 	DeterministicRNG& rng)
 {
-	// Calculate galaxy radius based on planet count and density
-	double base_radius = std::sqrt(double(params.n_planets) / params.density) * 10.0;
+	// Calculate galaxy radius based on planet count, density, and Poisson disk packing
+	// Poisson disk sampling with min_distance d has packing efficiency ~0.65-0.7
+	// Each point occupies approximately π * d² area
+	// density parameter: 1.0 = tight packing, lower values = more spread out
+	double min_distance = GameConstants::min_planet_distance;
+	// Poisson disk sampling fills the region with min_distance spacing
+	// Factor of 1.5 empirically accounts for packing efficiency
+	// Note: density parameter doesn't apply to Poisson disk sampling (it always fills completely)
+	double base_area_per_planet = 1.5 * min_distance * min_distance;
+	double total_area = params.n_planets * base_area_per_planet;
+	double base_radius = std::sqrt(total_area / M_PI);
 	
 	// Use Poisson disk sampling to generate evenly distributed coordinates
 	CircleRegion region(base_radius);
-	
-	double min_distance = GameConstants::min_planet_distance;
 	std::vector<PlanetCoord> coords = poisson_disk_sampling(region, min_distance, params.n_planets, rng);
 	
 	return coords;
@@ -887,14 +894,24 @@ std::vector<PlanetCoord> Galaxy::generate_coordinates_ring(
 	const GalaxyGenerationParams& params,
 	DeterministicRNG& rng)
 {
-	// Calculate galaxy radius based on planet count and density
-	double base_radius = std::sqrt(double(params.n_planets) / params.density) * 10.0;
+	// Calculate galaxy radius based on planet count, density, and Poisson disk packing
+	// Poisson disk sampling with min_distance d has packing efficiency ~0.65-0.7
+	// Each point occupies approximately π * d² area
+	// density parameter: 1.0 = tight packing, lower values = more spread out
+	double min_distance = GameConstants::min_planet_distance;
+	// Poisson disk sampling fills the region with min_distance spacing
+	// Factor of 1.5 empirically accounts for packing efficiency
+	// Note: density parameter doesn't apply to Poisson disk sampling (it always fills completely)
+	double base_area_per_planet = 1.5 * min_distance * min_distance;
+	double total_area = params.n_planets * base_area_per_planet;
+	double base_radius = std::sqrt(total_area / M_PI);
 	
 	// Use Poisson disk sampling to generate evenly distributed coordinates in a ring
-	double inner_radius = base_radius * 0.6;  // Inner radius is 60% of outer
-	RingRegion region(inner_radius, base_radius);
-	
-	double min_distance = GameConstants::min_planet_distance;
+	// Ring area = π(R_outer² - R_inner²). With R_inner = 0.6*R_outer, ring area = 0.64*π*R_outer²
+	// To achieve target area, scale up: R_outer = base_radius / sqrt(0.64) = base_radius * 1.25
+	double outer_radius = base_radius * 1.25;
+	double inner_radius = outer_radius * 0.6;
+	RingRegion region(inner_radius, outer_radius);
 	std::vector<PlanetCoord> coords = poisson_disk_sampling(region, min_distance, params.n_planets, rng);
 	
 	return coords;

@@ -116,7 +116,7 @@ std::vector<PlanetCoord> poisson_disk_sampling(
 	const int k = 30;
 	
 	// Process active list
-	while (!active.empty() && output.size() < target_points) {
+	while (!active.empty()) {
 		// Pick random active point
 		int idx = rng.nextInt32Range(0, active.size() - 1);
 		PlanetCoord p = active[idx];
@@ -138,11 +138,6 @@ std::vector<PlanetCoord> poisson_disk_sampling(
 				active.push_back(candidate);
 				add_to_grid(candidate);
 				found = true;
-				
-				// Stop if we've reached target
-				if (output.size() >= target_points) {
-					return output;
-				}
 				break;
 			}
 		}
