@@ -2,7 +2,7 @@
 
 **Purpose:** Track all functions and values that need implementation or reverse-engineering from the original game.
 
-**Last Updated:** January 27, 2026 (Session 15 - Spiral Galaxy Implementation Complete)
+**Last Updated:** February 3, 2026 (Session 16 - Cluster Galaxy Implementation Complete)
 
 ---
 
@@ -46,11 +46,11 @@
 
 ### Non-Data-Driven Functions (Clear Logic, Need Implementation) - 5 items
 
-- [x] [Galaxy Shape Distribution Algorithms](#galaxy-shape-distribution-algorithms) - PARTIALLY IMPLEMENTED (3 of 4 shapes)
+- [x] [Galaxy Shape Distribution Algorithms](#galaxy-shape-distribution-algorithms) - FULLY IMPLEMENTED (All 4 shapes)
   - [x] Circle galaxy distribution - IMPLEMENTED
   - [x] Ring galaxy distribution - IMPLEMENTED
   - [x] Spiral galaxy distribution - IMPLEMENTED
-  - [ ] Cluster galaxy distribution
+  - [x] Cluster galaxy distribution - IMPLEMENTED
 - [ ] [Turn Processing](#turn-processing) - Partially implemented (5 missing steps)
 - [ ] [Fleet Movement & Combat](#fleet-movement--combat) - Partially implemented (combat stub)
 - [ ] [Nova Warning Duration](#nova-warning-duration) - Placeholder
@@ -175,7 +175,7 @@ These have clear logic but need implementation. No reverse-engineering needed.
 
 ### Galaxy Shape Distribution Algorithms
 
-**Status:** PARTIALLY IMPLEMENTED (Circle, Ring, and Spiral complete; Cluster pending)  
+**Status:** FULLY IMPLEMENTED (All 4 shapes complete)  
 **Location:** `galaxy.cpp`, `utility.h/cpp`
 
 **Completed (Session 14):**
@@ -210,13 +210,19 @@ These have clear logic but need implementation. No reverse-engineering needed.
   - Implemented `select_home_planets_spiral()` function
   - Modified Poisson disk sampling to accept existing coordinates
 
-**Remaining (Next Session):**
+**Completed (Session 16):**
 
-- [ ] `generate_coordinates_cluster()` - Clustered galaxy distribution
-  - Design: N clusters (N = number of players) arranged in ring around center
-  - Clusters similarly sized, each with player's home planet
-  - TODO: Implement home planet selection for cluster (one per cluster)
-  - TODO: Rework min planets/homeworld assignment strategy for cluster shape
+- [x] `generate_coordinates_cluster()` - Clustered galaxy distribution - IMPLEMENTED
+  - N clusters (N = number of players) arranged in perfect ring around center
+  - Random angular offset (0-360 degrees) for varied cluster orientations
+  - Clusters similarly sized with random planet placement within cluster circles
+  - Density-based spacing: 10% overlap at high density, room for another cluster at low density
+  - Simple random sampling within cluster circles (not Poisson)
+  - Attempt limit: 10x target planets per cluster
+  - Implemented `select_home_planets_cluster()` function
+  - Wedge-based home planet selection: galaxy divided into N equal angular wedges
+  - One random planet selected from each wedge as home planet
+  - Temporary `cluster_angular_offset` member variable for orientation tracking
 
 **Implementation Infrastructure:**
 - Region abstract base class with virtual methods (utility.h)
@@ -234,11 +240,19 @@ These have clear logic but need implementation. No reverse-engineering needed.
 - Spiral galaxies use Fermat spiral for better geometric properties
 - Home planet selection is shape-specific (random for circle/ring, arm-end for spiral)
 
-**Next Steps for Cluster:**
-1. Implement cluster generation with ring arrangement
-2. Implement shape-specific home planet selection for clusters
-3. Handle gravity mismatch for START_OUTPOST quality colonies
-4. Implement error handling when insufficient suitable planets
+**IMPORTANT: Extensive Testing Required**
+
+All four galaxy shapes (CIRCLE, RING, SPIRAL, CLUSTER) now have coordinate generation implemented. However, comprehensive testing is needed to verify:
+
+- Planet distribution correctness for all shapes
+- Spatial constraint validation (minimum distances)
+- Density consistency across shapes and parameters
+- Edge cases (extreme planet counts and density values)
+- Home planet placement accuracy per shape
+- Seed reproducibility
+- Visual inspection for artifacts or anomalies
+
+This testing should be performed before galaxy generation is considered production-ready.
 
 ---
 
