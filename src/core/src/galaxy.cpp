@@ -17,7 +17,14 @@ Galaxy::Galaxy(const GalaxyGenerationParams& params, GameState* game_state)
 	
 	// Phase 2: Select home planet coordinates based on galaxy shape
 	std::vector<PlanetCoord> home_coords;
-	if (params.shape == GALAXY_SPIRAL)
+	if (params.shape == GALAXY_CLUSTER)
+	{
+		// For cluster galaxies, use the stored angular offset
+		home_coords = select_home_planets_cluster(all_coords, params.n_players, cluster_angular_offset, game_state);
+		// Clear the temporary member variable after use
+		cluster_angular_offset = 0.0;
+	}
+	else if (params.shape == GALAXY_SPIRAL)
 	{
 		// For spiral galaxies, we need the spiral parameters
 		// We'll need to pass them through - for now, use a workaround
@@ -83,7 +90,7 @@ std::vector<PlanetCoord> Galaxy::generate_planet_coordinates(
 		case GALAXY_RING:
 			return Galaxy::generate_coordinates_ring(params, game_state);
 		case GALAXY_CLUSTER:
-			return Galaxy::generate_coordinates_cluster(params, game_state);
+			return Galaxy::generate_coordinates_cluster(params, game_state, this);
 		case GALAXY_GRID:
 			return Galaxy::generate_coordinates_grid(params, game_state);
 		default:
@@ -384,10 +391,87 @@ std::vector<PlanetCoord> Galaxy::generate_coordinates_ring(
 
 std::vector<PlanetCoord> Galaxy::generate_coordinates_cluster(
 	const GalaxyGenerationParams& params,
-	GameState* game_state)
+	GameState* game_state,
+	Galaxy* galaxy)
 {
-	// TODO: Implement cluster coordinate generation
-	return std::vector<PlanetCoord>();
+	DeterministicRNG& rng = game_state->get_rng();
+	std::vector<PlanetCoord> coords;
+	
+	// Phase 0: Generate random angular offset for cluster orientation
+	// This ensures cluster galaxies don't all have the same orientation
+	if (galaxy)
+	{
+		galaxy->cluster_angular_offset = rng.nextDouble() * 360.0;
+	}
+	
+	// Phase 1: Calculate cluster parameters
+	uint32_t n_clusters = params.n_players;
+	if (n_clusters < 1) n_clusters = 1;
+	
+	// Calculate overall galaxy size
+	double gal_size = std::sqrt(double(params.n_planets)) * 
+	                  (GameConstants::Galaxy_Size_Scale_Base + GameConstants::Galaxy_Size_Scale_Density / params.density);
+	
+	// Calculate cluster radius and ring radius based on density
+	// At high density (1.0): clusters can overlap slightly (~10%)
+	// At low density (0.25): enough space for another cluster between them
+	double cluster_radius = gal_size / (2.0 * std::sqrt(double(n_clusters)));
+	
+	// Ring radius: distance from center to cluster centers
+	// Spacing between clusters on ring: 2π * ring_radius / n_clusters
+	// We want spacing = 2 * cluster_radius * spacing_factor
+	// spacing_factor ranges from 1.1 (high density, ~10% overlap) to 2.0 (low density, room for another)
+	double spacing_factor = 1.1 + (1.0 - params.density) * 0.9;  // Range: [1.1, 2.0]
+	double desired_spacing = 2.0 * cluster_radius * spacing_factor;
+	double ring_radius = desired_spacing * n_clusters / (2.0 * M_PI);
+	
+	// Planets per cluster (roughly equal distribution)
+	uint32_t planets_per_cluster = params.n_planets / n_clusters;
+	uint32_t remaining_planets = params.n_planets % n_clusters;
+	
+	// Phase 2: Generate clusters
+	CheckDistanceSpatialGrid grid(GameConstants::min_planet_distance, gal_size * 2.0);
+	
+	for (uint32_t cluster_idx = 0; cluster_idx < n_clusters; ++cluster_idx)
+	{
+		// Calculate cluster center position on ring
+		double angle = (2.0 * M_PI * cluster_idx) / n_clusters;
+		double cluster_center_x = ring_radius * std::cos(angle);
+		double cluster_center_y = ring_radius * std::sin(angle);
+		
+		// Determine how many planets in this cluster
+		uint32_t planets_in_this_cluster = planets_per_cluster;
+		if (cluster_idx < remaining_planets)
+		{
+			planets_in_this_cluster++;
+		}
+		
+		// Phase 3: Generate planets within this cluster
+		uint32_t planets_placed = 0;
+		uint32_t max_attempts = planets_in_this_cluster * 10;  // Generous attempt limit
+		uint32_t attempts = 0;
+		
+		while (planets_placed < planets_in_this_cluster && attempts < max_attempts)
+		{
+			// Generate random position within cluster circle
+			double angle_offset = rng.nextDouble() * 2.0 * M_PI;
+			double radius_offset = rng.nextDouble() * cluster_radius;
+			
+			double x_coord = cluster_center_x + radius_offset * std::cos(angle_offset);
+			double y_coord = cluster_center_y + radius_offset * std::sin(angle_offset);
+			
+			// Check if position is valid
+			if (grid.is_position_valid(x_coord, y_coord, GameConstants::min_planet_distance))
+			{
+				coords.push_back({x_coord, y_coord});
+				grid.add_planet(x_coord, y_coord, static_cast<uint32_t>(coords.size()));
+				planets_placed++;
+			}
+			attempts++;
+		}
+	}
+	
+	return coords;
 }
 
 std::vector<PlanetCoord> Galaxy::generate_coordinates_grid(
@@ -917,16 +1001,6 @@ std::vector<PlanetCoord> Galaxy::generate_coordinates_ring(
 	return coords;
 }
 
-std::vector<PlanetCoord> Galaxy::generate_coordinates_cluster(
-	const GalaxyGenerationParams& params,
-	DeterministicRNG& rng)
-{
-	// Not implemented yet
-	(void)params;
-	(void)rng;
-	return {};
-}
-
 std::vector<PlanetCoord> Galaxy::generate_coordinates_grid(
 	const GalaxyGenerationParams& params,
 	DeterministicRNG& rng)
@@ -956,4 +1030,74 @@ std::vector<PlanetCoord> Galaxy::generate_coordinates_grid(
 	}
 	
 	return coords;
+}
+
+std::vector<PlanetCoord> Galaxy::select_home_planets_cluster(
+	const std::vector<PlanetCoord>& all_coords,
+	uint32_t n_home_planets,
+	double angular_offset,
+	GameState* game_state)
+{
+	DeterministicRNG& rng = game_state->get_rng();
+	
+	// Validate that we have enough coordinates for home planets
+	if (all_coords.size() < n_home_planets)
+	{
+		throw std::runtime_error("Insufficient planet coordinates (" + std::to_string(all_coords.size()) + 
+		                         ") for " + std::to_string(n_home_planets) + " home planets.");
+	}
+	
+	std::vector<PlanetCoord> home_coords;
+	
+	// Convert angular offset from degrees to radians
+	double offset_rad = angular_offset * M_PI / 180.0;
+	
+	// Wedge angle in radians
+	double wedge_angle = 2.0 * M_PI / n_home_planets;
+	
+	// For each wedge, find planets within it and select one at random
+	for (uint32_t wedge_idx = 0; wedge_idx < n_home_planets; ++wedge_idx)
+	{
+		// Calculate wedge boundaries
+		double wedge_start = offset_rad + wedge_idx * wedge_angle;
+		double wedge_end = wedge_start + wedge_angle;
+		
+		// Find all planets within this wedge
+		std::vector<PlanetCoord> planets_in_wedge;
+		for (const auto& coord : all_coords)
+		{
+			double angle = std::atan2(coord.second, coord.first);
+			
+			// Normalize angle to [0, 2π)
+			if (angle < 0) angle += 2.0 * M_PI;
+			
+			// Check if angle is within wedge (handling wraparound)
+			bool in_wedge = false;
+			if (wedge_end <= 2.0 * M_PI)
+			{
+				// Normal case: wedge doesn't wrap around
+				in_wedge = (angle >= wedge_start && angle < wedge_end);
+			}
+			else
+			{
+				// Wedge wraps around 0 radians
+				double wrapped_end = wedge_end - 2.0 * M_PI;
+				in_wedge = (angle >= wedge_start || angle < wrapped_end);
+			}
+			
+			if (in_wedge)
+			{
+				planets_in_wedge.push_back(coord);
+			}
+		}
+		
+		// Select one random planet from this wedge
+		if (!planets_in_wedge.empty())
+		{
+			uint32_t random_idx = rng.nextInt32Range(0, planets_in_wedge.size() - 1);
+			home_coords.push_back(planets_in_wedge[random_idx]);
+		}
+	}
+	
+	return home_coords;
 }

@@ -64,6 +64,11 @@ struct Galaxy
 	// Stores Euclidean distance rounded to nearest integer as double
 	std::vector<std::vector<double>> distance_matrix;
 	
+	// Temporary member variable for cluster galaxy generation
+	// Stores the random angular offset used to orient cluster arrangements
+	// Only used during construction, cleared after home planets are selected
+	double cluster_angular_offset = 0.0;
+	
 	// Constructor to initialize galaxy boundaries and planets
 	// Takes GameState reference for access to RNG and TextAssets
 	// Implementation in game.cpp
@@ -102,6 +107,15 @@ struct Galaxy
 		double delta_theta,
 		class GameState* game_state);
 	
+	// Phase 2c: Select home planet coordinates for cluster galaxies
+	// Divides galaxy into N equal wedges starting from angular_offset
+	// Selects one random planet from each wedge as a home planet
+	std::vector<PlanetCoord> select_home_planets_cluster(
+		const std::vector<PlanetCoord>& all_coords,
+		uint32_t n_home_planets,
+		double angular_offset,
+		class GameState* game_state);
+	
 	// Phase 3: Generate planet parameters for all coordinates
 	void generate_planet_parameters(
 		const std::vector<PlanetCoord>& all_coords,
@@ -129,7 +143,8 @@ struct Galaxy
 	
 	static std::vector<PlanetCoord> generate_coordinates_cluster(
 		const GalaxyGenerationParams& params,
-		class GameState* game_state);
+		class GameState* game_state,
+		Galaxy* galaxy = nullptr);
 	
 	static std::vector<PlanetCoord> generate_coordinates_grid(
 		const GalaxyGenerationParams& params,
