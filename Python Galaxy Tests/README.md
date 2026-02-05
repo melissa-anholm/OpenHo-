@@ -116,10 +116,10 @@ coords = og.generate_coordinates(100, 4, 0.5, 'RING', 42)
 # Grid distribution
 coords = og.generate_coordinates(100, 4, 0.5, 'GRID', 42)
 
-# Spiral (TODO - returns empty for now)
+# Spiral distribution
 coords = og.generate_coordinates(100, 4, 0.5, 'SPIRAL', 42)
 
-# Cluster (TODO - returns empty for now)
+# Cluster distribution
 coords = og.generate_coordinates(100, 4, 0.5, 'CLUSTER', 42)
 ```
 

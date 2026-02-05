@@ -21,6 +21,7 @@ struct GalaxyGenerationParams
 	double density;      // Planet distribution density (0.0-1.0, TBD)
 	GalaxyShape shape;   // Distribution pattern (random, spiral, circle, ring, cluster, grid)
 	uint64_t seed;       // Random seed for generation
+	double cluster_angular_offset;  // Angular offset for cluster galaxies (set by generate_coordinates_cluster)
 	
 	// Default constructor for testing
 	GalaxyGenerationParams()
@@ -31,6 +32,7 @@ struct GalaxyGenerationParams
 		n_planets = 100;
 		n_players = 1;
 		density = 0.5;
+		cluster_angular_offset = 0.0;
 	}
 	
 	// Constructor
@@ -42,6 +44,7 @@ struct GalaxyGenerationParams
 		n_planets = planets;
 		n_players = players;
 		density = dens;
+		cluster_angular_offset = 0.0;
 	}
 };
 
@@ -63,11 +66,6 @@ struct Galaxy
 	// Computed once at initialization, never updated
 	// Stores Euclidean distance rounded to nearest integer as double
 	std::vector<std::vector<double>> distance_matrix;
-	
-	// Temporary member variable for cluster galaxy generation
-	// Stores the random angular offset used to orient cluster arrangements
-	// Only used during construction, cleared after home planets are selected
-	double cluster_angular_offset = 0.0;
 	
 	// Constructor to initialize galaxy boundaries and planets
 	// Takes GameState reference for access to RNG and TextAssets
@@ -108,12 +106,11 @@ struct Galaxy
 		class GameState* game_state);
 	
 	// Phase 2c: Select home planet coordinates for cluster galaxies
-	// Divides galaxy into N equal wedges starting from angular_offset
+	// Divides galaxy into N equal wedges starting from angular_offset in params
 	// Selects one random planet from each wedge as a home planet
 	std::vector<PlanetCoord> select_home_planets_cluster(
 		const std::vector<PlanetCoord>& all_coords,
-		uint32_t n_home_planets,
-		double angular_offset,
+		const GalaxyGenerationParams& params,
 		class GameState* game_state);
 	
 	// Phase 3: Generate planet parameters for all coordinates
@@ -143,8 +140,7 @@ struct Galaxy
 	
 	static std::vector<PlanetCoord> generate_coordinates_cluster(
 		const GalaxyGenerationParams& params,
-		class GameState* game_state,
-		Galaxy* galaxy = nullptr);
+		class GameState* game_state);
 	
 	static std::vector<PlanetCoord> generate_coordinates_grid(
 		const GalaxyGenerationParams& params,
