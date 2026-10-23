@@ -20,19 +20,25 @@ GameState::GameState(const class GameSetup& setup)
 {
 	// Setup data has been copied and stored as members in initializer list
 	
-	// Initialize RNG with random seeds from std::random_device
-	// This ensures each game has different random behavior
-	std::random_device rd;
-	uint64_t det_seed = rd();
-	uint64_t ai_seed = det_seed + 1;  // Use seed + 1 for AI RNG
+		// Use an explicit setup seed for reproducible games. A zero seed requests
+		// a fresh random seed for normal interactive game creation.
+		std::random_device rd;
+		uint64_t det_seed = galaxy_params.seed;
+		if (det_seed == 0)
+			det_seed = rd();
+		uint64_t ai_seed = det_seed + 1;  // Use seed + 1 for AI RNG
 	rng = std::make_unique<DeterministicRNG>(det_seed, ai_seed);
 	
 	// Load text assets
 	text_assets = std::make_unique<TextAssets>();
 	text_assets->load_assets("TextAssets");
 	
-	// Initialize players with setup configuration
-	players = initialize_players(player_setups);
+		// Initialize players with setup configuration
+		players = initialize_players(player_setups);
+		for (const auto& player : players)
+		{
+			turn_ready[player.id] = false;
+		}
 	
 	// Initialize galaxy with provided parameters
 	// This also assigns planets to players internally
@@ -181,6 +187,40 @@ const Player::MoneyAllocation& GameState::get_money_allocation(uint32_t player_i
 // ============================================================================
 // Turn Processing
 // ============================================================================
+
+ErrorCode GameState::mark_player_turn_ready(uint32_t player_id)
+{
+		if (!get_player(player_id))
+			return ErrorCode::INVALID_PLAYER_ID;
+
+		turn_ready[player_id] = true;
+		return ErrorCode::SUCCESS;
+}
+
+int32_t GameState::get_player_turn_ready_status(uint32_t player_id) const
+{
+		if (!get_player(player_id))
+			return -1;
+
+		auto it = turn_ready.find(player_id);
+		return (it != turn_ready.end() && it->second) ? 1 : 0;
+}
+
+bool GameState::all_players_ready() const
+{
+		if (players.empty())
+			return false;
+
+		for (const auto& player : players)
+		{
+			auto it = turn_ready.find(player.id);
+			if (it == turn_ready.end() || !it->second)
+				return false;
+		}
+
+		return true;
+}
+
 void GameState::start_first_turn()
 {
 	// Initialize the first turn with initial game state
@@ -215,6 +255,9 @@ void GameState::process_turn()
 	
 	increment_turn();
 	increment_year();
+
+	for (auto& ready : turn_ready)
+		ready.second = false;
 }
 
 // ============================================================================
@@ -436,18 +479,18 @@ std::unique_ptr<Galaxy> GameState::initialize_galaxy(const GalaxyGenerationParam
 	assign_planets_random(home_planets);
 	
 	// Build entity ID maps for quick lookup
-	build_entity_maps();
+	build_entity_maps(*new_galaxy);
 	
 	return new_galaxy;
 }
 
-void GameState::build_entity_maps()
+void GameState::build_entity_maps(const Galaxy& galaxy_ref)
 {
 	// Build planet ID to index map and planet name to index map
-	for (size_t i = 0; i < galaxy->planets.size(); ++i)
+	for (size_t i = 0; i < galaxy_ref.planets.size(); ++i)
 	{
-		planet_id_to_index[galaxy->planets[i].id] = i;
-		planet_name_to_index[galaxy->planets[i].name] = i;
+		planet_id_to_index[galaxy_ref.planets[i].id] = i;
+		planet_name_to_index[galaxy_ref.planets[i].name] = i;
 	}
 	
 	// Build player ID to index map and player name to index map
@@ -1036,8 +1079,9 @@ void GameState::assign_planets_random(const std::vector<Planet*>& suitable_plane
 		// Adjust homeworld temperature to match player's ideal_temperature
 		planet->true_temperature = player.ideal_temperature;
 		
-		// Set homeworld population based on starting colony quality
-		planet->population = GameConstants::Starting_Colony_Population[setup.starting_colony_quality];
+			// Set homeworld population based on starting colony quality
+			planet->population = GameConstants::Starting_Colony_Population[setup.starting_colony_quality];
+			planet->metal = GameConstants::Starting_Colony_Metal[setup.starting_colony_quality];
 		
 		// Create ColonizedPlanet entry for this player with quality-based values
 		ColonizedPlanet colonized_planet(
@@ -1045,9 +1089,7 @@ void GameState::assign_planets_random(const std::vector<Planet*>& suitable_plane
 		GameConstants::Starting_Colony_Population[setup.starting_colony_quality],
 		GameConstants::Starting_Colony_Income[setup.starting_colony_quality] );
 		
-		// TODO: Set metal based on quality (add to ColonizedPlanet if needed)
-		
-		// Add to player's colonized planets
+			// Add to player's colonized planets
 		player.colonized_planets.push_back(colonized_planet);
 		
 		

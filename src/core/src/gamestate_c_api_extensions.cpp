@@ -9,28 +9,31 @@
 ErrorCode game_mark_player_turn_ready(GameState* game_state, uint32_t player_id)
 {
 	if (!game_state)
-		return ErrorCode::INVALID_PARAMETER;
-	
-	// TODO: Implement turn ready tracking
-	return ErrorCode::SUCCESS;
+		{
+			return ErrorCode::INVALID_PARAMETER;
+		}
+
+	return game_state->mark_player_turn_ready(player_id);
 }
 
 int32_t game_get_player_turn_ready_status(const GameState* game_state, uint32_t player_id)
 {
 	if (!game_state)
-		return -1;
-	
-	// TODO: Implement turn ready status query
-	return 0;
+		{
+			return -1;
+		}
+
+	return game_state->get_player_turn_ready_status(player_id);
 }
 
 uint32_t game_all_players_ready(const GameState* game_state)
 {
 	if (!game_state)
-		return 0;
-	
-	// TODO: Implement check for all players ready
-	return 0;
+		{
+			return 0;
+		}
+
+	return game_state->all_players_ready() ? 1U : 0U;
 }
 
 // Note: game_process_turn() is implemented in c_api.cpp
@@ -39,10 +42,11 @@ uint32_t game_all_players_ready(const GameState* game_state)
 uint32_t game_get_current_year(const GameState* game_state)
 {
 	if (!game_state)
-		return 0;
-	
-	// TODO: Add getter to GameState if not present
-	return 0;
+		{
+			return 0;
+		}
+
+	return game_state->get_current_year();
 }
 
 // ============================================================================

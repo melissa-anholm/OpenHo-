@@ -31,9 +31,11 @@ struct PlayerSetup
 /// before creating a GameState instance.
 class GameSetup
 {
-public:
-	GameSetup();
-	~GameSetup();
+	public:
+		GameSetup();
+		GameSetup(GalaxyGenerationParams galaxy_params,
+		          std::vector<PlayerSetup> player_setups);
+		~GameSetup();
 	
 	/// Start a new game setup flow
 	/// Queries user for galaxy parameters and player configuration

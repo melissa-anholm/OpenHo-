@@ -247,6 +247,8 @@ namespace GameFormulas
 // ============================================================================
 // Planetary Perception Calculations
 // ============================================================================
+namespace GameFormulas
+{
 double calculate_apparent_gravity(double ideal_gravity, double true_gravity)
 {
 	// Linear gravity perception formula
@@ -277,3 +279,5 @@ double calculate_apparent_temperature(double ideal_temperature, double true_temp
 	
 	return perceived_temp;
 }
+
+}  // namespace GameFormulas
