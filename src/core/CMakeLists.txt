@@ -41,6 +41,10 @@ set_target_properties(OpenHoCore PROPERTIES POSITION_INDEPENDENT_CODE ON)
 # Link Boost
 target_link_libraries(OpenHoCore PUBLIC Boost::random)
 
+# Minimal playable vertical-slice smoke test.
+add_executable(openho_minimal_game_test test_minimal_game.cpp)
+target_link_libraries(openho_minimal_game_test PRIVATE OpenHoCore)
+
 # Set compiler flags for better warnings
 if(MSVC)
 	target_compile_options(OpenHoCore PRIVATE /W4)

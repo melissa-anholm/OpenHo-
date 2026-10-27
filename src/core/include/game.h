@@ -110,8 +110,11 @@ public:
 	void move_fleet(uint32_t player_id, uint32_t fleet_id, uint32_t destination_planet_id);
 	void refuel_fleet(uint32_t player_id, uint32_t fleet_id);
 	
-	// Turn processing
-	void process_turn();
+		// Turn processing
+		void process_turn();
+		[[nodiscard]] ErrorCode mark_player_turn_ready(uint32_t player_id);
+		[[nodiscard]] int32_t get_player_turn_ready_status(uint32_t player_id) const;
+		[[nodiscard]] bool all_players_ready() const;
 	
 	// Money allocation
 	void set_money_allocation(uint32_t player_id, const Player::MoneyAllocation& alloc);
@@ -189,8 +192,10 @@ private:
 	
 	// Note: player_planets mapping removed - use players' colonized_planets instead
 	
-	// Player public information history: player_id -> vector of PlayerPublicInfo (one per turn)
-	std::unordered_map<uint32_t, std::vector<PlayerPublicInfo>> player_info_history;
+		// Player public information history: player_id -> vector of PlayerPublicInfo (one per turn)
+		std::unordered_map<uint32_t, std::vector<PlayerPublicInfo>> player_info_history;
+		// Turn readiness for the current simultaneous-turn cycle.
+		std::unordered_map<uint32_t, bool> turn_ready;
 	
 	// Research advancement cost caches (indexed by tech level)
 	std::vector<int64_t> research_cost_range;
@@ -208,7 +213,7 @@ private:
 	std::vector<Player> initialize_players(const std::vector<PlayerSetup>& player_setups);
 	std::unique_ptr<Galaxy> initialize_galaxy(const GalaxyGenerationParams& params);
 	void initialize_player_knowledge();
-	void build_entity_maps();
+		void build_entity_maps(const Galaxy& galaxy_ref);
 	
 	// Assign suitable planets to players based on their starting colony quality
 	// Takes the suitable planets vector to avoid recalculating it

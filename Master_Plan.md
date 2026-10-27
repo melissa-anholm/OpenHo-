@@ -1,7 +1,7 @@
 # OpenHo Master Plan
 
-**Last Updated:** January 27, 2026 (Session 15 - Galaxy Shapes & Spiral Implementation)  
-**Project Status:** Phase 2 - C++ Core Implementation & UI Architecture Planning (In Progress)
+**Last Updated:** October 23, 2026 (Minimal Playable Vertical Slice Planning)
+**Project Status:** Phase 2 - Minimal playable C++ core first; feature completeness follows incrementally
 
 ---
 
@@ -33,7 +33,7 @@ The project uses a command-line build system (no Xcode dependency) with CMake fo
 
 ### Phase 2: C++ Core Implementation (Current)
 
-**Overall Status:** Foundation layer complete, galaxy generation substantially complete, starting planet assignment complete, player perception formulas complete, C API validation layer implemented, economic mechanics implemented
+**Overall Status:** Foundation layer substantial; current priority is a minimal playable vertical slice. Galaxy generation has multiple code paths, but RANDOM is the first candidate for a reliable game path. Player initialization and multi-turn processing must be made functional before ships and combat are expanded.
 
 **Deliverable:** Static library `libOpenHoCore.a` with deterministic game engine
 
@@ -426,6 +426,66 @@ The project uses a command-line build system (no Xcode dependency) with CMake fo
 - Square root formulas for diminishing returns on mining/terraforming
 
 ---
+
+## Minimal Playable Vertical Slice Roadmap
+
+The immediate objective is not feature completeness. It is a small, repeatable game loop that can initialize a game and advance through multiple turns.
+
+### Stage 1: Reliable minimal galaxy
+
+- Use the RANDOM galaxy generator as the first production path because it is the least structurally risky current generator.
+- Confirm exact planet count, home-planet availability, deterministic seeding, and successful construction through the main `Galaxy`/`GameState` path.
+- Leave the other generator paths available for later validation rather than making them prerequisites for the first playable slice.
+
+### Stage 2: Correct player initialization
+
+- Initialize all player resources and state explicitly.
+- Assign homeworlds and starting colony values.
+- Initialize technology, research, allocations, knowledge state, fleets, and ship designs to deliberate minimal defaults.
+- Ensure every initialized field is observable through tests or a diagnostic interface.
+
+### Stage 3: Multi-turn playable loop
+
+- Implement turn-ready tracking.
+- Make the existing turn sequence advance safely through all required stages.
+- Keep economics functional even where the underlying rule is still provisional; placeholder formulas must be explicit, deterministic, and non-crashing.
+- Verify that a minimal game can advance through multiple turns without invalid state, resource corruption, or placeholder success codes masking failures.
+
+### First vertical-slice milestone (October 23, 2026)
+
+- **Stage 1:** RANDOM galaxy construction is working in the main `GameState` path and is covered by a deterministic 40-planet smoke test.
+- **Stage 2:** Player homeworld population, income, metal, ideal conditions, explicit default state, and knowledge initialization are working. Initial fleets and ship designs remain intentionally deferred to Stage 4.
+- **Stage 3:** Turn-readiness tracking is functional, and the existing economics/turn sequence advances a two-player game through three turns in the smoke test.
+- The C++ core now builds with CMake after fixing the integer-limit include, formula namespace mismatch, and entity-map initialization-order defect.
+
+### Stage 4: Placeholder ship building
+
+- Add a minimal ship-building operation after the multi-turn loop works.
+- Initially, the operation may use placeholder economics, but it must create a real fleet/design state and report validation failures accurately.
+
+### Stage 5: Ship travel, exploration, and knowledge
+
+- Implement ship travel through the galaxy.
+- Maintain incomplete or stale per-player knowledge of planets and fleets.
+- Validate movement, arrival, ownership, and discovery behavior before combat.
+
+### Stage 6: Ship combat
+
+- Implement ship-versus-ship combat only after ship construction and travel are real rather than placeholders.
+- Add combat resolution, damage, casualties, retreat, and victory/defeat state.
+
+### Stage 7: Ship-versus-planet combat
+
+- Extend the combat model to planetary attacks and defenses after ship combat is stable.
+
+### Stage 8: Nova events
+
+- Treat novae as the final major subsystem.
+- Keep them rare and optional while the rest of the game is being completed; the game can be considered effectively complete before nova processing is finalized.
+
+### Documentation and approval rule
+
+This roadmap is a planning decision, not authorization to modify implementation code. Source changes require explicit approval before work begins. The master plan and the source audit should be updated after each significant milestone.
 
 ### Recent Commits
 

@@ -65,8 +65,30 @@ public:
 	PlayerType type;
 	int32_t iq;  // For computer players
 	
-	// Constructor
-	Player(class GameState* game_state_ref) : game_state(game_state_ref) {}
+		// Constructor
+		Player(class GameState* game_state_ref)
+			: id(0),
+			  name(),
+			  gender(GENDER_OTHER),
+			  type(PLAYER_HUMAN),
+			  iq(0),
+			  game_state(game_state_ref),
+			  money_savings(0),
+			  metal_reserve(0),
+			  ideal_temperature(0.0),
+			  ideal_gravity(0.0),
+			  money_income(0),
+			  metal_income(0),
+			  tech{0, 0, 0, 0, 0, 0},
+			  current_turn_income{0, 0, 0, 0},
+			  allocation{0.5, 0.25, 0.25, {1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0,
+			                                  1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0}},
+			  partial_research{0, 0, 0, 0, 0, 0},
+			  knowledge_galaxy(nullptr),
+			  next_ship_design_id(1),
+			  fleets(),
+			  player_info_history()
+		{ }
 	
 	// Move semantics (required by Fleet's unique_ptr)
 	Player(Player&&) = default;

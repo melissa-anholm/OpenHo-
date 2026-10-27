@@ -2,14 +2,23 @@
 #include "game.h"
 #include <iostream>
 #include <limits>
+#include <utility>
 
 // ============================================================================
 // GameSetup Constructor and Destructor
 // ============================================================================
 
 GameSetup::GameSetup()
-	: galaxy_params(100, 1, 0.5, GALAXY_RANDOM, 0)
+		: galaxy_params(100, 1, 0.5, GALAXY_RANDOM, 0)
 { }
+
+GameSetup::GameSetup(GalaxyGenerationParams params,
+                     std::vector<PlayerSetup> setups)
+		: galaxy_params(std::move(params)),
+		  player_setups(std::move(setups))
+{
+		galaxy_params.n_players = static_cast<uint32_t>(player_setups.size());
+}
 
 GameSetup::~GameSetup()
 { }

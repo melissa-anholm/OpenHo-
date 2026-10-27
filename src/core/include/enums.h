@@ -3,6 +3,7 @@
 
 #include <map>
 #include <string>
+#include <cstdint>
 
 // ============================================================================
 // Game Enums
