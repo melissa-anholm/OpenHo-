@@ -10,7 +10,7 @@ import openho_galaxy as og
 import matplotlib.pyplot as plt
 import numpy as np
 
-def visualize_single_galaxy(n_planets=200, n_players=4, density=0.5, shape='RANDOM', seed=None):
+def visualize_single_galaxy(n_planets=50, n_players=2, density=1.0, shape='RANDOM', seed=None):
 	"""
 	Generate and visualize a single galaxy.
 	
