@@ -1,116 +1,134 @@
-#include <iostream>
-#include <vector>
 #include <cmath>
 #include <iomanip>
+#include <iostream>
 #include <limits>
-#include "include/galaxy.h"
-#include "include/game.h"
-#include "include/game_constants.h"
+#include <vector>
 
-int main() {
-    std::cout << "=== Spiral Galaxy Generation Test ===" << std::endl << std::endl;
-    
-    try {
-        // Create galaxy parameters for spiral shape
+#include "galaxy.h"
+#include "game_constants.h"
+#include "rng.h"
+
+namespace
+{
+void print_parameter_diagnostics()
+{
+    std::cout << "Spiral parameter diagnostics:\n";
+
+    const double test_angles[] = {M_PI / 4.0, M_PI / 2.0, 3.0 * M_PI / 4.0, M_PI};
+    for (double delta_theta : test_angles)
+    {
+        const double a = 100.0 / std::sqrt(delta_theta);
+        const double core_radius = 20.0;
+        const double ratio = 3.0;
+        const double outer_radius = core_radius * ratio;
+        const double theta_core = (core_radius / a) * (core_radius / a);
+        const double r_average = (core_radius + outer_radius) / 2.0;
+        const double angular_distance = r_average * (delta_theta - theta_core);
+        const double radial_distance = outer_radius - core_radius;
+        const double arc_length = std::sqrt(
+            radial_distance * radial_distance + angular_distance * angular_distance);
+
+        std::cout << "  Angular span: " << std::fixed << std::setprecision(4)
+                  << delta_theta << " rad (" << delta_theta * 180.0 / M_PI << " deg)\n"
+                  << "    Tightness (a): " << a << "\n"
+                  << "    Example arm length: " << arc_length << " units\n"
+                  << "    Estimated planets per arm: "
+                  << static_cast<int>(arc_length / GameConstants::min_planet_distance)
+                  << "\n";
+    }
+
+    std::cout << "\nFermat spiral samples:\n";
+    const double sample_a = 100.0 / std::sqrt(M_PI / 2.0);
+    for (int i = 0; i <= 4; ++i)
+    {
+        const double theta = (i / 4.0) * (M_PI / 2.0);
+        const double radius = sample_a * std::sqrt(theta);
+        std::cout << "  theta = " << std::setprecision(4) << theta
+                  << ", radius = " << radius << "\n";
+    }
+
+    std::cout << "\nConfigured generation ranges:\n"
+              << "  Angular span: [45, 180] degrees\n"
+              << "  Arm-length/core-radius ratio: [2.0, 6.0]\n"
+              << "  Core overlap floor: 6.0 units\n";
+}
+
+void print_generation_diagnostics(const std::vector<PlanetCoord>& coords)
+{
+    std::cout << "\nGenerated coordinates: " << coords.size() << "\n";
+    if (coords.empty())
+        return;
+
+    double min_radius = std::numeric_limits<double>::max();
+    double max_radius = 0.0;
+    double average_radius = 0.0;
+    for (const auto& coord : coords)
+    {
+        const double radius = std::hypot(coord.first, coord.second);
+        min_radius = std::min(min_radius, radius);
+        max_radius = std::max(max_radius, radius);
+        average_radius += radius;
+    }
+    average_radius /= static_cast<double>(coords.size());
+
+    std::cout << "  Min distance from center: " << min_radius << "\n"
+              << "  Max distance from center: " << max_radius << "\n"
+              << "  Average distance from center: " << average_radius << "\n";
+
+    uint32_t spacing_violations = 0;
+    for (size_t i = 0; i < coords.size(); ++i)
+    {
+        for (size_t j = i + 1; j < coords.size(); ++j)
+        {
+            const double dx = coords[i].first - coords[j].first;
+            const double dy = coords[i].second - coords[j].second;
+            if (std::hypot(dx, dy) < GameConstants::min_planet_distance - 0.01)
+                ++spacing_violations;
+        }
+    }
+
+    if (spacing_violations == 0)
+        std::cout << "  Minimum-spacing check: PASS\n";
+    else
+        std::cout << "  Minimum-spacing check: FAIL ("
+                  << spacing_violations << " violations)\n";
+}
+} // namespace
+
+int main()
+{
+    try
+    {
+        constexpr uint32_t planet_count = 150;
+        constexpr uint32_t player_count = 3;
+        constexpr double density = 0.5;
+        constexpr uint64_t seed = 12345;
+
         GalaxyGenerationParams params(
-            150,              // n_planets
-            3,                // n_players
-            0.5,              // density
-            GALAXY_SPIRAL,    // shape
-            12345             // seed
-        );
-        
-        // Create a minimal GameState for testing
-        // Note: This is a simplified test that creates a GameState
-        GameSetup setup;
-        GameState* game_state = setup.create_new_game();
-        
-        if (!game_state) {
-            std::cerr << "Failed to create game state" << std::endl;
-            return 1;
-        }
-        
-        // Get the galaxy
-        const Galaxy& galaxy = game_state->get_galaxy();
-        
-        std::cout << "Galaxy Parameters:" << std::endl;
-        std::cout << "  Shape: SPIRAL" << std::endl;
-        std::cout << "  Players: " << params.n_players << std::endl;
-        std::cout << "  Requested Planets: " << params.n_planets << std::endl;
-        std::cout << "  Density: " << params.density << std::endl;
-        std::cout << std::endl;
-        
-        std::cout << "Generated Galaxy:" << std::endl;
-        std::cout << "  Actual Planets: " << galaxy.planets.size() << std::endl;
-        std::cout << "  Home Planets: " << galaxy.home_planet_indices.size() << std::endl;
-        std::cout << "  Galaxy Size: " << galaxy.gal_size << std::endl;
-        std::cout << std::endl;
-        
-        // Verify home planets
-        std::cout << "Home Planet Verification:" << std::endl;
-        for (size_t i = 0; i < galaxy.home_planet_indices.size(); ++i) {
-            size_t idx = galaxy.home_planet_indices[i];
-            const Planet& planet = galaxy.planets[idx];
-            std::cout << "  Player " << (i + 1) << " home: " << planet.name 
-                      << " at (" << std::fixed << std::setprecision(2) 
-                      << planet.x << ", " << planet.y << ")" << std::endl;
-        }
-        std::cout << std::endl;
-        
-        // Check planet distribution
-        std::cout << "Planet Distribution Analysis:" << std::endl;
-        double min_dist = std::numeric_limits<double>::max();
-        double max_dist = 0;
-        double avg_dist = 0;
-        int count = 0;
-        
-        for (const auto& planet : galaxy.planets) {
-            double dist = std::sqrt(planet.x * planet.x + planet.y * planet.y);
-            min_dist = std::min(min_dist, dist);
-            max_dist = std::max(max_dist, dist);
-            avg_dist += dist;
-            count++;
-        }
-        avg_dist /= count;
-        
-        std::cout << "  Min distance from center: " << std::fixed << std::setprecision(2) << min_dist << std::endl;
-        std::cout << "  Max distance from center: " << std::fixed << std::setprecision(2) << max_dist << std::endl;
-        std::cout << "  Avg distance from center: " << std::fixed << std::setprecision(2) << avg_dist << std::endl;
-        std::cout << std::endl;
-        
-        // Check minimum spacing
-        std::cout << "Minimum Spacing Verification:" << std::endl;
-        int violations = 0;
-        for (size_t i = 0; i < galaxy.planets.size(); ++i) {
-            for (size_t j = i + 1; j < galaxy.planets.size(); ++j) {
-                double dx = galaxy.planets[i].x - galaxy.planets[j].x;
-                double dy = galaxy.planets[i].y - galaxy.planets[j].y;
-                double dist = std::sqrt(dx * dx + dy * dy);
-                if (dist < GameConstants::min_planet_distance - 0.01) {  // Small tolerance for rounding
-                    violations++;
-                    if (violations <= 5) {  // Only print first 5 violations
-                        std::cout << "  VIOLATION: " << galaxy.planets[i].name << " and " 
-                                  << galaxy.planets[j].name << " distance: " 
-                                  << std::fixed << std::setprecision(2) << dist << std::endl;
-                    }
-                }
-            }
-        }
-        
-        if (violations == 0) {
-            std::cout << "  ✓ All planets maintain minimum spacing of " 
-                      << GameConstants::min_planet_distance << " units" << std::endl;
-        } else {
-            std::cout << "  ✗ Found " << violations << " spacing violations!" << std::endl;
-        }
-        std::cout << std::endl;
-        
-        std::cout << "=== Test Complete ===" << std::endl;
-        delete game_state;
+            planet_count,
+            player_count,
+            density,
+            GALAXY_SPIRAL,
+            seed);
+        DeterministicRNG rng(seed, seed + 1);
+
+        std::cout << "=== Spiral Galaxy Coordinate Diagnostic ===\n\n"
+                  << "Requested planets: " << params.n_planets << "\n"
+                  << "Players / spiral arms: " << params.n_players << "\n"
+                  << "Density: " << params.density << "\n"
+                  << "Seed: " << params.seed << "\n\n";
+
+        print_parameter_diagnostics();
+        const std::vector<PlanetCoord> coords =
+            Galaxy::generate_coordinates_spiral(params, rng);
+        print_generation_diagnostics(coords);
+
+        std::cout << "\n=== Diagnostic Complete ===\n";
         return 0;
-        
-    } catch (const std::exception& e) {
-        std::cerr << "ERROR: " << e.what() << std::endl;
+    }
+    catch (const std::exception& error)
+    {
+        std::cerr << "ERROR: " << error.what() << '\n';
         return 1;
     }
 }

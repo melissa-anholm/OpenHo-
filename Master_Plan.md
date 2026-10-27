@@ -1,6 +1,6 @@
 # OpenHo Master Plan
 
-**Last Updated:** October 23, 2026 (Minimal Playable Vertical Slice Planning)
+**Last Updated:** October 27, 2026 (Galaxy Generation Organization Decision)
 **Project Status:** Phase 2 - Minimal playable C++ core first; feature completeness follows incrementally
 
 ---
@@ -391,6 +391,15 @@ The project uses a command-line build system (no Xcode dependency) with CMake fo
 ---
 
 ### Key Design Decisions
+
+**Galaxy Generation Source Organization (Approved October 27, 2026):**
+- Keep `galaxy.cpp` focused on Galaxy-level orchestration, shared lifecycle behavior, planet initialization, and other functionality common to all galaxy shapes.
+- Extract shared generation support into `galaxy_generation.cpp`; this name is intentional and does not imply a "commonplace" galaxy shape.
+- Extract shape-specific coordinate generation into dedicated files such as `galaxygen_random.cpp`, `galaxygen_spiral.cpp`, `galaxygen_circle.cpp`, `galaxygen_ring.cpp`, `galaxygen_cluster.cpp`, and `galaxygen_grid.cpp`.
+- Consider separate `galaxy_home_selection.cpp` and `galaxy_diagnostics.cpp` files for home-planet selection and generation-failure reporting.
+- Preserve public declarations and current behavior during the initial extraction. In particular, do not reorder, remove, or redesign the existing `GameState*` and direct-`DeterministicRNG&` overloads as part of this refactoring.
+- Avoid duplicate symbols, duplicate implementations, and circular dependencies by inventorying all definitions before moving code and updating CMake only after each extracted implementation has a single owner.
+- Treat this as a mechanical organization refactoring first; algorithmic changes and any future overload simplification require separate rationale and approval.
 
 **Player-GameState Relationship:**
 - Player holds pointer to GameState for fleet ID allocation

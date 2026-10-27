@@ -1,4 +1,6 @@
-# OpenHo Project TODO
+# OpenHo Project Implementation Log
+
+This document records chronological development sessions, completed implementation work, architectural decisions, and outstanding implementation items. It is a historical working log; the current roadmap and implementation status are maintained separately in `Master_Plan.md`, `Missing_Implementation_List.md`, and `Source_Implementation_Audit.md`.
 
 ## Session 7 - Distance Matrix Implementation
 

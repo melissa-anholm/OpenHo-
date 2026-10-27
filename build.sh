@@ -1,40 +1,24 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Colors for output
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BUILD_DIR="${OPENHO_CORE_BUILD_DIR:-${ROOT_DIR}/src/core/build}"
+BUILD_TYPE="${CMAKE_BUILD_TYPE:-Release}"
 
-echo -e "${BLUE}OpenHo Build System${NC}"
-
-# Phase 2: Build C++ Core
-echo -e "${BLUE}Building C++ Core...${NC}"
-mkdir -p src/core/build
-cd src/core/build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j$(sysctl -n hw.ncpu)
-cd ../../..
-echo -e "${GREEN}✓ C++ Core built${NC}"
-
-# Phase 3a: Build Objective-C++ Bridge (if exists)
-if [ -d "src/macos" ]; then
-    echo -e "${BLUE}Building Objective-C++ Bridge...${NC}"
-    mkdir -p src/macos/build
-    cd src/macos/build
-    cmake .. -DCMAKE_BUILD_TYPE=Release
-    make -j$(sysctl -n hw.ncpu)
-    cd ../../..
-    echo -e "${GREEN}✓ Objective-C++ Bridge built${NC}"
+if command -v getconf >/dev/null 2>&1; then
+    JOBS="$(getconf _NPROCESSORS_ONLN 2>/dev/null || true)"
 fi
+JOBS="${JOBS:-${OPENHO_BUILD_JOBS:-2}}"
 
-# Phase 3b: Build SwiftUI Application (if exists)
-if [ -d "macos-app" ]; then
-    echo -e "${BLUE}Building SwiftUI Application...${NC}"
-    cd macos-app
-    swift build -c release
-    cd ..
-    echo -e "${GREEN}✓ SwiftUI Application built${NC}"
-fi
+printf 'OpenHo core build\n'
+printf '  Source: %s\n' "${ROOT_DIR}/src/core"
+printf '  Build:  %s\n' "${BUILD_DIR}"
+printf '  Type:   %s\n' "${BUILD_TYPE}"
+printf '  Jobs:   %s\n' "${JOBS}"
 
-echo -e "${GREEN}Build complete!${NC}"
+cmake -S "${ROOT_DIR}/src/core" \
+      -B "${BUILD_DIR}" \
+      -DCMAKE_BUILD_TYPE="${BUILD_TYPE}"
+cmake --build "${BUILD_DIR}" --parallel "${JOBS}"
+
+printf 'OpenHo core build complete.\n'

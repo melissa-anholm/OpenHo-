@@ -15,8 +15,16 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(CORE_SOURCES
 	src/utility.cpp
 	src/rng.cpp
-	src/types.cpp
 	src/galaxy.cpp
+	src/galaxy_generation.cpp
+	src/galaxygen_random.cpp
+	src/galaxygen_spiral.cpp
+	src/galaxygen_circle.cpp
+	src/galaxygen_ring.cpp
+	src/galaxygen_cluster.cpp
+	src/galaxygen_grid.cpp
+	src/galaxy_home_selection.cpp
+	src/galaxy_diagnostics.cpp
 	src/game.cpp
 	src/game_formulas.cpp
 	src/game_setup.cpp
