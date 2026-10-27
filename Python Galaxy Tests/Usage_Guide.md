@@ -237,4 +237,4 @@ When changing the wrapper:
 3. Expose it through `openho_galaxy_bindings.cpp`.
 4. Rebuild the package.
 5. Run a deterministic smoke call and, when relevant, the visualization examples.
-6. Update this README or `ARCHITECTURE.md` when behavior or design changes.
+6. Update this guide or `ARCHITECTURE.md` when behavior or design changes.

@@ -17,7 +17,7 @@ Python Galaxy Tests/
 ├── openho_galaxy_bindings.cpp   pybind11 module and Python-facing API
 ├── CMakeLists.txt               Extension build configuration
 ├── setup.py                     setuptools-to-CMake integration
-├── README.md                    Current user and developer guide
+├── Usage_Guide.md               Current user and developer guide
 ├── ARCHITECTURE.md              This design document
 ├── .gitignore                   Wrapper build-artifact rules
 └── examples/
@@ -161,7 +161,7 @@ For a new Python-visible operation:
 4. Add Python docstrings and an example where appropriate.
 5. Rebuild the extension with `pip3 install --force-reinstall .`.
 6. Run a deterministic smoke check.
-7. Update `README.md` and this document if the public contract or architecture changes.
+7. Update `Usage_Guide.md` and this document if the public contract or architecture changes.
 
 For a new galaxy shape:
 
