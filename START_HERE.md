@@ -63,7 +63,7 @@ The project deliberately does not use a generic `README.md` as its development a
 | Why were earlier design decisions made? | [`Project_Implementation_Log.md`](Project_Implementation_Log.md) |
 | How does the galaxy Python wrapper work? | [`Python Galaxy Tests/Usage_Guide.md`](Python%20Galaxy%20Tests/Usage_Guide.md) and [`Python Galaxy Tests/ARCHITECTURE.md`](Python%20Galaxy%20Tests/ARCHITECTURE.md) |
 | How does Poisson disk sampling work mathematically? | [`Technical_Refs/PoissonDiskSamplingOverview.md`](Technical_Refs/PoissonDiskSamplingOverview.md) |
-| What future AI-opponent approaches have been considered? | [`AI_DEVELOPMENT_CONSIDERATIONS.md`](AI_DEVELOPMENT_CONSIDERATIONS.md) |
+| What future AI-opponent approaches have been considered? | [`Technical_Refs/AI_Development_Considerations.md`](Technical_Refs/AI_Development_Considerations.md) |
 | What future build/platform architecture has been proposed? | [`BUILD_SYSTEM_PLAN.md`](BUILD_SYSTEM_PLAN.md) |
 
 ## Document authority and status vocabulary

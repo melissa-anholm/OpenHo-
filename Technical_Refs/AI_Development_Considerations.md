@@ -2,7 +2,9 @@
 
 **Document Purpose:** Outline options for implementing AI opponents in OpenHo, including libraries, tools, and architectural approaches.
 
-**Status:** Planning/Design phase
+**Status:** Speculative future reference; not part of the current implementation plan.
+
+This document records possible approaches for future computer-player development. It does not establish an approved milestone, alter the current development sequence, or imply that an AI subsystem is presently implemented.
 
 ---
 

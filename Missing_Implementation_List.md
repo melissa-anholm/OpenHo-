@@ -2,7 +2,7 @@
 
 **Purpose:** Track all functions and values that need implementation or reverse-engineering from the original game.
 
-**Last Updated:** February 3, 2026 (Session 16 - Cluster Galaxy Implementation Complete)
+**Last Updated:** October 27, 2026 (Targeted status audit after galaxy-generation refactor)
 
 ---
 
@@ -39,39 +39,38 @@
 ### Data-Driven Values (Require Reverse-Engineering) - 5 items
 
 - [ ] [Planet Desirability Rating](#planet-desirability-rating) - Placeholder
-- [ ] [Planetary Income Calculation](#planetary-income-calculation) - Placeholder
+- [ ] [Planetary Income Calculation](#planetary-income-calculation) - Provisional main-path formula; standalone helper is a stub
 - [ ] [Ship Design Costs](#ship-design-costs) - Placeholder (3 functions)
 - [ ] [Player Metrics](#player-metrics) - Placeholder (2 functions)
 - [ ] [Population Growth](#population-growth) - Placeholder (ignores conditions)
 
 ### Non-Data-Driven Functions (Clear Logic, Need Implementation) - 5 items
 
-- [x] [Galaxy Shape Distribution Algorithms](#galaxy-shape-distribution-algorithms) - FULLY IMPLEMENTED (All 4 shapes)
+- [ ] [Galaxy Shape Distribution Algorithms](#galaxy-shape-distribution-algorithms) - Implemented but insufficiently validated (all 6 shapes)
+  - [x] RANDOM galaxy distribution - Used by the minimal playable path
   - [x] Circle galaxy distribution - IMPLEMENTED
   - [x] Ring galaxy distribution - IMPLEMENTED
-  - [x] Spiral galaxy distribution - IMPLEMENTED
-  - [x] Cluster galaxy distribution - IMPLEMENTED
-- [ ] [Turn Processing](#turn-processing) - Partially implemented (5 missing steps)
-- [ ] [Fleet Movement & Combat](#fleet-movement--combat) - Partially implemented (combat stub)
+  - [x] Spiral galaxy distribution - IMPLEMENTED but experimental
+  - [x] Cluster galaxy distribution - IMPLEMENTED but insufficiently validated
+  - [x] GRID galaxy distribution - IMPLEMENTED
+- [ ] [Turn Processing](#turn-processing) - Partially implemented; research and basic processing exist, but several systems remain provisional or absent
+- [ ] [Fleet Movement & Combat](#fleet-movement--combat) - Movement exists but needs validation; combat is absent
 - [ ] [Nova Warning Duration](#nova-warning-duration) - Placeholder
 - [ ] [Research Conversion](#research-conversion) - Placeholder (1:1 conversion)
 
 ### Partially Implemented (Need Completion) - 3 items
 
-- [ ] [Ship Design Creation](#ship-design-creation) - Incomplete (3 missing steps)
-- [ ] [Fleet Creation](#fleet-creation) - Incomplete (3 missing steps)
-- [ ] [Player Initial Setup](#player-initial-setup) - Incomplete (9 missing steps)
+- [ ] [Ship Design Creation](#ship-design-creation) - Object creation and storage exist; costs and validation consistency remain
+- [ ] [Fleet Creation](#fleet-creation) - Creation and validation exist; resource deduction remains
+- [ ] [Player Initial Setup](#player-initial-setup) - Mostly implemented for the minimal game; explicit initial-state decisions and tests remain
 
 ### Infrastructure/Setup (Needed for Game Flow) - 1 item
 
-- [ ] [Turn Ready Tracking](#turn-ready-tracking) - Stub (2 functions)
+- [ ] [Turn Ready Tracking](#turn-ready-tracking) - Implemented, but not yet enforced as a turn-advance gate
 
 ### Summary
 
-**Total Items:** 20 functions/systems  
-**Implemented:** 13 (65%)  
-**Partially Implemented:** 4 (20%)  
-**Placeholder/Stub:** 3 (15%)
+The categories below overlap: a subsystem can be implemented in the current code while still using provisional formulas or lacking validation. Percentages are intentionally not reported here because they would obscure that distinction.
 
 ---
 
@@ -81,8 +80,8 @@ These require playing through the original Spaceward Ho! and reverse-engineering
 
 ### Planet Desirability Rating
 
-**Status:** Placeholder  
-**Location:** `game_formulas.cpp`
+**Status:** Placeholder
+**Location:** `src/core/src/colonized_planet.cpp` and related game logic
 
 **Current Implementation:**
 - Returns 0 (stub)
@@ -98,8 +97,8 @@ These require playing through the original Spaceward Ho! and reverse-engineering
 
 ### Planetary Income Calculation
 
-**Status:** Placeholder  
-**Location:** `game_formulas.cpp`
+**Status:** Provisional main-path formula; standalone helper remains a stub
+**Location:** `src/core/src/game.cpp` and `src/core/src/game_formulas.cpp`
 
 **Current Implementation:**
 - Returns 0 (stub)
@@ -116,13 +115,13 @@ These require playing through the original Spaceward Ho! and reverse-engineering
 
 ### Ship Design Costs
 
-**Status:** Placeholder (3 functions)  
-**Location:** `game_formulas.cpp`
+**Status:** Placeholder (3 functions)
+**Location:** `src/core/src/game_formulas.cpp`
 
 **Functions Needed:**
-1. `calculate_ship_design_cost()` - Cost to design a new ship type
-2. `calculate_ship_build_cost()` - Cost to build one ship of a design
-3. `calculate_ship_upgrade_cost()` - Cost to upgrade a ship design
+1. `calculate_ship_design_prototype_cost()` - Cost to prototype a new ship type
+2. `calculate_ship_design_build_cost()` - Cost to build one ship of a design
+3. `calculate_ship_design_metal_cost()` - Metal cost associated with a ship design
 
 **Reverse-Engineering Approach:**
 - Create new ship designs and observe costs
@@ -135,8 +134,8 @@ These require playing through the original Spaceward Ho! and reverse-engineering
 
 ### Player Metrics
 
-**Status:** Placeholder (2 functions)  
-**Location:** `game_formulas.cpp`
+**Status:** Placeholder (2 functions)
+**Location:** `src/core/src/game_formulas.cpp`
 
 **Functions Needed:**
 1. `calculate_player_score()` - Overall player ranking
@@ -152,8 +151,8 @@ These require playing through the original Spaceward Ho! and reverse-engineering
 
 ### Population Growth
 
-**Status:** Placeholder (ignores planet conditions)  
-**Location:** `game_formulas.cpp`
+**Status:** Placeholder (ignores planet conditions)
+**Location:** `src/core/src/game_formulas.cpp`
 
 **Current Implementation:**
 - Returns 10% growth regardless of gravity/temperature mismatch
@@ -175,10 +174,10 @@ These have clear logic but need implementation. No reverse-engineering needed.
 
 ### Galaxy Shape Distribution Algorithms
 
-**Status:** FULLY IMPLEMENTED (All 4 shapes complete)  
-**Location:** `galaxy.cpp`, `utility.h/cpp`
+**Status:** Implemented but insufficiently validated (all 6 shapes)
+**Location:** `src/core/src/galaxy*.cpp`, `src/core/src/galaxygen_*.cpp`, and `src/core/src/galaxy_home_selection.cpp`
 
-**Completed (Session 14):**
+**Implemented shape generators:**
 
 - [x] `generate_coordinates_circle()` - Circular disk galaxy distribution - IMPLEMENTED
   - Uses Bridson's Poisson disk sampling for uniform distribution
@@ -194,8 +193,6 @@ These have clear logic but need implementation. No reverse-engineering needed.
   - Supports inner/outer ratio constraints (50%-80%)
   - Maintains same active area as circle galaxy for consistent density
 
-**Completed (Session 15):**
-
 - [x] `generate_coordinates_spiral()` - Fermat spiral arm galaxy distribution - IMPLEMENTED
   - Uses Fermat spiral (r = a√θ) instead of logarithmic for better radial tangent
   - N spiral arms (N = number of players), evenly spaced angularly
@@ -210,8 +207,6 @@ These have clear logic but need implementation. No reverse-engineering needed.
   - Implemented `select_home_planets_spiral()` function
   - Modified Poisson disk sampling to accept existing coordinates
 
-**Completed (Session 16):**
-
 - [x] `generate_coordinates_cluster()` - Clustered galaxy distribution - IMPLEMENTED
   - N clusters (N = number of players) arranged in perfect ring around center
   - Random angular offset (0-360 degrees) for varied cluster orientations
@@ -222,7 +217,10 @@ These have clear logic but need implementation. No reverse-engineering needed.
   - Implemented `select_home_planets_cluster()` function
   - Wedge-based home planet selection: galaxy divided into N equal angular wedges
   - One random planet selected from each wedge as home planet
-  - Temporary `cluster_angular_offset` member variable for orientation tracking
+  - Angular offset is carried through `GalaxyGenerationParams` for later home-planet selection
+
+- [x] `generate_coordinates_random()` - Random galaxy distribution - IMPLEMENTED and used by the minimal playable path
+- [x] `generate_coordinates_grid()` - Grid galaxy distribution - IMPLEMENTED
 
 **Implementation Infrastructure:**
 - Region abstract base class with virtual methods (utility.h)
@@ -235,14 +233,14 @@ These have clear logic but need implementation. No reverse-engineering needed.
 
 **Design Decisions:**
 - Active area approach ensures consistent planet density across shapes
-- Poisson sampling guarantees minimum distance between planets
+- Poisson sampling can guarantee minimum distance between planets when used with an appropriate minimum-distance constraint
 - Ring galaxies support randomized inner/outer radii within small range
 - Spiral galaxies use Fermat spiral for better geometric properties
 - Home planet selection is shape-specific (random for circle/ring, arm-end for spiral)
 
 **IMPORTANT: Extensive Testing Required**
 
-All four galaxy shapes (CIRCLE, RING, SPIRAL, CLUSTER) now have coordinate generation implemented. However, comprehensive testing is needed to verify:
+All six galaxy shapes now have coordinate generation implemented. However, comprehensive testing is needed to verify:
 
 - Planet distribution correctness for all shapes
 - Spatial constraint validation (minimum distances)
@@ -258,8 +256,8 @@ This testing should be performed before galaxy generation is considered producti
 
 ### Apparent Gravity/Temperature Perception Conversion
 
-**Status:** IMPLEMENTED  
-**Location:** `game_formulas.cpp`
+**Status:** IMPLEMENTED
+**Location:** `src/core/src/game_formulas.cpp`
 
 - `calculate_apparent_gravity()` - Convert true gravity to perceived gravity
   - Formula: `apparent = 100 * true_gravity` (linear scaling)
@@ -274,35 +272,36 @@ This testing should be performed before galaxy generation is considered producti
 
 ### Turn Processing
 
-**Status:** Partially implemented (5 missing steps)  
-**Location:** `game.cpp`
+**Status:** Partially implemented; research and basic processing exist, but several systems remain provisional or absent
+**Location:** `src/core/src/game.cpp` and `src/core/src/game_formulas.cpp`
 
 **Completed:**
 - [x] Income calculation and allocation
 - [x] Mining efficiency processing
 - [x] Terraforming efficiency processing
 - [x] Population growth (placeholder)
+- [x] Research-point accumulation and technology advancement (using provisional conversion and cost formulas)
+- [x] End-of-turn counter/readiness reset behavior
 
 **Missing:**
-- [ ] Fleet movement and combat
-- [ ] Research point accumulation and tech advancement
+- [ ] Fleet combat
 - [ ] Nova events and warnings
 - [ ] Diplomacy/trade events
-- [ ] End-of-turn cleanup and state updates
+- [ ] Complete end-of-turn state/knowledge updates
 
 ---
 
 ### Fleet Movement & Combat
 
-**Status:** Partially implemented (combat stub)  
-**Location:** `game.cpp`
+**Status:** Movement implemented but insufficiently validated; combat is absent
+**Location:** `src/core/src/game.cpp`, `src/core/src/player.cpp`, and `src/core/src/fleet.cpp`
 
 **Completed:**
 - [x] Fleet movement calculation (distance-based)
-- [x] Fleet arrival detection
+- [x] Fleet arrival processing (requires validation of planet-ID to vector-index lookup)
 
 **Missing:**
-- [ ] Combat resolution (currently returns stub)
+- [ ] Combat resolution (not implemented)
 - [ ] Damage calculation
 - [ ] Fleet retreat logic
 - [ ] Casualty handling
@@ -312,11 +311,11 @@ This testing should be performed before galaxy generation is considered producti
 
 ### Nova Warning Duration
 
-**Status:** Placeholder  
-**Location:** `game_formulas.cpp`
+**Status:** Placeholder
+**Location:** `src/core/src/game_formulas.cpp`
 
 **Current Implementation:**
-- Returns 0 (stub)
+- Returns 1 as a placeholder; the warning-duration rule is not implemented
 
 **Expected Behavior:**
 - Determine how many turns a nova warning is visible before the nova occurs
@@ -326,8 +325,8 @@ This testing should be performed before galaxy generation is considered producti
 
 ### Research Conversion
 
-**Status:** Placeholder (1:1 conversion)  
-**Location:** `game_formulas.cpp`
+**Status:** Placeholder (1:1 conversion)
+**Location:** `src/core/src/game_formulas.cpp`
 
 **Current Implementation:**
 - 1 research point = 1 technology level increase (1:1 ratio)
@@ -346,55 +345,55 @@ These have some implementation but are missing key steps.
 
 ### Ship Design Creation
 
-**Status:** Incomplete (3 missing steps)  
-**Location:** `game.cpp`
+**Status:** Object creation and storage exist; costs and validation consistency remain
+**Location:** `src/core/src/player.cpp`, `src/core/src/game.cpp`, and `src/core/src/gamestate_c_api_extensions.cpp`
 
 **Completed:**
 - [x] Basic ShipDesign object creation
 - [x] Design ID allocation
+- [x] Add design to the player's available design list
 
 **Missing:**
-- [ ] Validate design parameters (armor, weapons, engines, etc.)
-- [ ] Calculate design cost
-- [ ] Add design to player's available designs
+- [ ] Ensure all direct creation paths apply the same design validation
+- [ ] Calculate and charge design/prototype costs
 
 ---
 
 ### Fleet Creation
 
-**Status:** Incomplete (3 missing steps)  
-**Location:** `game.cpp`
+**Status:** Creation and validation exist; resource deduction remains
+**Location:** `src/core/src/player.cpp`, `src/core/src/game.cpp`, and `src/core/src/gamestate_c_api_extensions.cpp`
 
 **Completed:**
 - [x] Basic Fleet object creation
 - [x] Fleet ID allocation
+- [x] Validate fleet parameters through the GameState/API path
+- [x] Add fleet to the player's fleet list
 
 **Missing:**
-- [ ] Validate fleet parameters (location, design, quantity)
-- [ ] Deduct resources from colony
-- [ ] Add fleet to player's fleet list
+- [ ] Ensure direct and API creation paths apply consistent validation
+- [ ] Deduct money/metal according to the intended fleet cost rules
 
 ---
 
 ### Player Initial Setup
 
-**Status:** Incomplete (9 missing steps)  
-**Location:** `game.cpp`
+**Status:** Mostly implemented for the minimal game; starting fleets/designs and explicit initialization tests remain
+**Location:** `src/core/src/game.cpp`, `src/core/src/game_setup.cpp`, and `src/core/src/game_constants.h`
 
 **Completed:**
 - [x] Player object creation
 - [x] Basic property initialization
+- [x] Initialize the homeworld and `colonized_planets`
+- [x] Initialize `KnowledgeGalaxy`
+- [x] Assign starting population, income, and metal based on colony quality
+- [x] Initialize the default technology, research, and allocation state
+- [x] Initialize empty fleet and ship-design lists
 
-**Missing:**
-- [ ] Initialize money_savings and metal_reserve
-- [ ] Initialize colonized_planets with homeworld
-- [ ] Initialize all technology levels
-- [ ] Initialize research and money allocation fractions
-- [ ] Initialize KnowledgeGalaxy
-- [ ] Set up initial income calculation
-- [ ] Assign starting colony values based on quality
-- [ ] Initialize fleet list
-- [ ] Initialize ship design list
+**Missing or requiring a decision:**
+- [ ] Confirm and document intended initial savings and reserve values
+- [ ] Decide whether starting fleets and ship designs should be created
+- [ ] Add focused assertions covering every expected initial field
 
 ---
 
@@ -402,15 +401,15 @@ These have some implementation but are missing key steps.
 
 ### Turn Ready Tracking
 
-**Status:** Stub (2 functions)  
-**Location:** `gamestate_c_api_extensions.cpp`
+**Status:** Implemented, but not yet enforced as a turn-advance gate
+**Location:** `src/core/src/game.cpp` and `src/core/src/gamestate_c_api_extensions.cpp`
 
 **Functions:**
 1. `game_mark_player_turn_ready()` - Mark player as ready for next turn
 2. `game_get_player_turn_ready_status()` - Check if player is ready
 
 **Current Implementation:**
-- Both functions are stubs (return without doing anything)
+- Readiness is stored per player, can be marked and queried, and is reset after turn processing.
 
 **Expected Behavior:**
 - Track which players have completed their turn actions
@@ -423,24 +422,22 @@ These have some implementation but are missing key steps.
 
 Based on game flow dependencies:
 
-1. **CRITICAL (Blocks Game Loop):**
-   - Player Initial Setup (9 missing steps)
-   - Turn Ready Tracking (2 functions)
+1. **CRITICAL (Minimal Playable Path):**
+   - Validate and document player initial-state semantics
+   - Resolve provisional income/population update behavior
 
 2. **HIGH (Core Gameplay):**
-   - Population Growth (needs proper formula)
-   - Planetary Income Calculation (needed for economy)
-   - Fleet Movement & Combat (core mechanic)
+   - Population Growth and Planetary Income (intended formulas and update ordering)
+   - Placeholder ship construction with real state/resource effects
+   - Fleet movement validation and exploration/knowledge updates
 
-3. **MEDIUM (Enhances Gameplay):**
-   - Ship Design Creation (3 missing steps)
-   - Fleet Creation (3 missing steps)
-   - Research Conversion (needs proper formula)
+3. **MEDIUM (Expands Gameplay):**
+   - Ship design and fleet resource costs
+   - Research conversion and advancement formulas
+   - Ship combat
 
 4. **LOW (Polish/Balance):**
    - Planet Desirability Rating (AI decision-making)
    - Player Metrics (scoring/rankings)
-   - Nova Warning Duration (event system)
-   - Ship Design Costs (economy balance)
-   - Cluster Galaxy (shape variety)
-
+   - Nova Warning Duration and nova events
+   - Galaxy-shape validation and edge-case testing
