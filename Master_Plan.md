@@ -79,7 +79,7 @@ Ideal temperature/gravity assignment and apparent-condition formulas are impleme
 
 **Status:** Core provisional mechanics are implemented; several rules remain unresolved.
 
-Interest, mining, terraforming, allocation, and unit conversions are present. Planetary income, population growth, research conversion/advancement costs, desirability, player metrics, and ship costs remain placeholders or provisional formulas. See the [data-driven implementation checklist](Missing_Implementation_List.md#data-driven-values-require-reverse-engineering).
+Interest, mining, terraforming, allocation, and unit conversions are present. Planetary income, population growth, research conversion/advancement costs, desirability, player metrics, and ship costs remain placeholders or provisional formulas. Turn-processing order still needs correction so refreshed planetary income and interest are included before allocation, and negative-income handling remains a required future feature. See the [data-driven implementation checklist](Missing_Implementation_List.md#data-driven-values-require-reverse-engineering).
 
 ### Key Design Decisions
 
@@ -122,6 +122,8 @@ Interest, mining, terraforming, allocation, and unit conversions are present. Pl
 **Economic System:**
 - Interest applied to income, not savings directly
 - Income allocated by fractions before spending
+- Turn order must be corrected so planetary income is refreshed and interest is calculated before allocation
+- Negative-income handling remains a required future feature
 - Refunds for insufficient resources (metal, temperature overshoot)
 - Square root formulas for diminishing returns on mining/terraforming
 
