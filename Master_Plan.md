@@ -33,7 +33,7 @@ The project uses a command-line build system (no Xcode dependency) with CMake fo
 
 ### Phase 2: C++ Core Implementation (Current)
 
-**Overall Status:** The minimal playable game is operational through a deterministic RANDOM-galaxy path and multiple turns. Current priority is to validate and strengthen that path before expanding ship construction, exploration, and combat.
+**Overall Status:** The minimal playable game is operational through a deterministic RANDOM-galaxy path and multiple turns, but the current RANDOM generator has known planet-count and density defects. Current priority is to correct and validate that path before expanding ship construction, exploration, and combat.
 
 **Deliverable:** Static library `libOpenHoCore.a` with deterministic game engine
 
@@ -53,7 +53,7 @@ Players own fleet and ship-design collections, fleet movement state exists, and 
 
 #### Phase 2b-Extended: GameState Architecture & Text Assets
 
-**Status:** Core architecture and text-asset loading are in place; serialization and some public API operations remain provisional.
+**Status:** Core architecture and text-asset loading are in place; complete serialization, host migration, and some public API operations remain provisional.
 
 GameState coordinates setup, turns, entity lookup, RNG, and player state. Detailed refactoring history is preserved in `Project_Implementation_Log.md`.
 
@@ -61,7 +61,7 @@ GameState coordinates setup, turns, entity lookup, RNG, and player state. Detail
 
 **Status:** Implemented but unevenly validated.
 
-The staged galaxy flow and all six coordinate generators—RANDOM, GRID, CIRCLE, RING, SPIRAL, and CLUSTER—are present. RANDOM is the current reliable path for the minimal playable game. The other shapes, especially SPIRAL and CLUSTER, require broader validation of exact counts, spacing, density, home-planet selection, edge cases, and reproducibility. The galaxy implementation is now split across focused source files. See the [galaxy-generation checklist](Missing_Implementation_List.md#galaxy-shape-distribution-algorithms).
+The staged galaxy flow and six implemented coordinate generators—RANDOM, GRID, CIRCLE, RING, SPIRAL, and CLUSTER—are present. RANDOM remains the current integration path for the minimal playable game, but its planet-count and density behavior currently require correction. The other implemented shapes, especially SPIRAL and CLUSTER, require broader validation of exact counts, spacing, density, home-planet selection, edge cases, and reproducibility. The galaxy implementation is now split across focused source files. See the [Galaxy Generation checklist](Missing_Implementation_List.md#galaxy-generation).
 
 #### Phase 2d: Starting Planet Assignment & Colony Initialization
 
@@ -123,9 +123,31 @@ Interest, mining, terraforming, allocation, and unit conversions are present. Pl
 - Interest applied to income, not savings directly
 - Income allocated by fractions before spending
 - Turn order must be corrected so planetary income is refreshed and interest is calculated before allocation
-- Negative-income handling remains a required future feature
+- Negative effective income is charged directly against savings; no research, planetary development, or savings allocation is funded while income is negative. The bankruptcy limit remains data-driven and must be implemented.
 - Refunds for insufficient resources (metal, temperature overshoot)
 - Square root formulas for diminishing returns on mining/terraforming
+
+**Turn Processing Design:**
+- Economic processing occurs first, followed by queued fleet actions and then player actions.
+- Immediate-effect player actions are applied in the order specified by the player.
+- After economic processing, savings and accumulated metal reserve may update persistently; other recalculated economic values are projections until the next economic phase.
+- Negative effective income reduces savings directly; recovery is possible before the data-driven bankruptcy limit is reached.
+- Mining transfers metal losslessly from a planet to the player's shared metal reserve; planetary metal cannot fall below zero. Mining requires positive current-turn income allocation until **Dip Into Savings** exists.
+- Terraforming consumes money but not metal, changes temperature immediately during economic processing, and uses a nonlinear spending formula. Overshoot is prevented and excess allocation is currently refunded to savings, pending a future refund-destination decision.
+- Ship construction is immediate and costs both money and metal. The first ship of a type also incurs a money-only prototyping cost, typically about ten times the individual ship's money construction cost. Fleets are assembled from already-built ships rather than built as independent resource objects.
+- Unaffordable ship actions fail atomically. Ships built during the current player-action phase may be scrapped during that same phase without losing construction or prototyping resources; after the phase, scrapping recovers metal only at a heavy loss.
+- Queued fleet actions first resolve travel. Fleets still in transit have no further queued actions that turn; fleets at planets then resolve battles.
+- Non-allied fleets at the same planet must fight, as must a fleet stationed at a non-ally's planet. Exact battle rules, including multi-player battles, remain future work.
+- A planet whose entire population is killed becomes unowned, and surviving damaged ships are restored to full strength after battle. Mutual destruction is a draw.
+- Combat population loss immediately reduces projected planetary income, but cannot change the economic income already processed for the current turn. Any unextracted metal remains on a destroyed colony's planet for whoever colonizes it later; there is no separate planet-capture operation.
+- After battles resolve, an arriving ship of the colony-ship design automatically and freely establishes a colony at an uncolonized planet without consuming ships or resources. Non-allied colony ships fight before colonization; allied arrivals use speed technology to determine which ship proceeds. A surviving colony ship may colonize during the same turn.
+- Abandonment is queued during player actions but occurs at the beginning of the next turn's economic processing. It is free: the colony and its colonists are removed, unmined planetary metal remains, stationed fleets stay in place, and projected income updates. The abandoned colony is excluded from that next income calculation.
+- Resource transfers are immediate and lossless for both participants, may transfer money or metal, and are limited by the sender's available metal or permitted debt level. They are intentionally a very-low-priority implementation feature.
+- The canonical snapshot labeled Turn N represents the beginning of Turn N; Turn 0 begins in year 2000. Economic after-state and post-processing state are retained for diagnostics, history, and display.
+- The core engine enforces readiness. Players may ready, unready, and act again; actions submitted after ready make the player unready. Eliminated players do not block processing, and a host must explicitly decide whether to proceed after a disconnect.
+- AI players become ready after completing their planned actions, subject to a configurable turn-length limit. Complete game state must be serializable for mid-game resume, and critical host-migration state must synchronize at least once per turn.
+- First-turn starting values are tracked under Player Initial Setup in `Missing_Implementation_List.md`.
+- Diplomacy is deliberately deferred until its action set is defined and is not required for the core game flow.
 
 ---
 
@@ -135,7 +157,7 @@ The immediate objective is not feature completeness. It is a small, repeatable m
 
 ### Stage 1: Reliable minimal galaxy
 
-- [x] Use the RANDOM galaxy generator as the first production path because it is the least structurally risky current generator.
+- [x] Use the RANDOM galaxy generator as the first integration path because it is the least structurally risky current generator; its planet-count and density defects remain open.
 - [x] Confirm deterministic construction through the main `Galaxy`/`GameState` path with the minimal smoke test.
 - [ ] Validate exact counts, home-planet availability, and edge cases across all generator paths.
 
