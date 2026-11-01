@@ -8,6 +8,8 @@
 
 > **Known turn-processing issue — fix later:** `calculate_player_incomes()` currently sums stored planetary income before `update_planet_incomes()` refreshes it, and interest is added after the current turn’s allocations. Reorder the steps later so planetary income is refreshed and summed, interest is calculated, and then total current income is allocated. The intended interest destination remains current income, not savings.
 
+> **Design reminder — double-check later:** Verify the ordering of colonization relative to economic processing. Leave `TurnProcessingOrder.md` unchanged for now.
+
 ---
 
 ## Implementation Checklist
@@ -298,19 +300,22 @@ This testing should be performed before galaxy generation is considered producti
  - [x] Fleet arrival processing (requires validation of planet-ID to vector-index lookup)
 - **Priority:** Medium-high
 
-#### Fleet and Planet Combat
+#### Force Combat
 - **Status:** Not implemented
 - **Location:** `src/core/src/game.cpp`, `src/core/src/player.cpp`, and `src/core/src/fleet.cpp`
 - **Missing:**
  - [ ] Resolve fleet travel before battle resolution at each destination planet
- - [ ] Resolve fleet-versus-fleet battles between non-allied players at the same planet
- - [ ] Resolve fleet-versus-planet battles when a fleet is stationed at a non-ally's planet
+ - [ ] Detect when fleets and owned planets belonging to two or more non-allied players occupy the same place
+ - [ ] Resolve all such forces as participants in one battle rather than separate fleet-versus-fleet and fleet-versus-planet systems
+ - [ ] Prevent invading weapons from targeting the planet until all defending ships are destroyed
+ - [ ] Allow the planet to fire at attackers before it becomes targetable
  - [ ] Combat resolution for battles involving three or more players
  - [ ] Damage calculation
+ - [ ] Define force-turn order and technology effects
  - [ ] Casualty handling
  - [ ] Continue battles until at least one side loses all forces
  - [ ] Handle draws when all opposing sides destroy one another
- - [ ] Kill planetary population as applicable and make a colony unowned when its population reaches zero
+ - [ ] Destroy planetary population when the planet is targeted and make the colony unowned when its population reaches zero
  - [ ] Restore surviving but damaged ships to full strength after battle
  - [ ] Define victory/defeat determination and any fleet retreat logic
 - **Priority:** Medium-low
