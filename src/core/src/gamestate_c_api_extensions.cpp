@@ -176,6 +176,70 @@ ErrorCode game_player_set_spending_allocation(
 	return ErrorCode::SUCCESS;
 }
 
+ErrorCode game_can_player_set_dip_amount(
+	const GameState* game_state,
+	uint32_t player_id,
+	int64_t dip_amount)
+{
+	if (!game_state || dip_amount < 0)
+		return ErrorCode::INVALID_PARAMETER;
+	if (!game_state->get_player(player_id))
+		return ErrorCode::INVALID_PLAYER_ID;
+
+	return ErrorCode::SUCCESS;
+}
+
+ErrorCode game_player_set_dip_amount(
+	GameState* game_state,
+	uint32_t player_id,
+	int64_t dip_amount)
+{
+	const ErrorCode validation = game_can_player_set_dip_amount(
+		game_state, player_id, dip_amount);
+	if (validation != ErrorCode::SUCCESS)
+		return validation;
+
+	game_state->set_dip_amount(player_id, dip_amount);
+	return ErrorCode::SUCCESS;
+}
+
+ErrorCode game_player_set_one_time_dip_amount(
+	GameState* game_state,
+	uint32_t player_id,
+	int64_t dip_amount)
+{
+	const ErrorCode validation = game_can_player_set_dip_amount(
+		game_state, player_id, dip_amount);
+	if (validation != ErrorCode::SUCCESS)
+		return validation;
+
+	game_state->set_one_time_dip_amount(player_id, dip_amount);
+	return ErrorCode::SUCCESS;
+}
+
+ErrorCode game_player_clear_dip_amount(
+	GameState* game_state,
+	uint32_t player_id)
+{
+	if (!game_state)
+		return ErrorCode::INVALID_PARAMETER;
+	if (!game_state->get_player(player_id))
+		return ErrorCode::INVALID_PLAYER_ID;
+
+	game_state->clear_dip_amount(player_id);
+	return ErrorCode::SUCCESS;
+}
+
+int32_t game_get_player_dip_persistent(
+	const GameState* game_state,
+	uint32_t player_id)
+{
+	if (!game_state || !game_state->get_player(player_id))
+		return -1;
+
+	return game_state->is_dip_persistent(player_id) ? 1 : 0;
+}
+
 // ============================================================================
 // Fleet Movement Validation & Actions
 // ============================================================================

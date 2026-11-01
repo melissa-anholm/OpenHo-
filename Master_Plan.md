@@ -77,9 +77,9 @@ Ideal temperature/gravity assignment and apparent-condition formulas are impleme
 
 #### Phase 2f: Economic Mechanics
 
-**Status:** Core provisional mechanics are implemented; several rules remain unresolved.
+**Status:** Phase 1 economic-kernel ordering is implemented and regression-tested; the Dip Into Savings action model requires replacement before this part of the economic system is complete.
 
-Interest, mining, terraforming, allocation, and unit conversions are present. Planetary income, population growth, research conversion/advancement costs, desirability, player metrics, and ship costs remain placeholders or provisional formulas. Turn-processing order still needs correction so refreshed planetary income and interest are included before allocation, and negative-income handling remains a required future feature. See the [data-driven implementation checklist](Missing_Implementation_List.md#data-driven-values-require-reverse-engineering).
+The economic path applies population growth, refreshes planetary income using the resulting population, calculates interest from beginning-of-turn savings, commits one effective-income value, and then applies allocations, research, mining, and terraforming. The authoritative Dip Into Savings design is an action-phase selection with an immediate reversible savings adjustment and a locked amount applied to the following turn's effective income. Persistent pension-plan mode is the default, with a separate one-time option. The current implementation applies the dip at the wrong phase and must be replaced with separate pending/locked state. The dip is allowed to exceed current savings for now; the permitted-debt and bankruptcy limit remains a data-driven future rule. Population growth, planetary-income, research, mining, terraforming, and interest formulas remain provisional or require data-driven validation. Full beginning/economic/post-processing snapshots, queued actions, and later fleet phases remain future work. See the [data-driven implementation checklist](Missing_Implementation_List.md#data-driven-values-require-reverse-engineering).
 
 ### Key Design Decisions
 
@@ -132,7 +132,7 @@ Interest, mining, terraforming, allocation, and unit conversions are present. Pl
 - Immediate-effect player actions are applied in the order specified by the player.
 - After economic processing, savings and accumulated metal reserve may update persistently; other recalculated economic values are projections until the next economic phase.
 - Negative effective income reduces savings directly; recovery is possible before the data-driven bankruptcy limit is reached.
-- Mining transfers metal losslessly from a planet to the player's shared metal reserve; planetary metal cannot fall below zero. Mining requires positive current-turn income allocation until **Dip Into Savings** exists.
+- Mining transfers metal losslessly from a planet to the player's shared metal reserve; planetary metal cannot fall below zero. Mining requires positive effective income allocated to planetary development.
 - Terraforming consumes money but not metal, changes temperature immediately during economic processing, and uses a nonlinear spending formula. Overshoot is prevented and excess allocation is currently refunded to savings, pending a future refund-destination decision.
 - Ship construction is immediate and costs both money and metal. The first ship of a type also incurs a money-only prototyping cost, typically about ten times the individual ship's money construction cost. Fleets are assembled from already-built ships rather than built as independent resource objects.
 - Unaffordable ship actions fail atomically. Ships built during the current player-action phase may be scrapped during that same phase without losing construction or prototyping resources; after the phase, scrapping recovers metal only at a heavy loss.

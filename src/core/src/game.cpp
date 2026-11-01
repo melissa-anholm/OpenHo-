@@ -184,6 +184,61 @@ const Player::MoneyAllocation& GameState::get_money_allocation(uint32_t player_i
 	return player->allocation;
 }
 
+void GameState::set_dip_amount(uint32_t player_id, int64_t dip_amount)
+{
+	Player* player = get_player(player_id);
+	if (!player)
+		throw std::runtime_error("Player not found");
+	if (dip_amount < 0)
+		throw std::invalid_argument("Dip amount must not be negative");
+
+	player->money_savings += player->pending_dip_amount - dip_amount;
+	player->pending_dip_amount = dip_amount;
+	player->pending_dip_persistent = dip_amount > 0;
+}
+
+void GameState::set_one_time_dip_amount(uint32_t player_id, int64_t dip_amount)
+{
+	Player* player = get_player(player_id);
+	if (!player)
+		throw std::runtime_error("Player not found");
+	if (dip_amount < 0)
+		throw std::invalid_argument("Dip amount must not be negative");
+
+	player->money_savings += player->pending_dip_amount - dip_amount;
+	player->pending_dip_amount = dip_amount;
+	player->pending_dip_persistent = false;
+}
+
+void GameState::clear_dip_amount(uint32_t player_id)
+{
+	Player* player = get_player(player_id);
+	if (!player)
+		throw std::runtime_error("Player not found");
+
+	player->money_savings += player->pending_dip_amount;
+	player->pending_dip_amount = 0;
+	player->pending_dip_persistent = false;
+}
+
+int64_t GameState::get_dip_amount(uint32_t player_id) const
+{
+	const Player* player = get_player(player_id);
+	if (!player)
+		throw std::runtime_error("Player not found");
+
+	return player->pending_dip_amount;
+}
+
+bool GameState::is_dip_persistent(uint32_t player_id) const
+{
+	const Player* player = get_player(player_id);
+	if (!player)
+		throw std::runtime_error("Player not found");
+
+	return player->pending_dip_persistent;
+}
+
 // ============================================================================
 // Turn Processing
 // ============================================================================
@@ -230,24 +285,25 @@ void GameState::start_first_turn()
 
 void GameState::process_turn()
 {
-	// Process turn in order:
-	// 0. Capture and distribute public player information from previous turn
-	// 1. Calculate player incomes
-	// 2. Update planet incomes
-	// 3. Process money allocation (research, terraforming, mining)
-	// 4. Apply money interest
-	// 5. Process research
-	// 6. Process terraforming
-	// 7. Process mining
-	// 8. Process ships
-	// 9. Process novae
-	
+	// Phase 1 economic order:
+	// 1. Capture beginning-of-turn savings and public information.
+	// 2. Apply population growth.
+	// 3. Calculate planetary income using the new population.
+	// 4. Add interest calculated from beginning-of-turn savings.
+	// 5. Apply the resulting effective income to allocations and economic work.
+	// Later fleet and nova phases remain provisional or unimplemented.
+	lock_pending_dips();
+	for (auto& player : players)
+		player.turn_opening_savings = player.money_savings;
+
 	capture_and_distribute_player_public_info();
 	
-	calculate_player_incomes();
+	process_population_growth();
 	update_planet_incomes();
-	process_money_allocation();
+	calculate_player_incomes();
 	apply_money_interest();
+	apply_dip_into_savings();
+	process_money_allocation();
 	process_research();
 	process_planets();
 	process_ships();
@@ -257,7 +313,8 @@ void GameState::process_turn()
 	increment_year();
 
 	for (auto& ready : turn_ready)
-		ready.second = false;
+	ready.second = false;
+	renew_persistent_dips();
 }
 
 // ============================================================================
@@ -512,6 +569,30 @@ void GameState::build_entity_maps(const Galaxy& galaxy_ref)
 	}
 }
 
+void GameState::process_population_growth()
+{
+	for (auto& player : players)
+	{
+		for (auto& colonized : player.colonized_planets)
+		{
+			Planet* planet = get_planet(colonized.get_id());
+			if (!planet || planet->owner != static_cast<PlayerID>(player.id))
+				continue;
+
+			const int64_t population_growth = GameFormulas::calculate_population_growth(
+				colonized.get_population(),
+				planet->true_temperature,
+				planet->true_gravity,
+				player.ideal_temperature,
+				player.ideal_gravity
+			);
+			const int64_t new_population = static_cast<int64_t>(colonized.get_population()) + population_growth;
+			colonized.set_population(static_cast<int32_t>(new_population));
+			planet->population = static_cast<int32_t>(new_population);
+		}
+	}
+}
+
 void GameState::calculate_player_incomes()
 {
 	// For each player, calculate total income from all owned planets
@@ -519,12 +600,14 @@ void GameState::calculate_player_incomes()
 	{
 		player.money_income = 0;
 		player.metal_income = 0;
+		player.current_turn_income = {0, 0, 0, 0};
 		
 		for (const auto& colonized : player.colonized_planets)
 		{
 			player.money_income += colonized.get_income();
 			// Metal income calculation would go here
 		}
+		player.current_turn_income.planetary_income = player.money_income;
 	}
 }
 
@@ -557,52 +640,79 @@ void GameState::update_planet_incomes()
 			
 			colonized.set_income(static_cast<int32_t>(colonized.get_population() * happiness * 10));
 			
-			// Apply population growth
-			int64_t population_growth = GameFormulas::calculate_population_growth(
-				colonized.get_population(),
-				planet->true_temperature,
-				planet->true_gravity,
-				player.ideal_temperature,
-				player.ideal_gravity
-			);
-			
-			int64_t new_population = colonized.get_population() + population_growth;
-			colonized.set_population(static_cast<int32_t>(new_population));
-			planet->population = static_cast<int32_t>(new_population);
+			}
 		}
-	}
 }
 
 void GameState::process_money_allocation()
 {
-	// Distribute player income according to their allocation settings
-	// Income is allocated to: savings, research, and planet development
-	// Each portion is used directly for its purpose; nothing is left over
+	// Distribute the committed effective income according to the player's
+	// previous-turn allocation settings. Negative income is charged directly
+	// to savings and does not fund any allocation category.
 	for (auto& player : players)
 	{
-		// Calculate how much income goes to savings
-		int64_t savings_amount = Player::calculate_savings_amount(
-			player.allocation, player.money_income);
-		player.money_savings += savings_amount;
-		
-		// Note: Research and planet allocations are handled in their respective
-		// process functions (process_research and process_planets)
-		// They use player.money_income and the allocation fractions directly
+		if (player.effective_income > 0)
+		{
+			const int64_t savings_amount = Player::calculate_savings_amount(
+				player.allocation, player.effective_income);
+			player.money_savings += savings_amount;
+		}
+		else if (player.effective_income < 0)
+		{
+			player.money_savings += player.effective_income;
+		}
 	}
 }
 
 void GameState::apply_money_interest()
 {
-	// Apply interest on savings to player income
-	// Positive savings earn interest, negative savings (debt) incur interest costs
-	// TODO: Handle negative income (when debt interest exceeds income)
-	// For now, interest is simply added to income. In the future, we may need to
-	// implement mechanics for players with negative total income.
-	
+	// Add current-turn interest to the income pool. Interest is calculated from
+	// the savings snapshot taken before any current-turn economic changes.
 	for (auto& player : players)
 	{
-		int64_t interest = GameFormulas::calculate_money_interest(player.money_savings);
+		const int64_t interest = GameFormulas::calculate_money_interest(
+			player.turn_opening_savings);
 		player.money_income += interest;
+		player.effective_income = player.money_income;
+		player.current_turn_income.interest_income = interest;
+		player.current_turn_income.total_income = player.money_income;
+	}
+}
+
+void GameState::apply_dip_into_savings()
+{
+	for (auto& player : players)
+	{
+		// The locked amount was already removed from savings when it was
+		// selected during the preceding player-action phase.
+		player.effective_income = player.money_income + player.locked_dip_amount;
+	}
+}
+
+void GameState::lock_pending_dips()
+{
+	for (auto& player : players)
+	{
+		player.locked_dip_amount = player.pending_dip_amount;
+		player.locked_dip_persistent = player.pending_dip_persistent;
+		player.pending_dip_amount = 0;
+		player.pending_dip_persistent = false;
+	}
+}
+
+void GameState::renew_persistent_dips()
+{
+	for (auto& player : players)
+	{
+		if (player.locked_dip_persistent && player.locked_dip_amount > 0)
+		{
+			player.pending_dip_amount = player.locked_dip_amount;
+			player.pending_dip_persistent = true;
+			player.money_savings -= player.pending_dip_amount;
+		}
+
+		player.locked_dip_amount = 0;
+		player.locked_dip_persistent = false;
 	}
 }
 
@@ -710,9 +820,12 @@ void GameState::process_research()
 	// Process research for each player
 	for (Player& player : players)
 	{
+		if (player.effective_income <= 0)
+			continue;
+
 		// Calculate research budget for this player
 		int64_t research_budget = Player::calculate_research_amount(
-			player.allocation, player.money_income);
+				player.allocation, player.effective_income);
 		
 		// Process each research stream
 		process_research_stream(player, TECH_RANGE,   research_budget);
@@ -835,20 +948,23 @@ void GameState::process_planets()
 	// Process planets for each player
 	for (Player& player : players)
 	{
+		if (player.effective_income <= 0)
+			continue;
+
 		// Calculate total money available for planet development this turn
 		int64_t total_planet_development_budget = static_cast<int64_t>(
-			player.money_income * player.allocation.planets_fraction );
-		
-		// Iterate through each colonized planet
-		for (ColonizedPlanet& colonized : player.colonized_planets)
-		{
-			// Get the planet object
-			Planet* planet = get_planet(colonized.get_id() );
-			if (!planet || planet->owner != player.id)
-				{ continue; }  // Skip if planet doesn't exist or isn't owned by this player 
+			player.effective_income * player.allocation.planets_fraction );
 			
-			// Update planet desirability
-			colonized.update_desirability();
+			// Iterate through each colonized planet
+			for (ColonizedPlanet& colonized : player.colonized_planets)
+			{
+				// Get the planet object
+				Planet* planet = get_planet(colonized.get_id() );
+				if (!planet || planet->owner != static_cast<PlayerID>(player.id))
+					{ continue; }  // Skip if planet doesn't exist or isn't owned by this player
+
+				// Update planet desirability
+				colonized.update_desirability();
 			
 			// Calculate money allocated to this specific planet
 			int64_t planet_budget = static_cast<int64_t>(

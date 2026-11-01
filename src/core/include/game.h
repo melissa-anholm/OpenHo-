@@ -119,6 +119,11 @@ public:
 	// Money allocation
 	void set_money_allocation(uint32_t player_id, const Player::MoneyAllocation& alloc);
 	const Player::MoneyAllocation& get_money_allocation(uint32_t player_id) const;
+	void set_dip_amount(uint32_t player_id, int64_t dip_amount);
+	void set_one_time_dip_amount(uint32_t player_id, int64_t dip_amount);
+	void clear_dip_amount(uint32_t player_id);
+	int64_t get_dip_amount(uint32_t player_id) const;
+	bool is_dip_persistent(uint32_t player_id) const;
 	
 	// ========================================================================
 	// Validation Methods (check_* pattern)
@@ -213,18 +218,20 @@ private:
 	std::vector<Player> initialize_players(const std::vector<PlayerSetup>& player_setups);
 	std::unique_ptr<Galaxy> initialize_galaxy(const GalaxyGenerationParams& params);
 	void initialize_player_knowledge();
-		void build_entity_maps(const Galaxy& galaxy_ref);
-	
+	void build_entity_maps(const Galaxy& galaxy_ref);
+
 	// Assign suitable planets to players based on their starting colony quality
 	// Takes the suitable planets vector to avoid recalculating it
 	void assign_planets_random(const std::vector<Planet*>& suitable_planets);
 	void process_population_growth();
 	void check_population_decreasing_events(uint32_t planet_id);
 	void calculate_player_incomes();
-	void process_player_incomes();
 	void update_planet_incomes();
 	void process_money_allocation();
 	void apply_money_interest();
+	void apply_dip_into_savings();
+	void lock_pending_dips();
+	void renew_persistent_dips();
 	void process_research();
 	void process_research_stream(Player& player, TechStream stream, int64_t research_budget);
 	void process_planets();

@@ -65,20 +65,26 @@ public:
 	PlayerType type;
 	int32_t iq;  // For computer players
 	
-		// Constructor
-		Player(class GameState* game_state_ref)
-			: id(0),
-			  name(),
-			  gender(GENDER_OTHER),
-			  type(PLAYER_HUMAN),
-			  iq(0),
-			  game_state(game_state_ref),
-			  money_savings(0),
-			  metal_reserve(0),
-			  ideal_temperature(0.0),
-			  ideal_gravity(0.0),
-			  money_income(0),
-			  metal_income(0),
+	// Constructor
+	Player(class GameState* game_state_ref)
+		: id(0),
+		  name(),
+		  gender(GENDER_OTHER),
+		  type(PLAYER_HUMAN),
+		  iq(0),
+		  game_state(game_state_ref),
+		  money_savings(0),
+		  metal_reserve(0),
+		  ideal_temperature(0.0),
+		  ideal_gravity(0.0),
+		  money_income(0),
+		  effective_income(0),
+		  pending_dip_amount(0),
+		  pending_dip_persistent(false),
+		  locked_dip_amount(0),
+		  locked_dip_persistent(false),
+		  turn_opening_savings(0),
+		  metal_income(0),
 			  tech{0, 0, 0, 0, 0, 0},
 			  current_turn_income{0, 0, 0, 0},
 			  allocation{0.5, 0.25, 0.25, {1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0,
@@ -173,6 +179,12 @@ public:
 	
 	/// Get this player's money income per turn
 	int64_t get_money_income() const { return money_income; }
+	/// Get the effective income available for this turn's allocations
+	int64_t get_effective_income() const { return effective_income; }
+	/// Get the currently pending positive savings draw
+	int64_t get_dip_amount() const { return pending_dip_amount; }
+	/// Whether the pending draw is automatically repeated every turn
+	bool is_dip_persistent() const { return pending_dip_persistent; }
 	
 	/// Get this player's metal income per turn
 	int64_t get_metal_income() const { return metal_income; }
@@ -250,6 +262,12 @@ private:
 	
 	// Calculated properties
 	int64_t money_income;  // Per turn
+	int64_t effective_income;  // Income available for this turn's allocations
+	int64_t pending_dip_amount;  // Reversible action-phase selection
+	bool pending_dip_persistent;  // Whether the pending selection renews
+	int64_t locked_dip_amount;  // Amount committed for the next economic phase
+	bool locked_dip_persistent;  // Persistence mode of the locked action
+	int64_t turn_opening_savings;  // Savings snapshot used for this turn's interest
 	int64_t metal_income;  // Per turn
 	
 	// Technology levels

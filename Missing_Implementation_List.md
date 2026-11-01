@@ -2,11 +2,11 @@
 
 **Purpose:** Track all functions and values that need implementation or reverse-engineering from the original game.
 
-**Last Updated:** October 28, 2026 (Status and priority audit)
+**Last Updated:** October 31, 2026 (Dip Into Savings implementation)
 
 ---
 
-> **Known turn-processing issue — fix later:** `calculate_player_incomes()` currently sums stored planetary income before `update_planet_incomes()` refreshes it, and interest is added after the current turn’s allocations. Reorder the steps later so planetary income is refreshed and summed, interest is calculated, and then total current income is allocated. The intended interest destination remains current income, not savings.
+> **Economic-kernel status:** The main economic path now applies population growth, refreshes planetary income, calculates interest from beginning-of-turn savings, applies Dip Into Savings, and commits one effective-income value before allocation. Full snapshots, queued actions, and later fleet phases remain future work.
 
 > **Design reminder — double-check later:** Verify the ordering of colonization relative to economic processing. Leave `TurnProcessingOrder.md` unchanged for now.
 
@@ -45,14 +45,14 @@
 #### Savings Interest
 - **Status:** Provisional functionality.  No idea whether this formula is correct.
 - **Formula:** `interest = 10.0 × sqrt(savings)` for positive savings.
-- Current application/order requires correction; see the turn-processing note above
+- Current-turn interest is calculated from beginning-of-turn savings before Dip Into Savings and allocation.
 - **Priority:** Medium-low
 
 #### Mining Efficiency
 - **Status:** Provisional functionality.  No idea whether this formula is correct.
 - **Formula:** `metal_extracted = 20.0 × sqrt(money_spent)`
 - Inverse: `money = (metal / 20.0)²`
-- **Resource flow:** Money from the current positive income allocation is spent during economic processing; extracted metal is transferred losslessly from the planet to the player's shared metal reserve. Planetary metal is clamped at zero.
+- **Resource flow:** Money from the current positive effective-income allocation is spent during economic processing; extracted metal is transferred losslessly from the planet to the player's shared metal reserve. Planetary metal is clamped at zero.
 - **Feature:** Depleted-metal refund logic is implemented; the formula and data-driven behavior still require validation.
 - **Priority:** Medium-low
 
@@ -60,7 +60,7 @@
 - **Status:** Provisional functionality.  No idea if this is correct.
 - **Formula:** `temperature_change_F = 0.0811 × sqrt(money_spent)`
 - Inverse: `money = (temperature_change_F / 0.0811)²`
-- **Resource flow:** Money from the current positive income allocation is spent during economic processing; terraforming does not consume metal. Temperature changes immediately during economic processing.
+- **Resource flow:** Money from the current positive effective-income allocation is spent during economic processing; terraforming does not consume metal. Temperature changes immediately during economic processing.
 - **Feature:** Overshoot prevention and excess-allocation refunds are implemented. The current refund destination is `money_savings`, pending a future design decision.
 - **Priority:** Medium-low
 
@@ -70,26 +70,36 @@
 ### Data-Driven Values (Require Reverse-Engineering) - 5 items
 
 #### Negative Income Mechanics
-- **Status:** Partially specified; implementation and bankruptcy threshold remain future work.
-- **Location:** `src/core/src/game.cpp`
+- **Status:** Negative-income formulas are implemented provisionally; the current Dip-Into-Savings implementation must be replaced with the corrected queued-action model.
+- **Location:** `src/core/src/game.cpp`, `src/core/include/player.h`, and related action APIs
 - **Current Implementation:**
-  - Before **Dip Into Savings** is implemented, `effective_income = net_income`.
+  - The existing implementation applies the dip during economic processing and is not the final design.
+- **Required Dip-Into-Savings Design:**
+  - The player selects a positive dip during the player-action phase for the following economic phase.
+  - The selection immediately adjusts savings, but does not affect the current turn's income or allocations.
+  - Maintain separate pending and locked amounts, with separate persistence modes.
+  - When a pending selection changes, adjust savings by `old_pending - new_pending`; repeated on/off changes must be lossless.
+  - At the end of the player-action phase, lock the pending selection for the next economic phase without deducting savings again.
+  - In economic processing, `effective_income = net_income + locked_dip_amount`; the locked amount is not removed from savings a second time.
+  - By default, a selected dip is persistent and renews automatically as a pension plan until explicitly cleared.
+  - A separate one-time mode applies the locked dip for only one processed turn.
   - When effective income is positive, it is distributed according to the player's budget allocations.
   - When effective income is negative, no money is allocated to savings, planetary development, or technology research.
-  - The negative effective income is subtracted directly from the player's money savings account, which may become negative.
+  - The negative effective income is applied to the savings balance already adjusted by the immediate dip deduction; research and planetary development are not funded.
   - A player may recover later if net income becomes positive; one negative-income turn does not immediately cause bankruptcy.
 - **Missing:**
-  - [ ] Determine the data-driven lower limit for negative savings.
+  - [ ] Replace the current economic-phase deduction with reversible pending/locked action state.
+  - [ ] Determine the data-driven lower limit for negative savings and the maximum permitted dip amount; these are related bankruptcy-limit rules.
   - [ ] Implement bankruptcy and loss when the negative-savings limit is reached.
 - **Priority:** Medium-high
 
 #### Planetary Income Calculation
-- **Status:** Provisional main-path formula; standalone helper remains a stub
+- **Status:** Provisional main-path formula with corrected Phase 1 ordering; standalone helper remains a stub
 - **Location:** `src/core/src/game.cpp` and `src/core/src/game_formulas.cpp`
 - **Current Implementation:**
-  - The main turn path uses stored colony-income values and a provisional gravity/temperature condition factor.
+  - The main turn path refreshes colony income after population growth using a provisional gravity/temperature condition factor.
   - `calculate_planetary_income()` returns 0 and is not wired into the main path.
-  - Income is currently summed before colony income is refreshed for the new turn; see the turn-processing note at the top.
+  - Income is summed after colony income is refreshed; the formula itself remains provisional.
 - **Priority:** Medium-high
 
 #### Ship Design Costs
@@ -107,7 +117,7 @@
 - **Priority:** Medium
 
 #### Population Growth
-- **Status:** Placeholder (ignores planet conditions)
+- **Status:** Integrated into the Phase 1 economic order, but formula remains a placeholder
 - **Location:** `src/core/src/game_formulas.cpp`
 - **Current Implementation:**  Returns 10% growth regardless of gravity/temperature mismatch.  Accepts parameters but doesn't use them.
 - **Priority:** Medium-high

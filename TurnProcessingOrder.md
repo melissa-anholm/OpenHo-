@@ -60,12 +60,53 @@ turn_interest = interest(beginning_of_turn_savings)
 
 Add this value to the current income pool. It is not directly added to savings, and it is not applied a second time during the same economic phase.
 
-Until **Dip Into Savings** is implemented:
+First calculate net income:
 
 ```text
 net_income = sum(current_turn_planetary_income) + turn_interest
-effective_income = net_income
 ```
+
+Dip Into Savings is selected during the player-action phase for a future
+economic phase. It has an immediate savings effect and a queued economic
+effect. The current-turn selection is provisional until the player-action
+phase ends.
+
+The action maintains separate pending and locked values:
+
+```text
+pending_dip_amount       = current reversible selection
+locked_dip_amount        = amount committed for the next economic phase
+pending_dip_persistent   = whether the selection renews automatically
+locked_dip_persistent    = persistence mode of the committed action
+```
+
+When the player changes the pending selection, savings are adjusted only by
+the difference between the old and new selections:
+
+```text
+savings += old_pending_dip_amount - new_pending_dip_amount
+```
+
+Thus, selecting, changing, or cancelling a dip repeatedly during one player
+action phase cannot create or destroy money. The pending selection does not
+affect the current turn's net or effective income. When the player-action
+phase ends, the pending selection becomes the locked action for the next
+economic phase; savings are not adjusted a second time at lock time.
+
+At the next economic phase, the locked dip is added to net income:
+
+```text
+effective_income = net_income + locked_dip_amount
+```
+
+The locked dip has already been removed from savings during the preceding
+player-action phase, so economic processing does not subtract it again. The
+dip may exceed savings and may therefore temporarily create or increase debt.
+The eventual permitted-debt/bankruptcy limit is data-dependent and is not
+enforced yet. By default, selecting a positive dip creates a persistent
+**pension plan** that renews automatically for later turns. The player may
+instead select a one-time dip, which is cleared after its locked amount is
+applied. Setting the pending dip to zero explicitly disables a pension plan.
 
 ### 2.3 Effective income and allocations
 
@@ -83,7 +124,24 @@ When effective income is negative, there is no money to distribute:
 - The negative amount is charged directly against money savings:
 
 ```text
-savings_after = opening_savings + effective_income
+savings_after_economic_processing = savings_at_economic_start + effective_income
+```
+
+When effective income is positive, the savings allocation is included in the
+same formula:
+
+```text
+savings_after_economic_processing = savings_at_economic_start
+                                    + effective_income × savings_allocation_fraction
+```
+
+Here `savings_at_economic_start` already includes the immediate deduction
+made when the locked dip was selected. Across both phases, the positive-income
+case is therefore equivalent to:
+
+```text
+opening_savings - dip_amount
+    + effective_income × savings_allocation_fraction
 ```
 
 Savings may therefore become debt. A single negative-income turn does not automatically cause bankruptcy; recovery remains possible. Reaching the data-dependent lower savings limit causes bankruptcy and loss of the game.
@@ -94,7 +152,7 @@ Apply the allocations and persist the resulting changes to savings, accumulated 
 
 #### Mining
 
-Mining requires positive effective income allocated to planetary development until **Dip Into Savings** exists. The transfer is lossless:
+Mining requires positive effective income allocated to planetary development. The transfer is lossless:
 
 ```text
 planet_metal -= metal_extracted
@@ -190,7 +248,7 @@ A player may immediately send money or metal to another player. Transfers are lo
 
 ### 5.3 Actions queued for the next turn
 
-Examples include fleet movements, colony abandonment, and diplomatic actions whose rules eventually resolve later. Queued actions remain mutable until processing begins.
+Examples include Dip Into Savings, fleet movements, colony abandonment, and diplomatic actions whose rules eventually resolve later. Dip selection immediately updates the persistent savings balance but queues the income effect; its pending amount and persistence mode remain mutable until the player-action phase ends. Other queued actions remain mutable until processing begins.
 
 ### 5.4 Colony abandonment
 

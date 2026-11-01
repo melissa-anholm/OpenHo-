@@ -152,6 +152,43 @@ ErrorCode game_player_set_spending_allocation(
 	double planets_fraction
 );
 
+/**
+ * Check whether a player can select a positive Dip Into Savings amount.
+ * The amount may exceed current savings; the future debt/bankruptcy limit
+ * is data-dependent and is not enforced yet.
+ */
+ErrorCode game_can_player_set_dip_amount(
+	const GameState* game_state,
+	uint32_t player_id,
+	int64_t dip_amount
+);
+
+/** Set a positive persistent Dip Into Savings amount (the pension plan). */
+ErrorCode game_player_set_dip_amount(
+	GameState* game_state,
+	uint32_t player_id,
+	int64_t dip_amount
+);
+
+/** Set a positive Dip Into Savings amount for one turn only. */
+ErrorCode game_player_set_one_time_dip_amount(
+	GameState* game_state,
+	uint32_t player_id,
+	int64_t dip_amount
+);
+
+/** Explicitly disable the player's persistent or pending dip. */
+ErrorCode game_player_clear_dip_amount(
+	GameState* game_state,
+	uint32_t player_id
+);
+
+/** Return 1 when the player's selected dip is persistent, otherwise 0. */
+int32_t game_get_player_dip_persistent(
+	const GameState* game_state,
+	uint32_t player_id
+);
+
 // ============================================================================
 // Fleet Movement Validation & Actions
 // ============================================================================
