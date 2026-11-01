@@ -1274,6 +1274,8 @@ ErrorCode GameState::check_player_design_ship(uint32_t player_id, const std::str
 	// Check design name is not empty
 	if (name.empty())
 		{ return ErrorCode::INVALID_PARAMETER; } 
+	if (type < SHIP_SCOUT || type > SHIP_BIOLOGICAL)
+		{ return ErrorCode::INVALID_SHIP_TYPE; }
 	
 	// Check design name is not duplicate
 	for (const auto& design : player->get_ship_designs())
@@ -1301,6 +1303,66 @@ ErrorCode GameState::check_player_design_ship(uint32_t player_id, const std::str
 	if (tech_mini > tech.mini || tech_mini < 0)
 		return ErrorCode::TECH_LEVEL_NOT_AVAILABLE;
 	
+	return ErrorCode::SUCCESS;
+}
+
+ErrorCode GameState::build_ships_from_design(uint32_t player_id, uint32_t design_id, uint32_t ship_count, uint32_t planet_id)
+{
+	Player* player = get_player(player_id);
+	if (!player)
+		return ErrorCode::INVALID_PLAYER_ID;
+	if (ship_count == 0)
+		return ErrorCode::INVALID_FLEET_SIZE;
+	if (ship_count > 1000)
+		return ErrorCode::INVALID_FLEET_SIZE;
+
+	ShipDesign* design = nullptr;
+	for (auto& candidate : player->ship_designs)
+	{
+		if (candidate.id == design_id)
+		{
+			design = &candidate;
+			break;
+		}
+	}
+	if (!design)
+		return ErrorCode::SHIP_DESIGN_NOT_FOUND;
+
+	Planet* planet = get_planet(planet_id);
+	if (!planet)
+		return ErrorCode::INVALID_PLANET_ID;
+	if (planet->owner != static_cast<PlayerID>(player_id))
+		return ErrorCode::PLANET_NOT_OWNED;
+
+	if (design->build_cost < 0 || design->prototype_cost < 0 || design->metal_cost < 0)
+		return ErrorCode::VALIDATION_FAILED;
+	if (ship_count > static_cast<uint64_t>(INT64_MAX) /
+			static_cast<uint64_t>(design->build_cost == 0 ? 1 : design->build_cost))
+		return ErrorCode::VALIDATION_FAILED;
+	if (ship_count > static_cast<uint64_t>(INT64_MAX) /
+			static_cast<uint64_t>(design->metal_cost == 0 ? 1 : design->metal_cost))
+		return ErrorCode::VALIDATION_FAILED;
+
+	const int64_t construction_cost = design->build_cost * static_cast<int64_t>(ship_count);
+	const int64_t prototype_cost = design->has_been_prototyped ? 0 : design->prototype_cost;
+	if (construction_cost > INT64_MAX - prototype_cost)
+		return ErrorCode::VALIDATION_FAILED;
+	const int64_t total_money_cost = construction_cost + prototype_cost;
+	const int64_t total_metal_cost = design->metal_cost * static_cast<int64_t>(ship_count);
+
+	if (player->money_savings < total_money_cost)
+		return ErrorCode::INSUFFICIENT_MONEY;
+	if (player->metal_reserve < total_metal_cost)
+		return ErrorCode::INSUFFICIENT_METAL;
+
+	const uint32_t fleet_id = player->build_fleet(
+		allocate_fleet_id(), design_id, ship_count, planet_id);
+	if (fleet_id == 0)
+		return ErrorCode::UNKNOWN_ERROR;
+
+	player->money_savings -= total_money_cost;
+	player->metal_reserve -= total_metal_cost;
+	design->has_been_prototyped = true;
 	return ErrorCode::SUCCESS;
 }
 

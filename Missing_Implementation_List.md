@@ -368,19 +368,35 @@ This testing should be performed before galaxy generation is considered producti
 - **Priority:** Medium-high
 
 #### Ship Design Creation
-- **Status:** Object creation and storage exist; costs and validation consistency remain
+- **Status:** Functional with provisional costs; final data-driven formulas remain future work.
 - **Location:** `src/core/src/player.cpp`, `src/core/src/game.cpp`, and `src/core/src/gamestate_c_api_extensions.cpp`
 - **Completed:**
  - [x] Basic ShipDesign object creation
  - [x] Design ID allocation
  - [x] Add design to the player's available design list
-- **Missing:**
- - [ ] Ensure all direct creation paths apply the same design validation
- - [ ] Calculate and charge design/prototype costs
+- [x] Ensure all direct creation paths apply the same design validation
+- [x] Store a `has_been_prototyped` flag directly with each design
+- [x] Calculate and store provisional build, prototype, and metal costs
+- **Remaining:**
+ - [ ] Replace provisional cost formulas with data-driven formulas
 - **Priority:** Medium
 
-#### Fleet Assembly
-- **Status:** Basic fleet objects exist; assembly from built ships and same-turn scrapping rules remain
+#### Ship Construction and Immediate Fleet Creation
+- **Status:** Functionally implemented with provisional costs; same-phase scrapping and final cost behavior remain.
+- **Location:** `src/core/src/c_api.cpp`, `src/core/src/player.cpp`, `src/core/src/game_formulas.cpp`, and fleet creation paths
+- **Required Behavior:**
+ - [x] Build N ships of one design as one immediate fleet
+ - [x] Charge the individual money and metal costs atomically
+ - [x] Add the money-only prototype cost for the first ship built from a design
+ - [x] Reject unaffordable actions without partial resource deductions
+ - [x] Permit multiple build actions when resources remain sufficient
+ - [x] Record prototype completion so later builds from that design omit the prototype cost
+ - [ ] Permit full-resource same-phase scrapping for newly built ships/fleets
+ - [ ] Implement later scrapping for metal only at a heavy loss
+- **Priority:** High
+
+#### Fleet Composition and Assembly
+- **Status:** Basic fleet objects exist; future composition operations remain separate from basic ship construction
 - **Location:** `src/core/src/player.cpp`, `src/core/src/game.cpp`, and `src/core/src/gamestate_c_api_extensions.cpp`
 - **Completed:**
  - [x] Basic Fleet object creation
@@ -388,12 +404,10 @@ This testing should be performed before galaxy generation is considered producti
  - [x] Validate fleet parameters through the GameState/API path
  - [x] Add fleet to the player's fleet list
 - **Missing:**
- - [ ] Assemble fleets from ships that have already been built
- - [ ] Ensure direct and API assembly paths apply consistent validation
- - [ ] Track which ships were built during the current player-action phase
- - [ ] Permit full-resource same-phase scrapping for newly built ships
- - [ ] Implement later scrapping for metal only at a heavy loss
-- **Dependency:** Fleet assembly relies on sufficiently complete ship-design creation and ship-design cost rules.
+ - [ ] Combine ships or fleets with different designs
+ - [ ] Split fleets into smaller fleets
+ - [ ] Ensure future composition paths apply consistent validation
+- **Dependency:** Future fleet composition relies on sufficiently complete ship-design and ship-construction rules, but is not required for basic construction or travel.
 - **Priority:** Medium
 
 #### Player Initial Setup

@@ -429,17 +429,12 @@ ErrorCode game_delete_ship_design(void* game, uint32_t player_id, uint32_t desig
 	return success ? ErrorCode::SUCCESS : ErrorCode::SHIP_DESIGN_NOT_FOUND;
 }
 
-ErrorCode game_build_ship_from_design(void* game, uint32_t player_id, uint32_t design_id)
+ErrorCode game_build_ships_from_design(void* game, uint32_t player_id, uint32_t design_id,
+	                                    uint32_t ship_count, uint32_t planet_id)
 {
-	if (!game) 
+	if (!game)
 		return ErrorCode::INVALID_PARAMETER;
-	
-	GameState* gameState = static_cast<GameState*>(game);
-	Player* player = gameState->get_player(player_id);
-	if (!player)
-		return ErrorCode::INVALID_PARAMETER;
-	
-	// TODO: Implement ship building logic
-	// This will deduct costs from player->money_savings and player->metal_reserve
-	return ErrorCode::SUCCESS;
+
+	return static_cast<GameState*>(game)->build_ships_from_design(
+		player_id, design_id, ship_count, planet_id);
 }

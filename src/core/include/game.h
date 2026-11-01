@@ -134,6 +134,9 @@ public:
 	
 	/// Check if a player can design a ship with given parameters
 	[[nodiscard]] ErrorCode check_player_design_ship(uint32_t player_id, const std::string& name, ShipType type, int32_t tech_range, int32_t tech_speed, int32_t tech_weapons, int32_t tech_shields, int32_t tech_mini) const;
+
+	/// Build a quantity of one ship design as one immediate fleet
+	[[nodiscard]] ErrorCode build_ships_from_design(uint32_t player_id, uint32_t design_id, uint32_t ship_count, uint32_t planet_id);
 	
 	/// Check if a player can set spending allocation
 	[[nodiscard]] ErrorCode check_player_set_spending_allocation(uint32_t player_id, double savings_frac, double research_frac, double planets_frac) const;

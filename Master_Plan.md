@@ -134,7 +134,7 @@ The economic path applies population growth, refreshes planetary income using th
 - Negative effective income reduces savings directly; recovery is possible before the data-driven bankruptcy limit is reached.
 - Mining transfers metal losslessly from a planet to the player's shared metal reserve; planetary metal cannot fall below zero. Mining requires positive effective income allocated to planetary development.
 - Terraforming consumes money but not metal, changes temperature immediately during economic processing, and uses a nonlinear spending formula. Overshoot is prevented and excess allocation is currently refunded to savings, pending a future refund-destination decision.
-- Ship construction is immediate and costs both money and metal. The first ship of a type also incurs a money-only prototyping cost, typically about ten times the individual ship's money construction cost. Fleets are assembled from already-built ships rather than built as independent resource objects.
+- Ship designs are player-owned blueprint objects. Each design stores whether its ship type has already been prototyped; this flag determines whether the next build pays the additional money-only prototyping cost. A build action immediately creates a fleet containing N ships of that design and charges money and metal atomically. There is no separate unassembled-ship inventory. Future fleet-composition actions may combine ship types, split fleets, or otherwise rearrange ships, but are separate later functionality.
 - Unaffordable ship actions fail atomically. Ships built during the current player-action phase may be scrapped during that same phase without losing construction or prototyping resources; after the phase, scrapping recovers metal only at a heavy loss.
 - Queued fleet actions first resolve travel. Fleets still in transit have no further queued actions that turn; fleets at planets then resolve battles.
 - Whenever forces belonging to two or more non-allied players occupy the same place, they fight; fleets and owned planets are both forces in that battle. An invading weapon cannot target the planet until all defending ships are destroyed, but the planet may fire when its turn comes around. Exact battle rules, including force-turn order and multi-player battles, remain future work.
@@ -179,10 +179,13 @@ The immediate objective is not feature completeness. It is a small, repeatable m
 
 The minimal playable game milestone established a deterministic RANDOM-galaxy path, initialized player homeworlds and knowledge state, and advanced a two-player game through three turns in a 40-planet smoke test. Turn-readiness tracking and the provisional economic sequence are operational; starting fleets/designs, full formula fidelity, and broader galaxy validation remain future work. The C++ core builds successfully with CMake.
 
-### Stage 4: Placeholder ship building
+### Stage 4: Placeholder ship design and construction
 
-- Add a minimal ship-building operation after the multi-turn loop works.
-- Initially, the operation may use placeholder economics, but it must create a real fleet/design state and report validation failures accurately.
+- [x] Rewrite the partial ship-design scaffold into a coherent player-owned design system.
+- [x] Store a `has_been_prototyped` flag directly with each design, and use it to charge the first-build prototype cost for that design.
+- [x] Use placeholder cost formulas initially, but charge money and metal atomically and accurately.
+- [x] Make each build action create its own same-design fleet immediately; no separate unassembled-ship inventory is required.
+- Defer mixed-design fleet assembly, fleet splitting, and other fleet-composition actions until after basic construction and travel are functional.
 
 ### Stage 5: Ship travel, exploration, and knowledge
 

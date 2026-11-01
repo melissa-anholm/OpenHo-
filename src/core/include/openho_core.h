@@ -72,7 +72,7 @@ void game_get_full_player_info_history(void* game, uint32_t player_id, const std
 void game_get_player_ship_designs(void* game, uint32_t player_id, ShipDesign* out, uint32_t max_count, uint32_t* out_count);
 [[nodiscard]] uint32_t game_get_num_player_ship_designs(void* game, uint32_t player_id);
 [[nodiscard]] ErrorCode game_delete_ship_design(void* game, uint32_t player_id, uint32_t design_id);
-[[nodiscard]] ErrorCode game_build_ship_from_design(void* game, uint32_t player_id, uint32_t design_id);
+[[nodiscard]] ErrorCode game_build_ships_from_design(void* game, uint32_t player_id, uint32_t design_id, uint32_t ship_count, uint32_t planet_id);
 
 // Money allocation
 [[nodiscard]] ErrorCode game_set_money_allocation(void* game, uint32_t player_id, const Player::MoneyAllocation* alloc);

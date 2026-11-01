@@ -2,6 +2,7 @@
 #include "openho_core.h"
 #include "player.h"
 #include "game.h"
+#include "game_formulas.h"
 #include <cmath>
 
 // ============================================================================
@@ -217,8 +218,9 @@ const std::vector<const Fleet*> Player::get_fleets_in_transit() const
 // ============================================================================
 uint32_t Player::create_ship_design(const std::string& name, ShipType type, int32_t tech_range, int32_t tech_speed, int32_t tech_weapons, int32_t tech_shields, int32_t tech_mini)
 {
-	// TODO: Validate tech levels are within reasonable bounds
-	// TODO: Check max 100 designs per player
+	if (!game_state || game_state->check_player_design_ship(
+		id, name, type, tech_range, tech_speed, tech_weapons, tech_shields, tech_mini) != ErrorCode::SUCCESS)
+		return 0;
 	
 	uint32_t design_id = next_ship_design_id++;
 	ShipDesign design;
@@ -228,6 +230,12 @@ uint32_t Player::create_ship_design(const std::string& name, ShipType type, int3
 	
 	// Set tech levels using the friend function
 	set_ship_design_tech(design, tech_range, tech_speed, tech_weapons, tech_shields, tech_mini);
+	design.build_cost = GameFormulas::calculate_ship_design_build_cost(
+		tech_range, tech_speed, tech_weapons, tech_shields, tech_mini);
+	design.prototype_cost = GameFormulas::calculate_ship_design_prototype_cost(
+		tech_range, tech_speed, tech_weapons, tech_shields, tech_mini);
+	design.metal_cost = GameFormulas::calculate_ship_design_metal_cost(
+		tech_range, tech_speed, tech_weapons, tech_shields, tech_mini);
 	
 	ship_designs.push_back(design);
 	return design_id;

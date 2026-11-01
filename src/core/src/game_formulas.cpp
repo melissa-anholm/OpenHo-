@@ -12,8 +12,13 @@ namespace GameFormulas
 	                                          int32_t tech_weapons, int32_t tech_shields, 
 	                                          int32_t tech_mini)
 	{
-		// Placeholder: return 1
-		// Real formula will be implemented later
+		// Provisional flat cost. The technology arguments remain part of the
+		// interface so the data-driven formula can be substituted later.
+		(void)tech_range;
+		(void)tech_speed;
+		(void)tech_weapons;
+		(void)tech_shields;
+		(void)tech_mini;
 		return 1;
 	}
 	
@@ -21,17 +26,21 @@ namespace GameFormulas
 	                                              int32_t tech_weapons, int32_t tech_shields, 
 	                                              int32_t tech_mini)
 	{
-		// Placeholder: return 1
-		// Real formula will be implemented later
-		return 1;
+		// Provisional prototype cost is ten times the individual build cost.
+		return 10 * calculate_ship_design_build_cost(
+			tech_range, tech_speed, tech_weapons, tech_shields, tech_mini);
 	}
 	
 	int64_t calculate_ship_design_metal_cost(int32_t tech_range, int32_t tech_speed, 
 	                                          int32_t tech_weapons, int32_t tech_shields, 
 	                                          int32_t tech_mini)
 	{
-		// Placeholder: return 1
-		// Real formula will be implemented later
+		// Provisional flat metal cost; the final value will be data-driven.
+		(void)tech_range;
+		(void)tech_speed;
+		(void)tech_weapons;
+		(void)tech_shields;
+		(void)tech_mini;
 		return 1;
 	}
 	

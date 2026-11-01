@@ -17,19 +17,20 @@ void set_ship_design_tech(struct ShipDesign& design, int32_t range, int32_t spee
 // Ship Design Structure
 // ============================================================================
 
-/// Ship design pattern (immutable once created)
-/// Represents a blueprint for building ships with specific technology levels and costs
+/// Ship design pattern. Blueprint fields are immutable after creation; the
+/// prototype state changes when the first ship is built from this design.
 struct ShipDesign
 {
 public:
-	uint32_t id;                    // Unique ID within player's design library
+	uint32_t id = 0;                // Unique ID within player's design library
 	std::string name;
-	ShipType type;
+	ShipType type = SHIP_SCOUT;
 	
 	// Costs (calculated at design creation time, immutable)
-	int64_t build_cost;              // Cost to build each ship of this design
-	int64_t prototype_cost;          // Cost for the first ship of this design
-	int64_t metal_cost;              // Metal cost per ship
+	int64_t build_cost = 0;          // Cost to build each ship of this design
+	int64_t prototype_cost = 0;      // Additional cost for the first ship of this design
+	int64_t metal_cost = 0;          // Metal cost per ship
+	bool has_been_prototyped = false; // Mutable construction state
 	
 	// Constructor to set tech levels during creation
 	ShipDesign() = default;
@@ -43,6 +44,10 @@ public:
 	int32_t get_weapons() const { return tech_weapons; }
 	int32_t get_shields() const { return tech_shields; }
 	int32_t get_mini() const    { return tech_mini; }
+	int64_t get_build_cost() const { return build_cost; }
+	int64_t get_prototype_cost() const { return prototype_cost; }
+	int64_t get_metal_cost() const { return metal_cost; }
+	bool get_has_been_prototyped() const { return has_been_prototyped; }
 	
 private:
 	// Technology levels associated with this design (immutable after construction)

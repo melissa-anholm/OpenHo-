@@ -114,6 +114,61 @@ int main()
     assert(game.get_current_turn() == 3);
     assert(game.get_current_year() == 2030);
 
+    std::vector<PlayerSetup> ship_player_setups = {
+        {"Ship Builder", GENDER_F, PLAYER_HUMAN, 100, START_NORMAL}
+    };
+    GalaxyGenerationParams ship_galaxy_params(20, 1, 0.5, GALAXY_RANDOM, 7);
+    GameSetup ship_setup(ship_galaxy_params, ship_player_setups);
+    GameState ship_game(ship_setup);
+    ship_game.process_turn();
+
+    const uint32_t ship_planet_id =
+        ship_game.get_players().front().get_colonized_planets().front().get_id();
+    const uint32_t design_id = ship_game.get_player(1)->create_ship_design(
+        "Placeholder Scout", SHIP_SCOUT, 1, 2, 1, 1, 0);
+    assert(design_id != 0);
+    const ShipDesign* design = ship_game.get_player(1)->get_ship_design(design_id);
+    assert(design != nullptr);
+    assert(design->get_build_cost() == 1);
+    assert(design->get_prototype_cost() == 10);
+    assert(design->get_metal_cost() == 1);
+    assert(!design->get_has_been_prototyped());
+
+    const int64_t money_before_first_build = ship_game.get_player(1)->get_money();
+    const int64_t metal_before_first_build = ship_game.get_player(1)->get_metal();
+    assert(ship_game.build_ships_from_design(1, design_id, 3, ship_planet_id) ==
+           ErrorCode::SUCCESS);
+    assert(ship_game.get_player(1)->get_money() == money_before_first_build - 13);
+    assert(ship_game.get_player(1)->get_metal() == metal_before_first_build - 3);
+    assert(ship_game.get_player(1)->get_fleets().size() == 1);
+    assert(ship_game.get_player(1)->get_fleets().front().ship_count == 3);
+    assert(design->get_has_been_prototyped());
+
+    const int64_t money_before_second_build = ship_game.get_player(1)->get_money();
+    const int64_t metal_before_second_build = ship_game.get_player(1)->get_metal();
+    assert(ship_game.build_ships_from_design(1, design_id, 2, ship_planet_id) ==
+           ErrorCode::SUCCESS);
+    assert(ship_game.get_player(1)->get_money() == money_before_second_build - 2);
+    assert(ship_game.get_player(1)->get_metal() == metal_before_second_build - 2);
+    assert(ship_game.get_player(1)->get_fleets().size() == 2);
+    assert(ship_game.get_player(1)->get_fleets()[1].ship_count == 2);
+
+    const int64_t money_before_failed_build = ship_game.get_player(1)->get_money();
+    const int64_t metal_before_failed_build = ship_game.get_player(1)->get_metal();
+    assert(ship_game.build_ships_from_design(1, design_id, 1001, ship_planet_id) ==
+           ErrorCode::INVALID_FLEET_SIZE);
+    assert(ship_game.get_player(1)->get_money() == money_before_failed_build);
+    assert(ship_game.get_player(1)->get_metal() == metal_before_failed_build);
+    assert(ship_game.get_player(1)->get_fleets().size() == 2);
+
+    ship_game.set_dip_amount(1, 100000000);
+    assert(ship_game.build_ships_from_design(1, design_id, 1, ship_planet_id) ==
+           ErrorCode::INSUFFICIENT_MONEY);
+    assert(ship_game.get_player(1)->get_money() == money_before_failed_build - 100000000);
+    assert(ship_game.get_player(1)->get_metal() == metal_before_failed_build);
+    assert(ship_game.get_player(1)->get_fleets().size() == 2);
+    ship_game.clear_dip_amount(1);
+
     std::cout << "Minimal RANDOM galaxy game advanced through 3 turns successfully.\n";
     return 0;
 }
