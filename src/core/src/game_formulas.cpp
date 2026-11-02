@@ -226,6 +226,18 @@ namespace GameFormulas
 			return static_cast<int64_t>(interest);
 		}
 	}
+
+	int64_t calculate_available_build_money(int64_t current_savings)
+	{
+		const int64_t available_money = current_savings
+			+ GameConstants::Provisional_Intentional_Debt_Limit;
+		return available_money > 0 ? available_money : 0;
+	}
+
+	bool has_reached_bankruptcy_limit(int64_t current_savings)
+	{
+		return current_savings <= -GameConstants::Provisional_Bankruptcy_Debt_Limit;
+	}
 	
 	int64_t convert_money_to_research_points(int64_t money_allocated)
 	{

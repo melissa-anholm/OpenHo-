@@ -127,9 +127,14 @@ namespace GameConstants
 	// Money and Resources
 	// ========================================================================
 	
-	// Interest rates removed - now calculated dynamically in GameFormulas::calculate_money_interest()
-	// Positive savings: 10 * sqrt(savings)
-	// Negative savings (debt): 0.15 * savings
+		// Interest rates removed - now calculated dynamically in GameFormulas::calculate_money_interest()
+		// Positive savings: 10 * sqrt(savings)
+		// Negative savings (debt): 0.15 * savings
+
+		// Provisional debt boundaries. These values are placeholders for the
+		// eventual data-driven loan and bankruptcy rules.
+		constexpr int64_t Provisional_Intentional_Debt_Limit = 100000;
+		constexpr int64_t Provisional_Bankruptcy_Debt_Limit = 250000;
 	
 	// ========================================================================
 	// Galaxy Construction / Planet Placement Abstract Parameters

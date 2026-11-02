@@ -84,8 +84,16 @@ namespace GameFormulas
 	/// Negative savings (debt) incur interest at MONEY_INTEREST_RATE_DEBT.
 	/// 
 	/// @param savings The player's current money savings (can be negative for debt)
-	/// @return The interest amount to add to savings (positive or negative)
-	int64_t calculate_money_interest(int64_t savings);
+		/// @return The interest amount to add to savings (positive or negative)
+		int64_t calculate_money_interest(int64_t savings);
+
+		/// Calculate money available for an intentional action.
+		/// Provisional policy allows savings plus the remaining intentional-debt
+		/// headroom, clamped at zero.
+		int64_t calculate_available_build_money(int64_t current_savings);
+
+		/// Return whether savings have reached the separate bankruptcy threshold.
+		bool has_reached_bankruptcy_limit(int64_t current_savings);
 	
 	/// Convert money allocated to research into research points.
 	/// This formula determines the efficiency of research spending.

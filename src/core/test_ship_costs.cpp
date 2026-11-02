@@ -65,6 +65,16 @@ int main()
 	assert(!check_ship_design_levels(SHIP_FIGHTER, -1, 0, 0, 0, 0));
 	assert(!check_ship_design_levels(SHIP_BIOLOGICAL, 0, 0, 0, 0, 0));
 
+	// Provisional debt boundaries are shared by intentional actions such as
+	// ship building and Dip Into Savings, while bankruptcy uses a larger limit.
+	expect_equal(calculate_available_build_money(0), 100000);
+	expect_equal(calculate_available_build_money(-25000), 75000);
+	expect_equal(calculate_available_build_money(-100000), 0);
+	expect_equal(calculate_available_build_money(-125000), 0);
+	assert(!has_reached_bankruptcy_limit(-249999));
+	assert(has_reached_bankruptcy_limit(-250000));
+	assert(has_reached_bankruptcy_limit(-300000));
+
 	std::cout << "Ship cost tests passed.\n";
 	return 0;
 }

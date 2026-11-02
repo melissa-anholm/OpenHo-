@@ -2,7 +2,7 @@
 
 **Purpose:** Track all functions and values that need implementation or reverse-engineering from the original game.
 
-**Last Updated:** October 31, 2026 (Dip Into Savings implementation)
+**Last Updated:** November 2, 2026 (checklist synchronization and ship-cost consolidation)
 
 ---
 
@@ -25,9 +25,9 @@
 - **Priority:** Low
 
 #### Debt Interest
-- **Status:** Implemented. Requires double-check, but it's probably ok.
-- **Formula:** `interest = 0.15 × savings` for negative savings
-- **Open Question:** Current application/order requires correction; see the turn-processing note above.
+- **Status:** Implemented. Requires final data-driven double-check.
+- **Formula:** For negative savings, `interest = 0.15 × savings`; the result is negative.
+- **Application:** Calculated from `turn_opening_savings` and added directly to the player's current-turn income pool before effective-income allocation. It is not applied directly to the savings balance at this step.
 - **Priority:** Low
 
 #### Apparent Gravity/Temperature Perception Conversion
@@ -70,27 +70,22 @@
 ### Data-Driven Values (Require Reverse-Engineering) - 5 items
 
 #### Negative Income Mechanics
-- **Status:** Negative-income formulas are implemented provisionally; the current Dip-Into-Savings implementation must be replaced with the corrected queued-action model.
-- **Location:** `src/core/src/game.cpp`, `src/core/include/player.h`, and related action APIs
-- **Current Implementation:**
-  - The existing implementation applies the dip during economic processing and is not the final design.
-- **Required Dip-Into-Savings Design:**
+- **Status:** Dip Into Savings and negative-income processing are functionally implemented and finalized; debt-limit values and enforcement remain provisional.
+- **Location:** `src/core/src/game.cpp`, `src/core/include/player.h`, `src/core/include/game_constants.h`, and related action APIs
+- **Implemented behavior:**
   - The player selects a positive dip during the player-action phase for the following economic phase.
-  - The selection immediately adjusts savings, but does not affect the current turn's income or allocations.
-  - Maintain separate pending and locked amounts, with separate persistence modes.
-  - When a pending selection changes, adjust savings by `old_pending - new_pending`; repeated on/off changes must be lossless.
-  - At the end of the player-action phase, lock the pending selection for the next economic phase without deducting savings again.
-  - In economic processing, `effective_income = net_income + locked_dip_amount`; the locked amount is not removed from savings a second time.
-  - By default, a selected dip is persistent and renews automatically as a pension plan until explicitly cleared.
-  - A separate one-time mode applies the locked dip for only one processed turn.
-  - When effective income is positive, it is distributed according to the player's budget allocations.
-  - When effective income is negative, no money is allocated to savings, planetary development, or technology research.
-  - The negative effective income is applied to the savings balance already adjusted by the immediate dip deduction; research and planetary development are not funded.
-  - A player may recover later if net income becomes positive; one negative-income turn does not immediately cause bankruptcy.
-- **Missing:**
-  - [ ] Replace the current economic-phase deduction with reversible pending/locked action state.
-  - [ ] Determine the data-driven lower limit for negative savings and the maximum permitted dip amount; these are related bankruptcy-limit rules.
-  - [ ] Implement bankruptcy and loss when the negative-savings limit is reached.
+  - Selecting or changing a pending dip immediately adjusts savings; changing it back is lossless.
+  - Separate pending and locked amounts and persistence modes are maintained.
+  - The pending amount is locked for the next economic phase without a second deduction.
+  - `effective_income = net_income + locked_dip_amount` during economic processing.
+  - Persistent pension-plan dips renew automatically; one-time dips apply for only one processed turn.
+  - Positive effective income is allocated according to the player's budget; negative effective income funds no categories and is charged directly to savings.
+  - A player may recover if later net income becomes positive; one negative-income turn does not immediately cause bankruptcy.
+- **Current provisional debt limits:** Defined in `src/core/include/game_constants.h` as `GameConstants::Provisional_Intentional_Debt_Limit = 100000` and `GameConstants::Provisional_Bankruptcy_Debt_Limit = 250000`. `calculate_available_build_money()` uses the former as available intentional-debt headroom; `has_reached_bankruptcy_limit()` checks the latter.
+- **Remaining:**
+  - [ ] Replace both provisional values with data-driven rules.
+  - [ ] Enforce the intentional-debt limit for Dip Into Savings and ship-building actions.
+  - [ ] Implement bankruptcy and loss when the larger negative-savings limit is reached.
 - **Priority:** Medium-high
 
 #### Planetary Income Calculation
@@ -103,17 +98,10 @@
 - **Priority:** Medium-high
 
 #### Ship Design Costs
-- **Status:** Placeholder (3 functions)
-- **Location:** `src/core/src/game_formulas.cpp`
-- **Confirmed rules:**
-  - Building ships costs both money and metal, charged immediately.
-  - The first ship of a given type also incurs a money-only prototyping cost, typically about 10x the individual ship's money construction cost; the exact ratio is data-driven.
-  - An unaffordable action fails atomically and creates nothing.
-  - Ships built during the current player-action phase may be scrapped during that same phase without losing their construction or prototyping resources. After the phase ends, scrapping recovers metal only and at a heavy loss.
-- **Functions Needed:**
-	1. `calculate_ship_design_prototype_cost()` - Cost to prototype a new ship type
-	2. `calculate_ship_design_build_cost()` - Cost to build one ship of a design
-	3. `calculate_ship_design_metal_cost()` - Metal cost associated with a ship design
+- **Status:** Provisional functionality implemented; final data-driven values remain future work.
+- **Location:** `src/core/src/game_formulas.cpp`, `src/core/include/game_constants.h`, and `src/core/include/game_formulas.h`
+- **Authority:** See [Ship Building Cost Specification](#ship-building-cost-specification) below for the current parameters, formulas, rounding policy, prototype accounting, and resource-limit calculations.
+- **Implemented Functions:** `calculate_ship_design_prototype_cost()`, `calculate_ship_design_build_cost()`, `calculate_ship_design_metal_cost()`, and `check_ship_design_levels()`.
 - **Priority:** Medium
 
 #### Population Growth
@@ -133,12 +121,12 @@
 
 
 ---
-### Non-Data-Driven Functions (Must Still Choose an Implementation) - 3 items
+### Non-Data-Driven Functions (Must Still Choose an Implementation) - 2 items
 
 #### Planet Desirability Rating
 - **Status:** Placeholder
 - **Location:** `src/core/src/colonized_planet.cpp` and related game logic
-- **Current Implementation:**  Returns 0 (stub)
+- **Current Implementation:**  `update_desirability()` assigns the placeholder value `3` to every colony; no real desirability calculation is implemented.
 - **Priority:** Low
 
 #### Player Metrics
@@ -149,11 +137,11 @@
 	2. `calculate_player_victory_points()` - Victory condition tracking
 - **Priority:** Low
 
-#### Nova Warning Duration
-- **Status:** Placeholder
-- **Location:** `src/core/src/game_formulas.cpp`
-- **Current Implementation:** Returns 1 as a placeholder; the warning-duration rule is not implemented.
-- **Expected Behavior:** Determine how many turns a nova warning is visible before the nova occurs; the rule may depend on distance from the nova star or other factors.
+#### Special Events
+- **Status:** Deferred low-priority placeholder functionality.
+- **Location:** `src/core/src/game_formulas.cpp` and `src/core/src/game.cpp`
+- **Current Implementation:** `calculate_planet_nova_warning_duration()` returns `1`; `calculate_windfall_income()` returns `0`; `process_novae()` is a no-op.
+- **Expected Behavior:** Eventually implement rare windfall and nova events, including warning duration, event timing, effects, and any distance-dependent rules.
 - **Priority:** Lowest
 
 ---
@@ -288,8 +276,8 @@ This testing should be performed before galaxy generation is considered producti
  - [x] End-of-turn counter/readiness reset behavior
 - **Missing:**
  - [ ] Fleet combat
- - [ ] Nova events and warnings
  - [ ] Diplomacy/trade events (deferred; not required for core game flow)
+ - [ ] Special events, including windfalls and novae (deferred; see Special Events above)
  - [ ] Capture canonical Turn N snapshots at the beginning of each turn, with Turn 0/year 2000 initialization
  - [ ] Capture economic after-state and post-processing state for history, diagnostics, and display
  - [ ] Complete end-of-turn state/knowledge updates with public/private filtering from the same snapshot boundary
@@ -368,7 +356,7 @@ This testing should be performed before galaxy generation is considered producti
 - **Priority:** Medium-high
 
 #### Ship Design Creation
-- **Status:** Functional with provisional costs; final data-driven formulas remain future work.
+- **Status:** Functional with provisional costs; player-facing selection and final data-driven formulas remain future work.
 - **Location:** `src/core/src/player.cpp`, `src/core/src/game.cpp`, and `src/core/src/gamestate_c_api_extensions.cpp`
 - **Completed:**
  - [x] Basic ShipDesign object creation
@@ -378,13 +366,22 @@ This testing should be performed before galaxy generation is considered producti
 - [x] Store a `has_been_prototyped` flag directly with each design
 - [x] Calculate and store provisional build, prototype, and metal costs
 - **Remaining:**
- - [ ] Replace provisional cost formulas with data-driven formulas
+ - [ ] Replace provisional cost formulas with final data-driven formulas
+ - [ ] Enforce current technology limits when creating new designs, while allowing already-owned designs to remain buildable even if they exceed the player's current technology access
+ - [ ] Support an uncommitted proposed design in the build-selection flow without adding it to the design library until a build occurs
 - **Priority:** Medium
 
 #### Ship Construction and Immediate Fleet Creation
-- **Status:** Functionally implemented with provisional costs; same-phase scrapping and final cost behavior remain.
+- **Status:** Basic construction is functionally implemented with provisional costs; the complete player-facing build process and same-phase scrapping remain.
 - **Location:** `src/core/src/c_api.cpp`, `src/core/src/player.cpp`, `src/core/src/game_formulas.cpp`, and fleet creation paths
 - **Required Behavior:**
+ - [ ] Allow the player to choose any already-owned design, or configure a new design whose levels are legal under the player's current technology
+ - [ ] Calculate the maximum buildable ship count for the proposed design from shared metal and available savings
+ - [x] Add `calculate_available_build_money(current_savings)` using the provisional intentional-debt headroom
+ - [ ] Apply the final permitted-intentional-debt limit when determining the savings-based maximum
+ - [ ] Apply the separate larger bankruptcy/default limit to the player's savings state
+ - [ ] Apply the [Ship Building Cost Specification](#ship-building-cost-specification), including one prototype charge followed by `N × individual resource cost` for an unprototyped design
+ - [ ] Allow construction at any planet owned by the player, with no shipyard or planet-specific build limit
  - [x] Build N ships of one design as one immediate fleet
  - [x] Charge the individual money and metal costs atomically
  - [x] Add the money-only prototype cost for the first ship built from a design
@@ -393,7 +390,144 @@ This testing should be performed before galaxy generation is considered producti
  - [x] Record prototype completion so later builds from that design omit the prototype cost
  - [ ] Permit full-resource same-phase scrapping for newly built ships/fleets
  - [ ] Implement later scrapping for metal only at a heavy loss
+ - [ ] Keep a newly created design in the player's library if all ships built from it are scrapped, but roll back its prototype marker before the player-action phase ends
+ - [ ] Prevent same-turn prototype rollback from avoiding the prototype charge on a later turn
 - **Priority:** High
+
+#### Ship Building Cost Specification
+
+> **Authority:** This section is the authoritative reference for the current provisional ship-building cost model. It is not a final balance specification or permanent implementation requirement.
+
+**Scope and parameters:** Supported ship types are Satellite, Fighter, Scout, Colony ship, Tanker, and Dreadnought. Biological ships and radical technology are deferred. Ordinary technology streams are range, speed, weapons, and shields. Every supported type permits every miniaturization level. Money and metal are separate resources with separate formulas; quantities of the two resources must never be added together or inferred from one another by conversion.
+
+| Ship type | Base money | Base metal | Money tech multiplier | Metal tech multiplier |
+| --- | ---: | ---: | ---: | ---: |
+| Satellite | 1,000 | 100 | 0.4 | 0.4 |
+| Fighter | 6,000 | 600 | 1.0 | 1.0 |
+| Scout | 4,000 | 400 | 0.85 | 0.85 |
+| Colony ship | 16,000 | 1,600 | 2.2 | 2.2 |
+| Tanker | 12,000 | 1,200 | 1.8 | 1.8 |
+| Dreadnought | 150,000 | 15,000 | 20.0 | 20.0 |
+
+All values are provisional and should ultimately be centralized as configuration parameters.
+
+**Ordinary technology costs:** Current placeholder increments for a transition from level `N` to `N + 1` are:
+
+| Stream | Money increment | Metal increment |
+| --- | ---: | ---: |
+| Range | 100 | 10 |
+| Speed | 100 | 10 |
+| Weapons | 100 | 10 |
+| Shields | 100 | 10 |
+
+The eventual increment may depend on resource, stream, ship type, and `N`. Each stream must retain separately replaceable money and metal formulas with `N` explicit. Game-state/API levels are integers and must be converted explicitly to `double` before cost calculations.
+
+For resource `R`, ship type `S`, stream `T`, and final level `L`:
+
+```text
+ordinary technology cost(R, S, T, L)
+    = sum for N = 0 through L - 1 of
+      base increment(R, T, N) × multiplier(R, S, T)
+```
+
+The multiplier uses the ship-type/resource default above unless a stream-specific override applies. Technology locks are also supported:
+
+- **Satellite speed:** higher levels have zero money and metal cost; effective multiplier is zero.
+- **Satellite range:** locked at level 0; the multiplier is irrelevant for valid designs but the lock should be explicit.
+
+**Cost formulas and miniaturization:** Calculate separate pre-miniaturization totals, then apply miniaturization to each resource independently:
+
+```text
+pre-mini money = base money
+               + range money + speed money + weapons money + shields money
+
+pre-mini metal = base metal
+               + range metal + speed metal + weapons metal + shields metal
+
+final money build cost = ceil(
+    pre-mini money × miniaturization money multiplier(M))
+
+final metal build cost = ceil(
+    pre-mini metal × miniaturization metal multiplier(M))
+```
+
+All intermediate calculations remain `double`; each public final resource cost rounds upward with `ceil`. Miniaturization receives the complete pre-mini total, not merely the base or technology increment, and is applied after all ordinary technology costs.
+
+| Resource | Provisional miniaturization multiplier |
+| --- | --- |
+| Metal | `0.9^M` (`M=0,1,2` → `1.00, 0.90, 0.81`) |
+| Money | `1.0` when `M=0`; `3.0 × M` when `M > 0` (`M=0,1,2` → `1.00, 3.00, 6.00`) |
+
+The `0.9` metal factor and `3.0` positive-level money contribution are adjustable placeholders. The money function will probably become explicitly level-dependent.
+
+**Prototype and multi-ship accounting:** The first ship built from a design incurs a provisional **money-only** prototype charge:
+
+```text
+prototype money cost = ceil(10 × unrounded money build-cost expression)
+```
+
+The 10× multiplier is placeholder behavior. Prototype calculations also retain `double` precision until their own final upward rounding and must not truncate the underlying money expression. No separate prototype metal charge applies.
+
+For `N` ships, money and metal remain separate:
+
+```text
+individual money build cost = final money build cost
+individual metal build cost = final metal build cost
+
+required money, unprototyped =
+    prototype money cost + N × individual money build cost
+
+required money, prototyped =
+    N × individual money build cost
+
+required metal, either state =
+    N × individual metal build cost
+```
+
+The prototype charge is applied once per build action, never once per ship. A design becomes prototyped only when it is actually used for a build.
+
+For a proposed build:
+
+```text
+metal-limited quantity =
+    floor(available metal / individual metal build cost)
+
+money-limited quantity, unprototyped =
+    floor((available build money - prototype money cost)
+          / individual money build cost)
+
+money-limited quantity, prototyped =
+    floor(available build money / individual money build cost)
+
+maximum quantity = min(applicable money-limited quantity,
+                       metal-limited quantity)
+```
+
+Other game limits may further reduce the result.
+
+**Debt boundaries and implementation constraints:** Two distinct negative-savings thresholds are required:
+
+- **Intentional-debt limit:** maximum negative savings permitted deliberately by actions such as ship building or Dip Into Savings.
+- **Bankruptcy/default limit:** larger negative-savings threshold; reaching it causes the player to lose by bankruptcy.
+
+The current implementation uses provisional constants. `calculate_available_build_money(current_savings)` represents current savings plus remaining intentional-debt headroom, clamped at zero. A separate bankruptcy helper reports whether the larger threshold has been reached. Both values and their enforcement rules require data-driven replacement.
+
+Implementation constraints:
+
+- Keep money and metal formulas, values, and affordability calculations separate.
+- Keep `N` explicit in replaceable level-transition functions.
+- Support ship-type defaults, stream-specific overrides, and technology locks.
+- Centralize provisional parameters rather than scattering literals.
+- Keep intermediate calculations in `double` and round final public resource costs upward.
+
+Final model questions:
+
+- Level-dependent formulas for each ordinary stream and resource.
+- Final ship-type multipliers and stream overrides.
+- Final metal and money miniaturization functions.
+- Final prototype-cost rule.
+- Additional technology locks or ship-specific exceptions.
+- Final intentional-debt and bankruptcy/default values and enforcement rules.
 
 #### Fleet Composition and Assembly
 - **Status:** Basic fleet objects exist; future composition operations remain separate from basic ship construction
@@ -464,5 +598,5 @@ Based on game flow dependencies:
 4. **LOW (Polish/Balance):**
    - Planet Desirability Rating (AI decision-making)
    - Player Metrics (scoring/rankings)
-   - Nova Warning Duration and nova events
+   - Special events, including windfall income and nova events
    - Galaxy-shape validation and edge-case testing

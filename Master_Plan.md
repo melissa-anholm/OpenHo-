@@ -1,6 +1,6 @@
 # OpenHo Master Plan
 
-**Last Updated:** October 27, 2026 (Current-status and history separation)
+**Last Updated:** November 1, 2026 (Ship construction model clarification)
 **Project Status:** Phase 2 - Minimal playable game first; feature completeness follows incrementally
 
 ---
@@ -47,9 +47,9 @@ The core entity model, deterministic RNG, GameState structure, C API boundary, c
 
 #### Phase 2b: Fleet System & Ship Design
 
-**Status:** Foundational structures complete; gameplay operations remain incomplete.
+**Status:** Foundational structures and provisional cost calculations are implemented; the complete player-facing build-selection process remains in progress.
 
-Players own fleet and ship-design collections, fleet movement state exists, and validation/delegation boundaries are established. Ship costs, resource deduction, real ship building, combat, and some movement validation remain future work. See the [active implementation checklist](Missing_Implementation_List.md#ship-design-creation).
+Players own fleet and ship-design collections, fleet movement state exists, and validation/delegation boundaries are established. Provisional ship costs, resource deduction, and immediate single-design fleet creation are implemented. The complete player-facing build-selection process, same-phase scrapping, combat, and some movement validation remain future work. See the [active implementation checklist](Missing_Implementation_List.md#ship-design-creation).
 
 #### Phase 2b-Extended: GameState Architecture & Text Assets
 
@@ -132,9 +132,13 @@ The economic path applies population growth, refreshes planetary income using th
 - Immediate-effect player actions are applied in the order specified by the player.
 - After economic processing, savings and accumulated metal reserve may update persistently; other recalculated economic values are projections until the next economic phase.
 - Negative effective income reduces savings directly; recovery is possible before the data-driven bankruptcy limit is reached.
+- Intentional actions such as ship building and Dip Into Savings share a provisional intentional-debt limit; a separate, larger provisional bankruptcy/default limit causes loss when reached. Both values and their final enforcement rules require data-driven replacement.
 - Mining transfers metal losslessly from a planet to the player's shared metal reserve; planetary metal cannot fall below zero. Mining requires positive effective income allocated to planetary development.
 - Terraforming consumes money but not metal, changes temperature immediately during economic processing, and uses a nonlinear spending formula. Overshoot is prevented and excess allocation is currently refunded to savings, pending a future refund-destination decision.
-- Ship designs are player-owned blueprint objects. Each design stores whether its ship type has already been prototyped; this flag determines whether the next build pays the additional money-only prototyping cost. A build action immediately creates a fleet containing N ships of that design and charges money and metal atomically. There is no separate unassembled-ship inventory. Future fleet-composition actions may combine ship types, split fleets, or otherwise rearrange ships, but are separate later functionality.
+- Ship designs are player-owned blueprint objects. Each design stores whether its ship type has already been prototyped; this flag determines whether the next build pays the additional money-only prototyping cost. There is no separate unassembled-ship inventory. Future fleet-composition actions may combine ship types, split fleets, or otherwise rearrange ships, but are separate later functionality.
+- Ship construction offers two player-facing selection paths: choose an already-owned design, or configure a new design within the player's currently available technology levels. Current technology limits are enforced when a new design is created, but do not invalidate already-owned designs; future mechanics may grant designs that exceed the player's ordinary technology access. A proposed build also computes its maximum legal ship count from the shared metal reserve and available build money, using the shared intentional-debt policy. For an unprototyped design, the money requirement is one prototype charge plus N individual build costs.
+- If a new design is actually built, it is added to the player's design library and its prototype state is established as part of that build. Ships may be built at any planet owned by the player; there are no shipyards, construction facilities, or planet-specific build limits. A build action creates a fleet containing N ships of that design and charges money and metal atomically. There is no separate unassembled-ship inventory. Future fleet-composition actions may combine ship types, split fleets, or otherwise rearrange ships, but are separate later functionality.
+- Same-phase scrapping must roll back the prototype state if every ship built from a previously unused design is scrapped before the player-action phase ends; the design remains in the player's library. The implementation must prevent using this rollback to avoid paying a prototype charge on a later turn.
 - Unaffordable ship actions fail atomically. Ships built during the current player-action phase may be scrapped during that same phase without losing construction or prototyping resources; after the phase, scrapping recovers metal only at a heavy loss.
 - Queued fleet actions first resolve travel. Fleets still in transit have no further queued actions that turn; fleets at planets then resolve battles.
 - Whenever forces belonging to two or more non-allied players occupy the same place, they fight; fleets and owned planets are both forces in that battle. An invading weapon cannot target the planet until all defending ships are destroyed, but the planet may fire when its turn comes around. Exact battle rules, including force-turn order and multi-player battles, remain future work.
