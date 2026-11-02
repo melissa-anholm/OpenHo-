@@ -81,9 +81,37 @@
   - Persistent pension-plan dips renew automatically; one-time dips apply for only one processed turn.
   - Positive effective income is allocated according to the player's budget; negative effective income funds no categories and is charged directly to savings.
   - A player may recover if later net income becomes positive; one negative-income turn does not immediately cause bankruptcy.
-- **Current provisional debt limits:** Defined in `src/core/include/game_constants.h` as `GameConstants::Provisional_Intentional_Debt_Limit = 100000` and `GameConstants::Provisional_Bankruptcy_Debt_Limit = 250000`. `calculate_available_build_money()` uses the former as available intentional-debt headroom; `has_reached_bankruptcy_limit()` checks the latter.
+- **Current provisional debt policy:** The exact current equations and function behavior are:
+
+  ```text
+  intentional_debt_limit(I, planet_count):
+      if I <= 0:
+          return 0
+      r = GameConstants::Provisional_Debt_Interest_Rate
+      N = 10
+      repayment_factor = (1 - (1 + r)^(-N)) / r
+      return floor(I × repayment_factor)
+
+  bankruptcy_debt_limit(I, planet_count):
+      r = GameConstants::Provisional_Debt_Interest_Rate
+      multiplier = GameConstants::Provisional_Bankruptcy_Debt_Multiplier
+      reference_income = GameConstants::Provisional_Bankruptcy_Reference_Income
+      return floor(multiplier × max(I, reference_income) / r)
+
+  available_build_money(current_savings, I, planet_count):
+      return max(0, current_savings
+                    + intentional_debt_limit(I, planet_count))
+
+  has_reached_bankruptcy_limit(current_savings, I, planet_count):
+      return current_savings
+             <= -bankruptcy_debt_limit(I, planet_count)
+  ```
+
+  Here, `I` is summed planetary income. `planet_count` is accepted explicitly by all four functions but does not affect the current provisional equations; it is reserved for a future data-driven refinement. The rate `r` is referenced by these limit calculations; it is not charged a second time. Actual negative savings interest is calculated separately and added to the player's income, not directly to savings.
+- **Current provisional parameters:** `GameConstants::Provisional_Debt_Interest_Rate = 0.15`, `GameConstants::Provisional_Intentional_Debt_Repayment_Turns = 10`, `GameConstants::Provisional_Bankruptcy_Debt_Multiplier = 5`, and `GameConstants::Provisional_Bankruptcy_Reference_Income = 50000`, all defined in `src/core/include/game_constants.h`. `calculate_available_build_money()` uses the income-dependent intentional-debt limit; `has_reached_bankruptcy_limit()` checks the income-dependent bankruptcy limit.
 - **Remaining:**
-  - [ ] Replace both provisional values with data-driven rules.
+  - [ ] Determine whether and how planet count should affect the intentional-debt and bankruptcy formulas.
+  - [ ] Replace the provisional interest rate, repayment horizon, bankruptcy multiplier, and reference income with data-driven rules.
   - [ ] Enforce the intentional-debt limit for Dip Into Savings and ship-building actions.
   - [ ] Implement bankruptcy and loss when the larger negative-savings limit is reached.
 - **Priority:** Medium-high

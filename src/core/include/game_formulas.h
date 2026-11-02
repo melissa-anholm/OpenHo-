@@ -87,13 +87,29 @@ namespace GameFormulas
 		/// @return The interest amount to add to savings (positive or negative)
 		int64_t calculate_money_interest(int64_t savings);
 
+		/// Calculate the provisional intentional-debt limit from summed planetary
+		/// income and the number of planets owned by the player.
+		int64_t calculate_intentional_debt_limit(
+			int64_t summed_planetary_income, uint32_t planet_count);
+
+		/// Calculate the provisional bankruptcy/default debt limit. The income and
+		/// planet-count parameters are accepted now so the eventual policy can use
+		/// them without another public API change.
+		int64_t calculate_bankruptcy_debt_limit(
+			int64_t summed_planetary_income, uint32_t planet_count);
+
 		/// Calculate money available for an intentional action.
-		/// Provisional policy allows savings plus the remaining intentional-debt
-		/// headroom, clamped at zero.
-		int64_t calculate_available_build_money(int64_t current_savings);
+		/// Savings plus the income-dependent intentional-debt headroom, clamped at 0.
+		int64_t calculate_available_build_money(
+			int64_t current_savings,
+			int64_t summed_planetary_income,
+			uint32_t planet_count);
 
 		/// Return whether savings have reached the separate bankruptcy threshold.
-		bool has_reached_bankruptcy_limit(int64_t current_savings);
+		bool has_reached_bankruptcy_limit(
+			int64_t current_savings,
+			int64_t summed_planetary_income,
+			uint32_t planet_count);
 	
 	/// Convert money allocated to research into research points.
 	/// This formula determines the efficiency of research spending.

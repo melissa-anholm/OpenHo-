@@ -2,6 +2,7 @@
 #include "game_constants.h"
 #include "utility.h"
 #include <cmath>
+#include <limits>
 
 namespace GameFormulas
 {
@@ -215,8 +216,8 @@ namespace GameFormulas
 	{
 		if (savings < 0)
 		{
-			// Negative savings (debt): apply 15% interest on debt
-			double interest = savings * 0.15;
+			// Negative savings (debt): apply the provisional debt-interest rate.
+			double interest = savings * GameConstants::Provisional_Debt_Interest_Rate;
 			return static_cast<int64_t>(interest);
 		}
 		else
@@ -227,16 +228,67 @@ namespace GameFormulas
 		}
 	}
 
-	int64_t calculate_available_build_money(int64_t current_savings)
+	int64_t calculate_intentional_debt_limit(
+		int64_t summed_planetary_income, uint32_t planet_count)
 	{
-		const int64_t available_money = current_savings
-			+ GameConstants::Provisional_Intentional_Debt_Limit;
+		// Planet count is part of the policy boundary now, even though the first
+		// provisional formula depends only on summed planetary income.
+		(void)planet_count;
+		if (summed_planetary_income <= 0)
+			return 0;
+
+		const double income = static_cast<double>(summed_planetary_income);
+		const double rate = GameConstants::Provisional_Debt_Interest_Rate;
+		const int32_t turns = GameConstants::Provisional_Intentional_Debt_Repayment_Turns;
+		const double repayment_factor = rate == 0.0
+			? static_cast<double>(turns)
+			: (1.0 - std::pow(1.0 + rate, -turns)) / rate;
+		const double limit = income * repayment_factor;
+		if (limit >= static_cast<double>(std::numeric_limits<int64_t>::max()))
+			return std::numeric_limits<int64_t>::max();
+		return static_cast<int64_t>(std::floor(limit));
+	}
+
+	int64_t calculate_bankruptcy_debt_limit(
+		int64_t summed_planetary_income, uint32_t planet_count)
+	{
+		// The provisional bankruptcy threshold is five times the debt at which
+		// interest equals planetary income. Use at least the reference income so
+		// low-income players do not receive an artificially small threshold.
+		(void)planet_count;
+		const int64_t effective_income = std::max(
+			summed_planetary_income,
+			GameConstants::Provisional_Bankruptcy_Reference_Income);
+		const double debt_limit =
+			static_cast<double>(effective_income)
+			* static_cast<double>(GameConstants::Provisional_Bankruptcy_Debt_Multiplier)
+			/ GameConstants::Provisional_Debt_Interest_Rate;
+		if (debt_limit >= static_cast<double>(std::numeric_limits<int64_t>::max()))
+			return std::numeric_limits<int64_t>::max();
+		return static_cast<int64_t>(std::floor(debt_limit));
+	}
+
+	int64_t calculate_available_build_money(
+		int64_t current_savings,
+		int64_t summed_planetary_income,
+		uint32_t planet_count)
+	{
+		const int64_t intentional_limit = calculate_intentional_debt_limit(
+			summed_planetary_income, planet_count);
+		const int64_t available_money = current_savings >
+			std::numeric_limits<int64_t>::max() - intentional_limit
+			? std::numeric_limits<int64_t>::max()
+			: current_savings + intentional_limit;
 		return available_money > 0 ? available_money : 0;
 	}
 
-	bool has_reached_bankruptcy_limit(int64_t current_savings)
+	bool has_reached_bankruptcy_limit(
+		int64_t current_savings,
+		int64_t summed_planetary_income,
+		uint32_t planet_count)
 	{
-		return current_savings <= -GameConstants::Provisional_Bankruptcy_Debt_Limit;
+		return current_savings <= -calculate_bankruptcy_debt_limit(
+			summed_planetary_income, planet_count);
 	}
 	
 	int64_t convert_money_to_research_points(int64_t money_allocated)

@@ -35,6 +35,8 @@ The project uses a command-line build system (no Xcode dependency) with CMake fo
 
 **Overall Status:** The minimal playable game is operational through a deterministic RANDOM-galaxy path and multiple turns, but the current RANDOM generator has known planet-count and density defects. Current priority is to correct and validate that path before expanding ship construction, exploration, and combat.
 
+**Economic policy decision:** The provisional intentional-debt limit is calculated from summed planetary income over a ten-turn repayment horizon, with the current 15% per-turn debt-interest rate. The provisional bankruptcy limit is five times the debt at which interest equals `max(summed planetary income, 50,000)`. Debt-limit functions accept summed planetary income and planet count explicitly; planet count is reserved for a future data-driven refinement.
+
 **Deliverable:** Static library `libOpenHoCore.a` with deterministic game engine
 
 ---

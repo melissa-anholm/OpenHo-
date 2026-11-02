@@ -65,15 +65,26 @@ int main()
 	assert(!check_ship_design_levels(SHIP_FIGHTER, -1, 0, 0, 0, 0));
 	assert(!check_ship_design_levels(SHIP_BIOLOGICAL, 0, 0, 0, 0, 0));
 
-	// Provisional debt boundaries are shared by intentional actions such as
-	// ship building and Dip Into Savings, while bankruptcy uses a larger limit.
-	expect_equal(calculate_available_build_money(0), 100000);
-	expect_equal(calculate_available_build_money(-25000), 75000);
-	expect_equal(calculate_available_build_money(-100000), 0);
-	expect_equal(calculate_available_build_money(-125000), 0);
-	assert(!has_reached_bankruptcy_limit(-249999));
-	assert(has_reached_bankruptcy_limit(-250000));
-	assert(has_reached_bankruptcy_limit(-300000));
+	// Intentional debt is provisionally limited to ten turns of repayment from
+	// summed planetary income, including 15% debt interest each turn.
+	const int64_t planetary_income = 10000;
+	const int64_t intentional_limit = calculate_intentional_debt_limit(
+		planetary_income, 2);
+	assert(intentional_limit > 50000 && intentional_limit < 51000);
+	expect_equal(calculate_available_build_money(0, planetary_income, 2),
+		intentional_limit);
+	expect_equal(calculate_available_build_money(-25000, planetary_income, 2),
+		intentional_limit - 25000);
+	expect_equal(calculate_intentional_debt_limit(0, 2), 0);
+	expect_equal(calculate_available_build_money(-100000, 0, 2), 0);
+	// Bankruptcy uses five times the debt where interest equals
+	// max(planetary income, 50,000). For income of 10,000, the floor is
+	// 1,666,666; income of 100,000 raises the limit to 3,333,333.
+	assert(!has_reached_bankruptcy_limit(-1666665, planetary_income, 2));
+	assert(has_reached_bankruptcy_limit(-1666666, planetary_income, 2));
+	assert(!has_reached_bankruptcy_limit(-3333332, 100000, 2));
+	assert(has_reached_bankruptcy_limit(-3333333, 100000, 2));
+	assert(has_reached_bankruptcy_limit(-3000000, 0, 2));
 
 	std::cout << "Ship cost tests passed.\n";
 	return 0;
