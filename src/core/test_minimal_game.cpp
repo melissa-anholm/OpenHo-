@@ -129,17 +129,17 @@ int main()
     assert(design_id != 0);
     const ShipDesign* design = ship_game.get_player(1)->get_ship_design(design_id);
     assert(design != nullptr);
-    assert(design->get_build_cost() == 1);
-    assert(design->get_prototype_cost() == 10);
-    assert(design->get_metal_cost() == 1);
+    assert(design->get_build_cost() == 4425);
+    assert(design->get_prototype_cost() == 44250);
+    assert(design->get_metal_cost() == 443);
     assert(!design->get_has_been_prototyped());
 
     const int64_t money_before_first_build = ship_game.get_player(1)->get_money();
     const int64_t metal_before_first_build = ship_game.get_player(1)->get_metal();
     assert(ship_game.build_ships_from_design(1, design_id, 3, ship_planet_id) ==
            ErrorCode::SUCCESS);
-    assert(ship_game.get_player(1)->get_money() == money_before_first_build - 13);
-    assert(ship_game.get_player(1)->get_metal() == metal_before_first_build - 3);
+    assert(ship_game.get_player(1)->get_money() == money_before_first_build - 57525);
+    assert(ship_game.get_player(1)->get_metal() == metal_before_first_build - 1329);
     assert(ship_game.get_player(1)->get_fleets().size() == 1);
     assert(ship_game.get_player(1)->get_fleets().front().ship_count == 3);
     assert(design->get_has_been_prototyped());
@@ -148,8 +148,8 @@ int main()
     const int64_t metal_before_second_build = ship_game.get_player(1)->get_metal();
     assert(ship_game.build_ships_from_design(1, design_id, 2, ship_planet_id) ==
            ErrorCode::SUCCESS);
-    assert(ship_game.get_player(1)->get_money() == money_before_second_build - 2);
-    assert(ship_game.get_player(1)->get_metal() == metal_before_second_build - 2);
+    assert(ship_game.get_player(1)->get_money() == money_before_second_build - 8850);
+    assert(ship_game.get_player(1)->get_metal() == metal_before_second_build - 886);
     assert(ship_game.get_player(1)->get_fleets().size() == 2);
     assert(ship_game.get_player(1)->get_fleets()[1].ship_count == 2);
 

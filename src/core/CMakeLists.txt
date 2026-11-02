@@ -53,6 +53,10 @@ target_link_libraries(OpenHoCore PUBLIC Boost::random)
 add_executable(openho_minimal_game_test test_minimal_game.cpp)
 target_link_libraries(openho_minimal_game_test PRIVATE OpenHoCore)
 
+# Provisional ship-building cost model regression test.
+add_executable(openho_ship_cost_test test_ship_costs.cpp)
+target_link_libraries(openho_ship_cost_test PRIVATE OpenHoCore)
+
 # Set compiler flags for better warnings
 if(MSVC)
 	target_compile_options(OpenHoCore PRIVATE /W4)

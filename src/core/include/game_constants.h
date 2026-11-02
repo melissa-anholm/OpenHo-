@@ -2,6 +2,7 @@
 #define OPENHO_GAME_CONSTANTS_H
 
 #include <cstdint>
+#include "enums.h"
 
 // ============================================================================
 // Game Balance Constants
@@ -61,7 +62,66 @@ namespace GameConstants
 	/// A player can create more designs over time, but only up to this many
 	/// can exist at once. Creating a new design when at the limit requires
 	/// deleting an existing design first.
-	constexpr uint32_t Max_Ship_Designs_Per_Player = 100;
+		constexpr uint32_t Max_Ship_Designs_Per_Player = 100;
+
+		// ========================================================================
+		// Provisional Ship-Building Cost Parameters
+		// ========================================================================
+		// Entries are indexed by ShipType. Biological ships are intentionally
+		// left at zero because their cost model is deferred.
+		constexpr double Ship_Build_Base_Money[] = {
+			4000.0,    // SHIP_SCOUT
+			6000.0,    // SHIP_FIGHTER
+			16000.0,   // SHIP_COLONY
+			1000.0,    // SHIP_SATELLITE
+			12000.0,   // SHIP_TANKER
+			150000.0,  // SHIP_DREADNOUGHT
+			0.0        // SHIP_BIOLOGICAL (deferred)
+		};
+
+		constexpr double Ship_Build_Base_Metal[] = {
+			400.0,     // SHIP_SCOUT
+			600.0,     // SHIP_FIGHTER
+			1600.0,    // SHIP_COLONY
+			100.0,     // SHIP_SATELLITE
+			1200.0,    // SHIP_TANKER
+			15000.0,   // SHIP_DREADNOUGHT
+			0.0        // SHIP_BIOLOGICAL (deferred)
+		};
+
+		constexpr double Ship_Build_Money_Tech_Multiplier[] = {
+			0.85,      // SHIP_SCOUT
+			1.0,       // SHIP_FIGHTER
+			2.2,       // SHIP_COLONY
+			0.4,       // SHIP_SATELLITE
+			1.8,       // SHIP_TANKER
+			20.0,      // SHIP_DREADNOUGHT
+			0.0        // SHIP_BIOLOGICAL (deferred)
+		};
+
+		constexpr double Ship_Build_Metal_Tech_Multiplier[] = {
+			0.85,      // SHIP_SCOUT
+			1.0,       // SHIP_FIGHTER
+			2.2,       // SHIP_COLONY
+			0.4,       // SHIP_SATELLITE
+			1.8,       // SHIP_TANKER
+			20.0,      // SHIP_DREADNOUGHT
+			0.0        // SHIP_BIOLOGICAL (deferred)
+		};
+
+		constexpr double Ship_Build_Range_Money_Increment = 100.0;
+		constexpr double Ship_Build_Speed_Money_Increment = 100.0;
+		constexpr double Ship_Build_Weapons_Money_Increment = 100.0;
+		constexpr double Ship_Build_Shields_Money_Increment = 100.0;
+
+		constexpr double Ship_Build_Range_Metal_Increment = 10.0;
+		constexpr double Ship_Build_Speed_Metal_Increment = 10.0;
+		constexpr double Ship_Build_Weapons_Metal_Increment = 10.0;
+		constexpr double Ship_Build_Shields_Metal_Increment = 10.0;
+
+		constexpr double Ship_Build_Mini_Metal_Factor = 0.9;
+		constexpr double Ship_Build_Mini_Money_Contribution = 3.0;
+		constexpr double Ship_Build_Prototype_Multiplier = 10.0;
 	
 	// ========================================================================
 	// Money and Resources

@@ -2,6 +2,7 @@
 #define OPENHO_GAME_FORMULAS_H
 
 #include <cstdint>
+#include "enums.h"
 #include "rng.h"
 
 // Forward declaration of GameState (defined in game.h)
@@ -20,45 +21,37 @@ namespace GameFormulas
 	// Ship Design Cost Calculations
 	// ========================================================================
 	
-	/// Calculate the build cost for a ship design based on its technology levels.
-	/// This is the cost to build each subsequent ship of this design (after the prototype).
-	/// 
-	/// @param techRange Technology level for range
-	/// @param techSpeed Technology level for speed
-	/// @param techWeapons Technology level for weapons
-	/// @param techShields Technology level for shields
-	/// @param techMiniaturization Technology level for miniaturization
-	/// @return The build cost in money
-	int64_t calculate_ship_design_build_cost(int32_t tech_range, int32_t tech_speed, 
-	                                          int32_t tech_weapons, int32_t tech_shields, 
-	                                          int32_t tech_mini);
+		/// Check structural validity of a ship design's technology levels.
+		/// Player technology availability is checked separately by GameState.
+		bool check_ship_design_levels(ShipType ship_type, int32_t tech_range,
+		                              int32_t tech_speed, int32_t tech_weapons,
+		                              int32_t tech_shields, int32_t tech_mini);
+
+		/// Calculate the money build cost for a ship design.
+		/// Inputs are assumed to have passed check_ship_design_levels().
+		int64_t calculate_ship_design_build_cost(ShipType ship_type,
+		                                          int32_t tech_range, int32_t tech_speed,
+		                                          int32_t tech_weapons, int32_t tech_shields,
+		                                          int32_t tech_mini);
 	
 	/// Calculate the prototype cost for a ship design based on its technology levels.
 	/// This is the additional cost paid only for the first ship of a new design.
 	/// Typically much more expensive than the build cost.
 	/// 
-	/// @param techRange Technology level for range
-	/// @param techSpeed Technology level for speed
-	/// @param techWeapons Technology level for weapons
-	/// @param techShields Technology level for shields
-	/// @param techMiniaturization Technology level for miniaturization
-	/// @return The prototype cost in money
-	int64_t calculate_ship_design_prototype_cost(int32_t tech_range, int32_t tech_speed, 
-	                                              int32_t tech_weapons, int32_t tech_shields, 
-	                                              int32_t tech_mini);
+		/// Inputs are assumed to have passed check_ship_design_levels().
+		int64_t calculate_ship_design_prototype_cost(ShipType ship_type,
+		                                              int32_t tech_range, int32_t tech_speed,
+		                                              int32_t tech_weapons, int32_t tech_shields,
+		                                              int32_t tech_mini);
 	
 	/// Calculate the metal cost for a ship design based on its technology levels.
 	/// This is the metal cost to build each ship of this design.
 	/// 
-	/// @param techRange Technology level for range
-	/// @param techSpeed Technology level for speed
-	/// @param techWeapons Technology level for weapons
-	/// @param techShields Technology level for shields
-	/// @param techMiniaturization Technology level for miniaturization
-	/// @return The metal cost per ship
-	int64_t calculate_ship_design_metal_cost(int32_t tech_range, int32_t tech_speed, 
-	                                          int32_t tech_weapons, int32_t tech_shields, 
-	                                          int32_t tech_mini);
+		/// Inputs are assumed to have passed check_ship_design_levels().
+		int64_t calculate_ship_design_metal_cost(ShipType ship_type,
+		                                          int32_t tech_range, int32_t tech_speed,
+		                                          int32_t tech_weapons, int32_t tech_shields,
+		                                          int32_t tech_mini);
 	
 	// ========================================================================
 	// Player Metrics Calculations

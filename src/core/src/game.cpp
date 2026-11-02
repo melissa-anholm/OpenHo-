@@ -1271,11 +1271,16 @@ ErrorCode GameState::check_player_design_ship(uint32_t player_id, const std::str
 	if (!player)
 		{ return ErrorCode::INVALID_PLAYER_ID; }
 	
-	// Check design name is not empty
-	if (name.empty())
-		{ return ErrorCode::INVALID_PARAMETER; } 
-	if (type < SHIP_SCOUT || type > SHIP_BIOLOGICAL)
-		{ return ErrorCode::INVALID_SHIP_TYPE; }
+		// Check design name is not empty
+		if (name.empty())
+			{ return ErrorCode::INVALID_PARAMETER; }
+		if (type < SHIP_SCOUT || type > SHIP_BIOLOGICAL)
+			{ return ErrorCode::INVALID_SHIP_TYPE; }
+		if (type == SHIP_BIOLOGICAL)
+			{ return ErrorCode::INVALID_SHIP_TYPE; }
+		if (!GameFormulas::check_ship_design_levels(
+			type, tech_range, tech_speed, tech_weapons, tech_shields, tech_mini))
+			{ return ErrorCode::TECH_LEVEL_NOT_AVAILABLE; }
 	
 	// Check design name is not duplicate
 	for (const auto& design : player->get_ship_designs())

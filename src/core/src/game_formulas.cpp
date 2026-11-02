@@ -8,40 +8,187 @@ namespace GameFormulas
 	// ============================================================================
 	// Ship Design Cost Calculations
 	// ============================================================================
-	int64_t calculate_ship_design_build_cost(int32_t tech_range, int32_t tech_speed, 
-	                                          int32_t tech_weapons, int32_t tech_shields, 
-	                                          int32_t tech_mini)
+	namespace
 	{
-		// Provisional flat cost. The technology arguments remain part of the
-		// interface so the data-driven formula can be substituted later.
-		(void)tech_range;
-		(void)tech_speed;
-		(void)tech_weapons;
-		(void)tech_shields;
-		(void)tech_mini;
-		return 1;
+		using IncrementFormula = double (*)(double);
+
+		int64_t round_up_cost(double value)
+		{
+			// Move one representable step toward zero before ceil() so values
+			// such as 600 * pow(0.9, 3), which are mathematically 486 but may
+			// be represented as 486.00000000000006, remain 486.
+			return static_cast<int64_t>(std::ceil(std::nextafter(value, 0.0)));
+		}
+
+		bool is_supported_ship_type(ShipType ship_type)
+		{
+			return ship_type >= SHIP_SCOUT && ship_type <= SHIP_DREADNOUGHT;
+		}
+
+		double calculate_range_money_increment(double current_level)
+		{
+			(void)current_level;
+			return GameConstants::Ship_Build_Range_Money_Increment;
+		}
+
+		double calculate_speed_money_increment(double current_level)
+		{
+			(void)current_level;
+			return GameConstants::Ship_Build_Speed_Money_Increment;
+		}
+
+		double calculate_weapons_money_increment(double current_level)
+		{
+			(void)current_level;
+			return GameConstants::Ship_Build_Weapons_Money_Increment;
+		}
+
+		double calculate_shields_money_increment(double current_level)
+		{
+			(void)current_level;
+			return GameConstants::Ship_Build_Shields_Money_Increment;
+		}
+
+		double calculate_range_metal_increment(double current_level)
+		{
+			(void)current_level;
+			return GameConstants::Ship_Build_Range_Metal_Increment;
+		}
+
+		double calculate_speed_metal_increment(double current_level)
+		{
+			(void)current_level;
+			return GameConstants::Ship_Build_Speed_Metal_Increment;
+		}
+
+		double calculate_weapons_metal_increment(double current_level)
+		{
+			(void)current_level;
+			return GameConstants::Ship_Build_Weapons_Metal_Increment;
+		}
+
+		double calculate_shields_metal_increment(double current_level)
+		{
+			(void)current_level;
+			return GameConstants::Ship_Build_Shields_Metal_Increment;
+		}
+
+		double ship_type_multiplier(ShipType ship_type, bool metal)
+		{
+			const uint32_t index = static_cast<uint32_t>(ship_type);
+			return metal ? GameConstants::Ship_Build_Metal_Tech_Multiplier[index]
+			             : GameConstants::Ship_Build_Money_Tech_Multiplier[index];
+		}
+
+		double stream_multiplier(ShipType ship_type, TechStream stream, bool metal)
+		{
+			// Satellite speed technology has no cost in either resource.
+			if (ship_type == SHIP_SATELLITE && stream == TECH_SPEED)
+				return 0.0;
+			return ship_type_multiplier(ship_type, metal);
+		}
+
+		double sum_stream_cost(int32_t level, ShipType ship_type, TechStream stream,
+		                      bool metal, IncrementFormula increment_formula)
+		{
+			double total = 0.0;
+			const double multiplier = stream_multiplier(ship_type, stream, metal);
+			for (int32_t transition = 0; transition < level; ++transition)
+			{
+				// Technology levels are stored as integers at the API boundary, but
+				// every formula receives the transition level as a double.
+				const double current_level = static_cast<double>(transition);
+				total += increment_formula(current_level) * multiplier;
+			}
+			return total;
+		}
+
+		double mini_money_multiplier(int32_t tech_mini)
+		{
+			if (tech_mini == 0)
+				return 1.0;
+			return GameConstants::Ship_Build_Mini_Money_Contribution
+				* static_cast<double>(tech_mini);
+		}
+
+		double mini_metal_multiplier(int32_t tech_mini)
+		{
+			return std::pow(GameConstants::Ship_Build_Mini_Metal_Factor,
+			                static_cast<double>(tech_mini));
+		}
+
+		double unrounded_money_cost(ShipType ship_type, int32_t tech_range,
+		                           int32_t tech_speed, int32_t tech_weapons,
+		                           int32_t tech_shields, int32_t tech_mini)
+		{
+			const uint32_t index = static_cast<uint32_t>(ship_type);
+			double total = GameConstants::Ship_Build_Base_Money[index];
+			total += sum_stream_cost(tech_range, ship_type, TECH_RANGE, false,
+			                         calculate_range_money_increment);
+			total += sum_stream_cost(tech_speed, ship_type, TECH_SPEED, false,
+			                         calculate_speed_money_increment);
+			total += sum_stream_cost(tech_weapons, ship_type, TECH_WEAPONS, false,
+			                         calculate_weapons_money_increment);
+			total += sum_stream_cost(tech_shields, ship_type, TECH_SHIELDS, false,
+			                         calculate_shields_money_increment);
+			return total * mini_money_multiplier(tech_mini);
+		}
+
+		double unrounded_metal_cost(ShipType ship_type, int32_t tech_range,
+		                           int32_t tech_speed, int32_t tech_weapons,
+		                           int32_t tech_shields, int32_t tech_mini)
+		{
+			const uint32_t index = static_cast<uint32_t>(ship_type);
+			double total = GameConstants::Ship_Build_Base_Metal[index];
+			total += sum_stream_cost(tech_range, ship_type, TECH_RANGE, true,
+			                         calculate_range_metal_increment);
+			total += sum_stream_cost(tech_speed, ship_type, TECH_SPEED, true,
+			                         calculate_speed_metal_increment);
+			total += sum_stream_cost(tech_weapons, ship_type, TECH_WEAPONS, true,
+			                         calculate_weapons_metal_increment);
+			total += sum_stream_cost(tech_shields, ship_type, TECH_SHIELDS, true,
+			                         calculate_shields_metal_increment);
+			return total * mini_metal_multiplier(tech_mini);
+		}
 	}
-	
-	int64_t calculate_ship_design_prototype_cost(int32_t tech_range, int32_t tech_speed, 
-	                                              int32_t tech_weapons, int32_t tech_shields, 
-	                                              int32_t tech_mini)
+
+	bool check_ship_design_levels(ShipType ship_type, int32_t tech_range,
+	                              int32_t tech_speed, int32_t tech_weapons,
+	                              int32_t tech_shields, int32_t tech_mini)
 	{
-		// Provisional prototype cost is ten times the individual build cost.
-		return 10 * calculate_ship_design_build_cost(
-			tech_range, tech_speed, tech_weapons, tech_shields, tech_mini);
+		if (!is_supported_ship_type(ship_type))
+			return false;
+		if (tech_range < 0 || tech_speed < 0 || tech_weapons < 0 ||
+			tech_shields < 0 || tech_mini < 0)
+			return false;
+		if (ship_type == SHIP_SATELLITE && tech_range != 0)
+			return false;
+		return true;
 	}
-	
-	int64_t calculate_ship_design_metal_cost(int32_t tech_range, int32_t tech_speed, 
-	                                          int32_t tech_weapons, int32_t tech_shields, 
-	                                          int32_t tech_mini)
+
+	int64_t calculate_ship_design_build_cost(ShipType ship_type, int32_t tech_range,
+	                                          int32_t tech_speed, int32_t tech_weapons,
+	                                          int32_t tech_shields, int32_t tech_mini)
 	{
-		// Provisional flat metal cost; the final value will be data-driven.
-		(void)tech_range;
-		(void)tech_speed;
-		(void)tech_weapons;
-		(void)tech_shields;
-		(void)tech_mini;
-		return 1;
+		return round_up_cost(unrounded_money_cost(
+			ship_type, tech_range, tech_speed, tech_weapons, tech_shields, tech_mini));
+	}
+
+	int64_t calculate_ship_design_prototype_cost(ShipType ship_type, int32_t tech_range,
+	                                              int32_t tech_speed, int32_t tech_weapons,
+	                                              int32_t tech_shields, int32_t tech_mini)
+	{
+		return round_up_cost(GameConstants::Ship_Build_Prototype_Multiplier
+			* unrounded_money_cost(
+				ship_type, tech_range, tech_speed, tech_weapons, tech_shields, tech_mini));
+	}
+
+	int64_t calculate_ship_design_metal_cost(ShipType ship_type, int32_t tech_range,
+	                                          int32_t tech_speed, int32_t tech_weapons,
+	                                          int32_t tech_shields, int32_t tech_mini)
+	{
+		return round_up_cost(unrounded_metal_cost(
+			ship_type, tech_range, tech_speed, tech_weapons, tech_shields, tech_mini));
 	}
 	
 	// ============================================================================

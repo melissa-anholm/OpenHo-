@@ -228,14 +228,14 @@ uint32_t Player::create_ship_design(const std::string& name, ShipType type, int3
 	design.name = name;
 	design.type = type;
 	
-	// Set tech levels using the friend function
-	set_ship_design_tech(design, tech_range, tech_speed, tech_weapons, tech_shields, tech_mini);
-	design.build_cost = GameFormulas::calculate_ship_design_build_cost(
-		tech_range, tech_speed, tech_weapons, tech_shields, tech_mini);
-	design.prototype_cost = GameFormulas::calculate_ship_design_prototype_cost(
-		tech_range, tech_speed, tech_weapons, tech_shields, tech_mini);
-	design.metal_cost = GameFormulas::calculate_ship_design_metal_cost(
-		tech_range, tech_speed, tech_weapons, tech_shields, tech_mini);
+		// Set tech levels using the friend function
+		set_ship_design_tech(design, tech_range, tech_speed, tech_weapons, tech_shields, tech_mini);
+		design.build_cost = GameFormulas::calculate_ship_design_build_cost(
+			type, tech_range, tech_speed, tech_weapons, tech_shields, tech_mini);
+		design.prototype_cost = GameFormulas::calculate_ship_design_prototype_cost(
+			type, tech_range, tech_speed, tech_weapons, tech_shields, tech_mini);
+		design.metal_cost = GameFormulas::calculate_ship_design_metal_cost(
+			type, tech_range, tech_speed, tech_weapons, tech_shields, tech_mini);
 	
 	ship_designs.push_back(design);
 	return design_id;
