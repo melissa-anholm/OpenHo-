@@ -1,16 +1,20 @@
 #include "save_file.h"
 
 #include <array>
+#include <cmath>
 #include <cstdio>
 #include <fstream>
 #include <limits>
 #include <string>
 #include <type_traits>
+#include <cstring>
+#include <unordered_set>
 
 namespace
 {
 constexpr std::array<char, 8> kFileMagic = {'O', 'H', 'O', 'S', 'A', 'V', 'E', '1'};
 constexpr std::array<char, 4> kRecordMagic = {'R', 'C', 'D', '1'};
+constexpr std::array<char, 8> kDefinitionMagic = {'O', 'H', 'O', 'D', 'E', 'F', '0', '1'};
 constexpr uint32_t kFormatVersion = 1;
 constexpr uint64_t kMaxSectionSize = 256ULL * 1024ULL * 1024ULL;
 
@@ -37,12 +41,61 @@ template <typename T>
 bool read_integer(const std::vector<uint8_t>& input, size_t& offset, T& value)
 {
     static_assert(std::is_unsigned<T>::value, "save integers must be unsigned");
-    if (input.size() - offset < sizeof(T))
+    if (offset > input.size() || input.size() - offset < sizeof(T))
         return false;
 
     value = 0;
     for (size_t i = 0; i < sizeof(T); ++i)
         value |= static_cast<T>(input[offset++]) << (i * 8);
+    return true;
+}
+
+void append_double(std::vector<uint8_t>& output, double value)
+{
+    uint64_t bits = 0;
+    std::memcpy(&bits, &value, sizeof(bits));
+    append_integer<uint64_t>(output, bits);
+}
+
+bool read_double(const std::vector<uint8_t>& input, size_t& offset, double& value)
+{
+    uint64_t bits = 0;
+    if (!read_integer(input, offset, bits))
+        return false;
+    std::memcpy(&value, &bits, sizeof(value));
+    return std::isfinite(value);
+}
+
+void append_string(std::vector<uint8_t>& output, const std::string& value)
+{
+    append_integer<uint32_t>(output, static_cast<uint32_t>(value.size()));
+    output.insert(output.end(), value.begin(), value.end());
+}
+
+bool read_string(const std::vector<uint8_t>& input, size_t& offset, std::string& value)
+{
+    uint32_t length = 0;
+    if (!read_integer(input, offset, length) || offset > input.size() ||
+        length > input.size() - offset)
+        return false;
+    value.assign(reinterpret_cast<const char*>(input.data() + offset), length);
+    offset += length;
+    return true;
+}
+
+bool valid_enum_values(const GameDefinition& definition)
+{
+    if (definition.galaxy_params.shape < GALAXY_RANDOM ||
+        definition.galaxy_params.shape > GALAXY_GRID)
+        return false;
+    for (const auto& setup : definition.player_setups)
+    {
+        if (setup.player_gender < GENDER_OTHER || setup.player_gender > GENDER_M ||
+            setup.type < PLAYER_HUMAN || setup.type > PLAYER_COMPUTER ||
+            setup.starting_colony_quality < START_OUTPOST ||
+            setup.starting_colony_quality > START_ABUNDANT)
+            return false;
+    }
     return true;
 }
 
@@ -114,6 +167,184 @@ bool append_header(std::ofstream& output, const std::vector<uint8_t>& definition
     output.write(reinterpret_cast<const char*>(definition.data()),
                  static_cast<std::streamsize>(definition.size()));
     return static_cast<bool>(output);
+}
+
+std::vector<uint8_t> encode_definition_payload(const GameDefinition& definition)
+{
+    if (definition.schema_version != GameDefinition::CURRENT_SCHEMA_VERSION ||
+        definition.planets.size() > 500 || definition.player_setups.size() > 100 ||
+        definition.home_planet_ids.size() > definition.planets.size() ||
+        definition.player_ideal_temperatures.size() != definition.player_setups.size() ||
+        definition.player_ideal_gravities.size() != definition.player_setups.size() ||
+        !std::isfinite(definition.galaxy_size) || !std::isfinite(definition.galaxy_params.density) ||
+        !std::isfinite(definition.galaxy_params.cluster_angular_offset) ||
+        !valid_enum_values(definition))
+        return {};
+
+    for (double value : definition.player_ideal_temperatures)
+        if (!std::isfinite(value))
+            return {};
+    for (double value : definition.player_ideal_gravities)
+        if (!std::isfinite(value))
+            return {};
+
+    std::vector<uint8_t> output;
+    output.insert(output.end(), kDefinitionMagic.begin(), kDefinitionMagic.end());
+    append_integer<uint32_t>(output, definition.schema_version);
+    append_integer<uint32_t>(output, definition.galaxy_params.n_planets);
+    append_integer<uint32_t>(output, definition.galaxy_params.n_players);
+    append_double(output, definition.galaxy_params.density);
+    output.push_back(static_cast<uint8_t>(definition.galaxy_params.shape));
+    append_integer<uint64_t>(output, definition.galaxy_params.seed);
+    append_double(output, definition.galaxy_params.cluster_angular_offset);
+    append_double(output, definition.galaxy_size);
+
+    append_integer<uint32_t>(output, static_cast<uint32_t>(definition.planets.size()));
+    for (const auto& planet : definition.planets)
+    {
+        append_integer<uint32_t>(output, planet.id);
+        append_string(output, planet.name);
+        append_double(output, planet.x);
+        append_double(output, planet.y);
+        append_double(output, planet.true_gravity);
+    }
+
+    append_integer<uint32_t>(output, static_cast<uint32_t>(definition.home_planet_ids.size()));
+    for (uint32_t id : definition.home_planet_ids)
+        append_integer<uint32_t>(output, id);
+
+    append_integer<uint32_t>(output, static_cast<uint32_t>(definition.player_setups.size()));
+    for (const auto& setup : definition.player_setups)
+    {
+        append_string(output, setup.name);
+        output.push_back(static_cast<uint8_t>(setup.player_gender));
+        output.push_back(static_cast<uint8_t>(setup.type));
+        append_integer<uint32_t>(output, static_cast<uint32_t>(setup.ai_iq));
+        output.push_back(static_cast<uint8_t>(setup.starting_colony_quality));
+    }
+    append_integer<uint32_t>(output, static_cast<uint32_t>(definition.player_ideal_temperatures.size()));
+    for (double ideal_temperature : definition.player_ideal_temperatures)
+        append_double(output, ideal_temperature);
+    append_integer<uint32_t>(output, static_cast<uint32_t>(definition.player_ideal_gravities.size()));
+    for (double ideal_gravity : definition.player_ideal_gravities)
+        append_double(output, ideal_gravity);
+    return output;
+}
+
+bool decode_definition_payload(const std::vector<uint8_t>& payload,
+                               GameDefinition& definition)
+{
+    if (payload.size() < 8 + 4 + 4 + 4 + 8 + 1 + 8 + 8 + 4)
+        return false;
+
+    size_t offset = 0;
+    for (char expected : kDefinitionMagic)
+    {
+        if (payload[offset++] != static_cast<uint8_t>(expected))
+            return false;
+    }
+
+    GameDefinition parsed;
+    uint32_t schema_version = 0;
+    uint8_t shape = 0;
+    if (!read_integer(payload, offset, schema_version) ||
+        !read_integer(payload, offset, parsed.galaxy_params.n_planets) ||
+        !read_integer(payload, offset, parsed.galaxy_params.n_players) ||
+        !read_double(payload, offset, parsed.galaxy_params.density) ||
+        offset >= payload.size())
+        return false;
+    shape = payload[offset++];
+    if (!read_integer(payload, offset, parsed.galaxy_params.seed) ||
+        !read_double(payload, offset, parsed.galaxy_params.cluster_angular_offset) ||
+        !read_double(payload, offset, parsed.galaxy_size))
+        return false;
+    parsed.schema_version = schema_version;
+    parsed.galaxy_params.shape = static_cast<GalaxyShape>(shape);
+
+    uint32_t planet_count = 0;
+    if (!read_integer(payload, offset, planet_count) || planet_count > 500)
+        return false;
+    parsed.planets.reserve(planet_count);
+    for (uint32_t i = 0; i < planet_count; ++i)
+    {
+        ImmutablePlanetDefinition planet;
+        if (!read_integer(payload, offset, planet.id) ||
+            !read_string(payload, offset, planet.name) ||
+            !read_double(payload, offset, planet.x) ||
+            !read_double(payload, offset, planet.y) ||
+            !read_double(payload, offset, planet.true_gravity))
+            return false;
+        parsed.planets.push_back(std::move(planet));
+    }
+
+    uint32_t home_count = 0;
+    if (!read_integer(payload, offset, home_count) || home_count > planet_count)
+        return false;
+    parsed.home_planet_ids.resize(home_count);
+    for (uint32_t& id : parsed.home_planet_ids)
+        if (!read_integer(payload, offset, id))
+            return false;
+
+    std::unordered_set<uint32_t> planet_ids;
+    for (const auto& planet : parsed.planets)
+        if (!planet_ids.insert(planet.id).second)
+            return false;
+    std::unordered_set<uint32_t> home_ids;
+    for (uint32_t id : parsed.home_planet_ids)
+        if (planet_ids.find(id) == planet_ids.end() || !home_ids.insert(id).second)
+            return false;
+
+    uint32_t player_count = 0;
+    if (!read_integer(payload, offset, player_count) || player_count > 100)
+        return false;
+    parsed.player_setups.reserve(player_count);
+    for (uint32_t i = 0; i < player_count; ++i)
+    {
+        PlayerSetup setup;
+        uint8_t gender = 0;
+        uint8_t type = 0;
+        uint32_t iq = 0;
+        uint8_t quality = 0;
+        if (!read_string(payload, offset, setup.name) || offset + 2 > payload.size())
+            return false;
+        gender = payload[offset++];
+        type = payload[offset++];
+        if (!read_integer(payload, offset, iq) || offset >= payload.size())
+            return false;
+        quality = payload[offset++];
+        setup.player_gender = static_cast<Gender>(gender);
+        setup.type = static_cast<PlayerType>(type);
+        setup.ai_iq = static_cast<int32_t>(iq);
+        setup.starting_colony_quality = static_cast<StartingColonyQuality>(quality);
+        parsed.player_setups.push_back(std::move(setup));
+    }
+
+    uint32_t ideal_temperature_count = 0;
+    if (!read_integer(payload, offset, ideal_temperature_count) ||
+        ideal_temperature_count != player_count)
+        return false;
+    parsed.player_ideal_temperatures.resize(ideal_temperature_count);
+    for (double& ideal_temperature : parsed.player_ideal_temperatures)
+        if (!read_double(payload, offset, ideal_temperature))
+            return false;
+
+    uint32_t ideal_gravity_count = 0;
+    if (!read_integer(payload, offset, ideal_gravity_count) ||
+        ideal_gravity_count != player_count)
+        return false;
+    parsed.player_ideal_gravities.resize(ideal_gravity_count);
+    for (double& ideal_gravity : parsed.player_ideal_gravities)
+        if (!read_double(payload, offset, ideal_gravity))
+            return false;
+
+    if (offset != payload.size() || parsed.schema_version != GameDefinition::CURRENT_SCHEMA_VERSION ||
+        parsed.galaxy_params.n_planets != planet_count ||
+        parsed.galaxy_params.n_players != player_count ||
+        parsed.home_planet_ids.size() != player_count || !valid_enum_values(parsed))
+        return false;
+
+    definition = std::move(parsed);
+    return true;
 }
 
 bool append_record(std::ofstream& output,
@@ -211,6 +442,17 @@ bool parse_records(const std::vector<uint8_t>& file,
 
     return found;
 }
+}
+
+std::vector<uint8_t> encode_game_definition(const GameDefinition& definition)
+{
+    return encode_definition_payload(definition);
+}
+
+bool decode_game_definition(const std::vector<uint8_t>& payload,
+                            GameDefinition& definition)
+{
+    return decode_definition_payload(payload, definition);
 }
 
 bool SaveFile::create(const std::string& path,

@@ -56,8 +56,9 @@ struct Galaxy
 {
 	GalaxyCoord gal_size;
 	
-	// Immutable planet list
-	std::vector<Planet> planets;
+		// Planet records: identity and geometry are stable, while environmental
+		// and ownership-related fields are mutable during play.
+		std::vector<Planet> planets;
 	
 	// Home planet indices (indices into planets vector)
 	std::vector<size_t> home_planet_indices;

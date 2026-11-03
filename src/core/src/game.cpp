@@ -2,6 +2,7 @@
 #include "game_setup.h"
 #include "game_constants.h"
 #include "game_formulas.h"
+#include "save_file.h"
 #include "text_assets.h"
 #include <algorithm>
 #include <cmath>
@@ -337,6 +338,40 @@ void GameState::process_turn()
 // ============================================================================
 // Serialization
 // ============================================================================
+std::vector<uint8_t> GameState::serialize_immutable_definition() const
+{
+	GameDefinition definition;
+	definition.galaxy_params = galaxy_params;
+	definition.galaxy_size = galaxy->gal_size;
+	definition.player_setups = player_setups;
+	definition.player_ideal_temperatures.reserve(players.size());
+	definition.player_ideal_gravities.reserve(players.size());
+	for (const Player& player : players)
+	{
+		definition.player_ideal_temperatures.push_back(player.ideal_temperature);
+		definition.player_ideal_gravities.push_back(player.ideal_gravity);
+	}
+	definition.planets.reserve(galaxy->planets.size());
+	for (const Planet& planet : galaxy->planets)
+	{
+		definition.planets.push_back({
+			planet.id,
+			planet.name,
+			planet.x,
+			planet.y,
+			planet.true_gravity
+		});
+	}
+	definition.home_planet_ids.reserve(galaxy->home_planet_indices.size());
+	for (size_t index : galaxy->home_planet_indices)
+	{
+		if (index >= galaxy->planets.size())
+			return {};
+		definition.home_planet_ids.push_back(galaxy->planets[index].id);
+	}
+	return encode_game_definition(definition);
+}
+
 std::vector<uint8_t> GameState::serialize_state() const
 {
 	// Placeholder for serialization

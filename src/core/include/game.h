@@ -158,8 +158,9 @@ public:
 		{ rng->setAISeed(seed); }
 	
 	
-	// Serialization
-	[[nodiscard]] std::vector<uint8_t> serialize_state() const;
+		// Serialization
+		[[nodiscard]] std::vector<uint8_t> serialize_immutable_definition() const;
+		[[nodiscard]] std::vector<uint8_t> serialize_state() const;
 	[[nodiscard]] bool deserialize_state(const std::vector<uint8_t>& data);
 	
 private:

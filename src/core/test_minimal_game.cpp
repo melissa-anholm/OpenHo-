@@ -225,8 +225,32 @@ void test_ship_construction()
 
 void test_append_only_save_file()
 {
+    auto game = create_two_player_game();
+    const std::vector<uint8_t> definition_payload =
+        game->serialize_immutable_definition();
+    assert(!definition_payload.empty());
+
+    GameDefinition decoded_definition;
+    assert(decode_game_definition(definition_payload, decoded_definition));
+    assert(decoded_definition.schema_version == GameDefinition::CURRENT_SCHEMA_VERSION);
+    assert(decoded_definition.planets.size() == game->get_galaxy().planets.size());
+    assert(decoded_definition.home_planet_ids.size() == 2);
+    assert(decoded_definition.player_setups.size() == 2);
+    assert(decoded_definition.player_ideal_temperatures.size() == 2);
+    assert(decoded_definition.player_ideal_gravities.size() == 2);
+    assert(decoded_definition.player_ideal_temperatures.front() ==
+           game->get_players().front().get_ideal_temperature());
+    assert(decoded_definition.player_ideal_gravities.front() ==
+           game->get_players().front().get_ideal_gravity());
+    assert(decoded_definition.galaxy_params.shape == GALAXY_RANDOM);
+    assert(decoded_definition.galaxy_params.seed == 42);
+    assert(decoded_definition.planets.front().id == game->get_galaxy().planets.front().id);
+    assert(decoded_definition.planets.front().name == game->get_galaxy().planets.front().name);
+    assert(decoded_definition.planets.front().true_gravity ==
+           game->get_galaxy().planets.front().true_gravity);
+
     const std::string path = "/tmp/openho_save_file_test.save";
-    const std::vector<uint8_t> definition = {0x01, 0x02, 0x03, 0x04};
+    const std::vector<uint8_t> definition = definition_payload;
     const std::vector<uint8_t> first_payload = {0x10, 0x20};
     const std::vector<uint8_t> second_payload = {0x30, 0x40, 0x50};
 

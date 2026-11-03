@@ -310,7 +310,7 @@ This testing should be performed before galaxy generation is considered producti
  - [ ] Capture canonical Turn N snapshots at the beginning of each turn, with Turn 0/year 2000 initialization
  - [ ] Capture economic after-state and post-processing state for history, diagnostics, and display
  - [ ] Complete end-of-turn state/knowledge updates with public/private filtering from the same snapshot boundary
- - [ ] Serialize and restore the complete mid-game state, including pending actions, readiness, knowledge, and RNG state
+ - [ ] Serialize and restore the complete mutable mid-game state, including pending actions, readiness, knowledge, and RNG state; the immutable game-definition payload and append-only container are implemented separately
  - [ ] Synchronize critical state at least once per turn for host migration
  - [ ] Enforce readiness in the core turn-processing entry point
  - [ ] Exclude eliminated players from readiness requirements
