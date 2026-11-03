@@ -1,6 +1,6 @@
 # OpenHo Master Plan
 
-**Last Updated:** November 1, 2026 (Ship construction model clarification)
+**Last Updated:** November 2, 2026 (Append-only save architecture)
 **Project Status:** Phase 2 - Minimal playable game first; feature completeness follows incrementally
 
 ---
@@ -152,6 +152,8 @@ The economic path applies population growth, refreshes planetary income using th
 - The canonical snapshot labeled Turn N represents the beginning of Turn N; Turn 0 begins in year 2000. Economic after-state and post-processing state are retained for diagnostics, history, and display.
 - The core engine enforces readiness. Players may ready, unready, and act again; actions submitted after ready make the player unready. Eliminated players do not block processing, and a host must explicitly decide whether to proceed after a disconnect.
 - AI players become ready after completing their planned actions, subject to a configurable turn-length limit. Complete game state must be serializable for mid-game resume, and critical host-migration state must synchronize at least once per turn.
+- **Save/persistence policy:** Autosave once at the end of every completed turn. Do not autosave at every player decision point, since the interface should not incur repeated serialization and file-write overhead. Support an explicit manual save on request, including before graceful application shutdown. Losing less than one incomplete turn after an accidental interruption is acceptable under this policy.
+- **Save-file architecture:** Use one versioned append-only save file. Store the immutable game definition once at the beginning, then append complete mutable runtime checkpoints after completed turns and for explicit manual saves. Each checkpoint is independently framed and checksummed; loading uses the newest complete valid record and ignores an incomplete trailing append. Periodic compaction may retain the definition and the newest checkpoint while removing older records. The initial runtime record format is snapshot-based rather than delta/event-based.
 - First-turn starting values are tracked under Player Initial Setup in `Missing_Implementation_List.md`.
 - Diplomacy is deliberately deferred until its action set is defined and is not required for the core game flow.
 

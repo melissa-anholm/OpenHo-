@@ -1,11 +1,15 @@
 #include "game.h"
 #include "game_setup.h"
 #include "game_formulas.h"
+#include "save_file.h"
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
 #include <iostream>
 #include <memory>
+#include <cstdio>
+#include <fstream>
+#include <string>
 #include <vector>
 
 namespace
@@ -218,6 +222,58 @@ void test_ship_construction()
     assert(game->get_player(1)->get_fleets().size() == 2);
     game->clear_dip_amount(1);
 }
+
+void test_append_only_save_file()
+{
+    const std::string path = "/tmp/openho_save_file_test.save";
+    const std::vector<uint8_t> definition = {0x01, 0x02, 0x03, 0x04};
+    const std::vector<uint8_t> first_payload = {0x10, 0x20};
+    const std::vector<uint8_t> second_payload = {0x30, 0x40, 0x50};
+
+    std::remove(path.c_str());
+    assert(SaveFile::create(path, definition));
+    assert(SaveFile::append_checkpoint(
+        path, 1, SaveRecordPhase::TURN_CHECKPOINT, first_payload));
+    assert(SaveFile::append_checkpoint(
+        path, 2, SaveRecordPhase::MANUAL_CHECKPOINT, second_payload));
+
+    std::vector<uint8_t> loaded_definition;
+    assert(SaveFile::read_immutable_definition(path, loaded_definition));
+    assert(loaded_definition == definition);
+
+    SaveCheckpoint latest;
+    assert(SaveFile::read_latest_checkpoint(path, latest));
+    assert(latest.turn == 2);
+    assert(latest.phase == SaveRecordPhase::MANUAL_CHECKPOINT);
+    assert(latest.payload == second_payload);
+
+    // Simulate a process interruption that leaves an incomplete trailing record.
+    {
+        std::ofstream damaged(path, std::ios::binary | std::ios::app);
+        const char incomplete[] = {'R', 'C', 'D'};
+        damaged.write(incomplete, sizeof(incomplete));
+    }
+    SaveCheckpoint after_interruption;
+    assert(SaveFile::read_latest_checkpoint(path, after_interruption));
+    assert(after_interruption.turn == 2);
+    assert(after_interruption.payload == second_payload);
+
+    const std::vector<uint8_t> repaired_payload = {0x60, 0x70};
+    assert(SaveFile::append_checkpoint(
+        path, 3, SaveRecordPhase::TURN_CHECKPOINT, repaired_payload));
+    SaveCheckpoint after_repair;
+    assert(SaveFile::read_latest_checkpoint(path, after_repair));
+    assert(after_repair.turn == 3);
+    assert(after_repair.payload == repaired_payload);
+
+    assert(SaveFile::compact(path));
+    SaveCheckpoint after_compaction;
+    assert(SaveFile::read_latest_checkpoint(path, after_compaction));
+    assert(after_compaction.turn == 3);
+    assert(after_compaction.payload == repaired_payload);
+
+    std::remove(path.c_str());
+}
 }
 
 int main()
@@ -225,6 +281,7 @@ int main()
     test_game_initialization_and_readiness();
     test_dip_and_turn_processing();
     test_ship_construction();
+    test_append_only_save_file();
     std::cout << "Gameplay regression scenarios passed.\n";
     return 0;
 }

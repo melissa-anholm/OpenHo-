@@ -35,6 +35,7 @@ set(CORE_SOURCES
 	src/knowledge_galaxy.cpp
 	src/fleet.cpp
 	src/text_assets.cpp
+	src/save_file.cpp
 	src/c_api.cpp
 	src/player_c_api.cpp
 	src/gamestate_c_api_extensions.cpp
