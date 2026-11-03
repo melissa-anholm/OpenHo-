@@ -204,6 +204,9 @@ private:
 		std::unordered_map<uint32_t, std::vector<PlayerPublicInfo>> player_info_history;
 		// Turn readiness for the current simultaneous-turn cycle.
 		std::unordered_map<uint32_t, bool> turn_ready;
+		// Tracks whether the provisional bankruptcy boundary was detected for a
+		// player, so the detection log is emitted only on the transition.
+		std::unordered_map<uint32_t, bool> bankruptcy_limit_reached;
 	
 	// Research advancement cost caches (indexed by tech level)
 	std::vector<int64_t> research_cost_range;
@@ -226,9 +229,11 @@ private:
 	// Assign suitable planets to players based on their starting colony quality
 	// Takes the suitable planets vector to avoid recalculating it
 	void assign_planets_random(const std::vector<Planet*>& suitable_planets);
-	void process_population_growth();
-	void check_population_decreasing_events(uint32_t planet_id);
-	void calculate_player_incomes();
+		void process_population_growth();
+		void check_population_decreasing_events(uint32_t planet_id);
+		int64_t calculate_summed_planetary_income(const Player& player) const;
+		void check_bankruptcy_limits();
+		void calculate_player_incomes();
 	void update_planet_incomes();
 	void process_money_allocation();
 	void apply_money_interest();

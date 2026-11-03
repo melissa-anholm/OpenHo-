@@ -1,6 +1,7 @@
 #include "game.h"
 #include "game_setup.h"
 #include "game_formulas.h"
+#include <algorithm>
 #include <cassert>
 #include <cstdint>
 #include <iostream>
@@ -42,18 +43,26 @@ int main()
     game.set_money_allocation(2, savings_only);
     const int64_t initial_savings = game.get_players().front().get_money();
     constexpr int64_t dip_amount = 100000;
+    const int64_t maximum_initial_dip = GameFormulas::calculate_available_build_money(
+        initial_savings, initial_income, 1);
     game.set_dip_amount(1, dip_amount);
-    assert(game.get_players().front().get_money() == initial_savings - dip_amount);
+    const int64_t persistent_dip_amount = std::min(dip_amount, maximum_initial_dip);
+    assert(game.get_players().front().get_money() == initial_savings - persistent_dip_amount);
     game.set_dip_amount(1, dip_amount * 2);
-    assert(game.get_players().front().get_money() == initial_savings - dip_amount * 2);
+    const int64_t increased_persistent_dip = std::min(dip_amount * 2, maximum_initial_dip);
+    assert(game.get_players().front().get_money() == initial_savings - increased_persistent_dip);
     game.clear_dip_amount(1);
     assert(game.get_players().front().get_money() == initial_savings);
     game.set_dip_amount(1, dip_amount);
     constexpr int64_t one_time_dip_amount = 50000;
+    const int64_t second_player_income = game.get_players()[1].get_colonized_planets().front().get_income();
+    const int64_t maximum_one_time_dip = GameFormulas::calculate_available_build_money(
+        game.get_players()[1].get_money(), second_player_income, 1);
     game.set_one_time_dip_amount(2, one_time_dip_amount);
-    assert(game.get_dip_amount(1) == dip_amount);
+    const int64_t actual_one_time_dip = std::min(one_time_dip_amount, maximum_one_time_dip);
+    assert(game.get_dip_amount(1) == persistent_dip_amount);
     assert(game.is_dip_persistent(1));
-    assert(game.get_dip_amount(2) == one_time_dip_amount);
+    assert(game.get_dip_amount(2) == actual_one_time_dip);
     assert(!game.is_dip_persistent(2));
 
     for (const Player& player : game.get_players())
@@ -87,27 +96,27 @@ int main()
            first_colony_after_turn.get_income() +
            GameFormulas::calculate_money_interest(-dip_amount));
     assert(first_player_after_turn.get_effective_income() ==
-           first_player_after_turn.get_money_income() + dip_amount);
+           first_player_after_turn.get_money_income() + persistent_dip_amount);
     assert(first_player_after_turn.get_money() ==
-           first_player_after_turn.get_money_income() - dip_amount);
-    assert(game.get_dip_amount(1) == dip_amount);
+           first_player_after_turn.get_money_income() - persistent_dip_amount);
+    assert(game.get_dip_amount(1) == persistent_dip_amount);
     assert(game.is_dip_persistent(1));
     const Player& second_player_after_turn = game.get_players()[1];
     assert(second_player_after_turn.get_effective_income() ==
-           second_player_after_turn.get_money_income() + one_time_dip_amount);
+           second_player_after_turn.get_money_income() + actual_one_time_dip);
     assert(game.get_dip_amount(2) == 0);
     assert(!game.is_dip_persistent(2));
 
     game.process_turn();
     assert(game.get_players().front().get_effective_income() ==
-           game.get_players().front().get_money_income() + dip_amount);
+           game.get_players().front().get_money_income() + persistent_dip_amount);
     assert(game.get_players()[1].get_effective_income() ==
            game.get_players()[1].get_money_income());
     const int64_t savings_before_clear = game.get_players().front().get_money();
     game.clear_dip_amount(1);
     assert(game.get_dip_amount(1) == 0);
     assert(!game.is_dip_persistent(1));
-    assert(game.get_players().front().get_money() == savings_before_clear + dip_amount);
+    assert(game.get_players().front().get_money() == savings_before_clear + persistent_dip_amount);
     game.process_turn();
     assert(game.get_players().front().get_effective_income() ==
            game.get_players().front().get_money_income());
@@ -161,10 +170,16 @@ int main()
     assert(ship_game.get_player(1)->get_metal() == metal_before_failed_build);
     assert(ship_game.get_player(1)->get_fleets().size() == 2);
 
-    ship_game.set_dip_amount(1, 100000000);
-    assert(ship_game.build_ships_from_design(1, design_id, 1, ship_planet_id) ==
-           ErrorCode::INSUFFICIENT_MONEY);
-    assert(ship_game.get_player(1)->get_money() == money_before_failed_build - 100000000);
+	const int64_t requested_excessive_dip = 100000000;
+	const int64_t ship_planetary_income =
+		ship_game.get_player(1)->get_colonized_planets().front().get_income();
+	const int64_t maximum_ship_dip = GameFormulas::calculate_available_build_money(
+		money_before_failed_build, ship_planetary_income, 1);
+	ship_game.set_dip_amount(1, requested_excessive_dip);
+	assert(ship_game.build_ships_from_design(1, design_id, 1, ship_planet_id) ==
+	       ErrorCode::INSUFFICIENT_MONEY);
+	assert(ship_game.get_player(1)->get_money() ==
+	       money_before_failed_build - std::min(requested_excessive_dip, maximum_ship_dip));
     assert(ship_game.get_player(1)->get_metal() == metal_before_failed_build);
     assert(ship_game.get_player(1)->get_fleets().size() == 2);
     ship_game.clear_dip_amount(1);

@@ -192,9 +192,17 @@ void GameState::set_dip_amount(uint32_t player_id, int64_t dip_amount)
 	if (dip_amount < 0)
 		throw std::invalid_argument("Dip amount must not be negative");
 
-	player->money_savings += player->pending_dip_amount - dip_amount;
-	player->pending_dip_amount = dip_amount;
-	player->pending_dip_persistent = dip_amount > 0;
+	const int64_t savings_before_pending = player->money_savings +
+		player->pending_dip_amount;
+	const int64_t available_dip = GameFormulas::calculate_available_build_money(
+		savings_before_pending,
+		calculate_summed_planetary_income(*player),
+		static_cast<uint32_t>(player->colonized_planets.size()));
+	const int64_t permitted_dip = std::min(dip_amount, available_dip);
+
+	player->money_savings += player->pending_dip_amount - permitted_dip;
+	player->pending_dip_amount = permitted_dip;
+	player->pending_dip_persistent = permitted_dip > 0;
 }
 
 void GameState::set_one_time_dip_amount(uint32_t player_id, int64_t dip_amount)
@@ -205,8 +213,16 @@ void GameState::set_one_time_dip_amount(uint32_t player_id, int64_t dip_amount)
 	if (dip_amount < 0)
 		throw std::invalid_argument("Dip amount must not be negative");
 
-	player->money_savings += player->pending_dip_amount - dip_amount;
-	player->pending_dip_amount = dip_amount;
+	const int64_t savings_before_pending = player->money_savings +
+		player->pending_dip_amount;
+	const int64_t available_dip = GameFormulas::calculate_available_build_money(
+		savings_before_pending,
+		calculate_summed_planetary_income(*player),
+		static_cast<uint32_t>(player->colonized_planets.size()));
+	const int64_t permitted_dip = std::min(dip_amount, available_dip);
+
+	player->money_savings += player->pending_dip_amount - permitted_dip;
+	player->pending_dip_amount = permitted_dip;
 	player->pending_dip_persistent = false;
 }
 
@@ -315,6 +331,7 @@ void GameState::process_turn()
 	for (auto& ready : turn_ready)
 	ready.second = false;
 	renew_persistent_dips();
+	check_bankruptcy_limits();
 }
 
 // ============================================================================
@@ -593,6 +610,32 @@ void GameState::process_population_growth()
 	}
 }
 
+int64_t GameState::calculate_summed_planetary_income(const Player& player) const
+{
+	int64_t summed_income = 0;
+	for (const auto& colonized : player.colonized_planets)
+		summed_income += colonized.get_income();
+	return summed_income;
+}
+
+void GameState::check_bankruptcy_limits()
+{
+	for (const auto& player : players)
+	{
+		const bool reached = player.money_savings <= -
+			GameFormulas::calculate_bankruptcy_debt_limit(
+				calculate_summed_planetary_income(player),
+				static_cast<uint32_t>(player.colonized_planets.size()));
+		const bool previously_reached = bankruptcy_limit_reached[player.id];
+		bankruptcy_limit_reached[player.id] = reached;
+		if (reached && !previously_reached)
+		{
+			std::cout << "Player " << player.name
+			          << " has reached the provisional bankruptcy limit.\n";
+		}
+	}
+}
+
 void GameState::calculate_player_incomes()
 {
 	// For each player, calculate total income from all owned planets
@@ -706,9 +749,15 @@ void GameState::renew_persistent_dips()
 	{
 		if (player.locked_dip_persistent && player.locked_dip_amount > 0)
 		{
-			player.pending_dip_amount = player.locked_dip_amount;
-			player.pending_dip_persistent = true;
-			player.money_savings -= player.pending_dip_amount;
+			const int64_t available_dip = GameFormulas::calculate_available_build_money(
+				player.money_savings,
+				calculate_summed_planetary_income(player),
+				static_cast<uint32_t>(player.colonized_planets.size()));
+			const int64_t renewed_dip = std::min(
+				player.locked_dip_amount, available_dip);
+			player.pending_dip_amount = renewed_dip;
+			player.pending_dip_persistent = renewed_dip > 0;
+			player.money_savings -= renewed_dip;
 		}
 
 		player.locked_dip_amount = 0;
@@ -1255,10 +1304,31 @@ ErrorCode GameState::check_player_build_fleet(uint32_t player_id, uint32_t desig
 	// Check ship count is valid
 	if (ship_count == 0)
 		{ return ErrorCode::INVALID_FLEET_SIZE; } 
-	
-	// Check player has sufficient money/metal for fleet construction
-	int64_t total_cost = design->metal_cost * ship_count;
-	if (player->get_metal() < total_cost)
+	if (ship_count > 1000)
+		{ return ErrorCode::INVALID_FLEET_SIZE; }
+
+	if (design->build_cost < 0 || design->prototype_cost < 0 || design->metal_cost < 0)
+		{ return ErrorCode::VALIDATION_FAILED; }
+	const uint64_t count = static_cast<uint64_t>(ship_count);
+	if (count > static_cast<uint64_t>(INT64_MAX) /
+			static_cast<uint64_t>(design->build_cost == 0 ? 1 : design->build_cost) ||
+		count > static_cast<uint64_t>(INT64_MAX) /
+			static_cast<uint64_t>(design->metal_cost == 0 ? 1 : design->metal_cost))
+		{ return ErrorCode::VALIDATION_FAILED; }
+
+	const int64_t construction_cost = design->build_cost * static_cast<int64_t>(ship_count);
+	const int64_t prototype_cost = design->has_been_prototyped ? 0 : design->prototype_cost;
+	if (construction_cost > INT64_MAX - prototype_cost)
+		{ return ErrorCode::VALIDATION_FAILED; }
+	const int64_t total_money_cost = construction_cost + prototype_cost;
+	const int64_t total_metal_cost = design->metal_cost * static_cast<int64_t>(ship_count);
+	const int64_t available_money = GameFormulas::calculate_available_build_money(
+		player->get_money(),
+		calculate_summed_planetary_income(*player),
+		static_cast<uint32_t>(player->get_colonized_planets().size()));
+	if (total_money_cost > available_money)
+		{ return ErrorCode::INSUFFICIENT_MONEY; }
+	if (player->get_metal() < total_metal_cost)
 		{ return ErrorCode::INSUFFICIENT_METAL; }
 	
 	return ErrorCode::SUCCESS;
@@ -1313,6 +1383,11 @@ ErrorCode GameState::check_player_design_ship(uint32_t player_id, const std::str
 
 ErrorCode GameState::build_ships_from_design(uint32_t player_id, uint32_t design_id, uint32_t ship_count, uint32_t planet_id)
 {
+	const ErrorCode validation = check_player_build_fleet(
+		player_id, design_id, ship_count, planet_id);
+	if (validation != ErrorCode::SUCCESS)
+		return validation;
+
 	Player* player = get_player(player_id);
 	if (!player)
 		return ErrorCode::INVALID_PLAYER_ID;
@@ -1355,7 +1430,11 @@ ErrorCode GameState::build_ships_from_design(uint32_t player_id, uint32_t design
 	const int64_t total_money_cost = construction_cost + prototype_cost;
 	const int64_t total_metal_cost = design->metal_cost * static_cast<int64_t>(ship_count);
 
-	if (player->money_savings < total_money_cost)
+	const int64_t available_money = GameFormulas::calculate_available_build_money(
+		player->money_savings,
+		calculate_summed_planetary_income(*player),
+		static_cast<uint32_t>(player->colonized_planets.size()));
+	if (total_money_cost > available_money)
 		return ErrorCode::INSUFFICIENT_MONEY;
 	if (player->metal_reserve < total_metal_cost)
 		return ErrorCode::INSUFFICIENT_METAL;

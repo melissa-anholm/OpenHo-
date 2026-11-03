@@ -100,13 +100,15 @@ effective_income = net_income + locked_dip_amount
 ```
 
 The locked dip has already been removed from savings during the preceding
-player-action phase, so economic processing does not subtract it again. The
-dip may exceed savings and may therefore temporarily create or increase debt.
-The eventual permitted-debt/bankruptcy limit is data-dependent and is not
-enforced yet. By default, selecting a positive dip creates a persistent
-**pension plan** that renews automatically for later turns. The player may
-instead select a one-time dip, which is cleared after its locked amount is
-applied. Setting the pending dip to zero explicitly disables a pension plan.
+player-action phase, so economic processing does not subtract it again. A
+requested dip is capped immediately at the current permitted intentional-debt
+amount. By default, selecting a positive dip creates a persistent **pension
+plan** that renews automatically for later turns. Each renewal is re-evaluated;
+if less borrowing capacity is available, the stored recurring request is
+reduced to the newly permitted amount and that smaller amount is used for later
+renewals. The player may instead select a one-time dip, which is cleared after
+its locked amount is applied. Setting the pending dip to zero explicitly
+disables a pension plan.
 
 ### 2.3 Effective income and allocations
 
@@ -144,7 +146,7 @@ opening_savings - dip_amount
     + effective_income × savings_allocation_fraction
 ```
 
-Savings may therefore become debt. A single negative-income turn does not automatically cause bankruptcy; recovery remains possible. Reaching the data-dependent lower savings limit causes bankruptcy and loss of the game.
+Savings may therefore become debt. A single negative-income turn does not automatically cause bankruptcy; recovery remains possible. Completed-turn processing performs one check against the provisional bankruptcy limit. The check currently records detection only; bankruptcy consequences and loss of the game remain a later implementation task.
 
 ### 2.4 Apply economic changes
 

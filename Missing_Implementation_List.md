@@ -70,17 +70,19 @@
 ### Data-Driven Values (Require Reverse-Engineering) - 5 items
 
 #### Negative Income Mechanics
-- **Status:** Dip Into Savings and negative-income processing are functionally implemented and finalized; debt-limit values and enforcement remain provisional.
+- **Status:** Dip Into Savings and negative-income processing are functionally implemented; debt-limit formulas remain provisional, while intentional-debt enforcement and once-per-turn bankruptcy detection are in place. Bankruptcy consequences remain deferred.
 - **Location:** `src/core/src/game.cpp`, `src/core/include/player.h`, `src/core/include/game_constants.h`, and related action APIs
 - **Implemented behavior:**
   - The player selects a positive dip during the player-action phase for the following economic phase.
-  - Selecting or changing a pending dip immediately adjusts savings; changing it back is lossless.
+  - Selecting or changing a pending dip immediately adjusts savings; changing it back is lossless. Requests are capped at the currently permitted intentional-debt amount.
   - Separate pending and locked amounts and persistence modes are maintained.
   - The pending amount is locked for the next economic phase without a second deduction.
   - `effective_income = net_income + locked_dip_amount` during economic processing.
-  - Persistent pension-plan dips renew automatically; one-time dips apply for only one processed turn.
+  - Persistent pension-plan dips renew automatically and are re-evaluated at renewal; if capacity decreases, the stored recurring request is reduced to the permitted amount. One-time dips apply for only one processed turn.
   - Positive effective income is allocated according to the player's budget; negative effective income funds no categories and is charged directly to savings.
   - A player may recover if later net income becomes positive; one negative-income turn does not immediately cause bankruptcy.
+  - Ship construction checks complete money cost against the same intentional-debt capacity.
+  - Bankruptcy-limit detection runs once per completed turn; it records the threshold transition but does not yet eliminate the player.
 - **Current provisional debt policy:** The exact current equations and function behavior are:
 
   ```text
@@ -112,7 +114,6 @@
 - **Remaining:**
   - [ ] Determine whether and how planet count should affect the intentional-debt and bankruptcy formulas.
   - [ ] Replace the provisional interest rate, repayment horizon, bankruptcy multiplier, and reference income with data-driven rules.
-  - [ ] Enforce the intentional-debt limit for Dip Into Savings and ship-building actions.
   - [ ] Implement bankruptcy and loss when the larger negative-savings limit is reached.
 - **Priority:** Medium-high
 
@@ -405,9 +406,9 @@ This testing should be performed before galaxy generation is considered producti
 - **Required Behavior:**
  - [ ] Allow the player to choose any already-owned design, or configure a new design whose levels are legal under the player's current technology
  - [ ] Calculate the maximum buildable ship count for the proposed design from shared metal and available savings
- - [x] Add `calculate_available_build_money(current_savings)` using the provisional intentional-debt headroom
- - [ ] Apply the final permitted-intentional-debt limit when determining the savings-based maximum
- - [ ] Apply the separate larger bankruptcy/default limit to the player's savings state
+ - [x] Add `calculate_available_build_money(current_savings, summed_planetary_income, planet_count)` using the provisional intentional-debt headroom
+ - [x] Apply the current permitted-intentional-debt limit when validating the complete money cost
+ - [x] Detect the separate larger bankruptcy/default limit once per completed turn
  - [ ] Apply the [Ship Building Cost Specification](#ship-building-cost-specification), including one prototype charge followed by `N × individual resource cost` for an unprototyped design
  - [ ] Allow construction at any planet owned by the player, with no shipyard or planet-specific build limit
  - [x] Build N ships of one design as one immediate fleet
