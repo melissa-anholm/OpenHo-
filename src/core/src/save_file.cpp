@@ -15,6 +15,7 @@ namespace
 constexpr std::array<char, 8> kFileMagic = {'O', 'H', 'O', 'S', 'A', 'V', 'E', '1'};
 constexpr std::array<char, 4> kRecordMagic = {'R', 'C', 'D', '1'};
 constexpr std::array<char, 8> kDefinitionMagic = {'O', 'H', 'O', 'D', 'E', 'F', '0', '1'};
+constexpr std::array<char, 8> kRuntimeMagic = {'O', 'H', 'O', 'R', 'T', 'C', 'P', '1'};
 constexpr uint32_t kFormatVersion = 1;
 constexpr uint64_t kMaxSectionSize = 256ULL * 1024ULL * 1024ULL;
 
@@ -79,6 +80,54 @@ bool read_string(const std::vector<uint8_t>& input, size_t& offset, std::string&
         length > input.size() - offset)
         return false;
     value.assign(reinterpret_cast<const char*>(input.data() + offset), length);
+    offset += length;
+    return true;
+}
+
+template <typename T>
+void append_signed(std::vector<uint8_t>& output, T value)
+{
+    append_integer<uint64_t>(output, static_cast<uint64_t>(value));
+}
+
+template <typename T>
+bool read_signed(const std::vector<uint8_t>& input, size_t& offset, T& value)
+{
+    uint64_t encoded = 0;
+    if (!read_integer(input, offset, encoded))
+        return false;
+    value = static_cast<T>(encoded);
+    return true;
+}
+
+void append_bool(std::vector<uint8_t>& output, bool value)
+{
+    output.push_back(value ? 1 : 0);
+}
+
+bool read_bool(const std::vector<uint8_t>& input, size_t& offset, bool& value)
+{
+    if (offset >= input.size() || input[offset] > 1)
+        return false;
+    value = input[offset++] != 0;
+    return true;
+}
+
+void append_bytes(std::vector<uint8_t>& output, const std::vector<uint8_t>& value)
+{
+    append_integer<uint32_t>(output, static_cast<uint32_t>(value.size()));
+    output.insert(output.end(), value.begin(), value.end());
+}
+
+bool read_bytes(const std::vector<uint8_t>& input, size_t& offset,
+                std::vector<uint8_t>& value, size_t maximum_size)
+{
+    uint32_t length = 0;
+    if (!read_integer(input, offset, length) || length > maximum_size ||
+        offset > input.size() || length > input.size() - offset)
+        return false;
+    value.assign(input.begin() + static_cast<std::ptrdiff_t>(offset),
+                 input.begin() + static_cast<std::ptrdiff_t>(offset + length));
     offset += length;
     return true;
 }
@@ -347,6 +396,165 @@ bool decode_definition_payload(const std::vector<uint8_t>& payload,
     return true;
 }
 
+std::vector<uint8_t> encode_runtime_payload(const RuntimeCheckpointPayload& checkpoint)
+{
+    if (checkpoint.schema_version != RuntimeCheckpointPayload::CURRENT_SCHEMA_VERSION ||
+        checkpoint.planets.size() > 500 || checkpoint.players.size() > 100)
+        return {};
+
+    std::vector<uint8_t> output;
+    output.insert(output.end(), kRuntimeMagic.begin(), kRuntimeMagic.end());
+    append_integer<uint32_t>(output, checkpoint.schema_version);
+    append_integer<uint32_t>(output, checkpoint.turn);
+    append_integer<uint32_t>(output, checkpoint.year);
+    append_integer<uint64_t>(output, checkpoint.deterministic_seed);
+    append_integer<uint64_t>(output, checkpoint.ai_seed);
+    append_bytes(output, checkpoint.deterministic_rng_state);
+    append_bytes(output, checkpoint.ai_rng_state);
+    append_integer<uint32_t>(output, static_cast<uint32_t>(checkpoint.planets.size()));
+    for (const auto& planet : checkpoint.planets)
+    {
+        if (!std::isfinite(planet.true_temperature))
+            return {};
+        append_integer<uint32_t>(output, planet.id);
+        append_signed<int32_t>(output, planet.owner);
+        append_double(output, planet.true_temperature);
+        append_signed<int32_t>(output, planet.metal);
+    }
+
+    append_integer<uint32_t>(output, static_cast<uint32_t>(checkpoint.players.size()));
+    for (const auto& player : checkpoint.players)
+    {
+        if (!std::isfinite(player.savings_rate_modifier) || player.savings_rate_modifier < 0.0 ||
+            player.colonies.size() > checkpoint.planets.size())
+            return {};
+        append_integer<uint32_t>(output, player.id);
+        append_bool(output, player.eliminated);
+        append_signed<int64_t>(output, player.money_savings);
+        append_signed<int64_t>(output, player.metal_reserve);
+        append_signed<int64_t>(output, player.metal_income);
+        append_double(output, player.savings_rate_modifier);
+        append_signed<int64_t>(output, player.pending_dip_amount);
+        append_bool(output, player.pending_dip_persistent);
+        append_signed<int64_t>(output, player.locked_dip_amount);
+        append_bool(output, player.locked_dip_persistent);
+        append_double(output, player.savings_fraction);
+        append_double(output, player.research_fraction);
+        append_double(output, player.planets_fraction);
+        for (double value : player.research_fractions)
+        {
+            if (!std::isfinite(value))
+                return {};
+            append_double(output, value);
+        }
+        for (int32_t value : player.technology_levels)
+            append_signed<int32_t>(output, value);
+        for (int64_t value : player.partial_research)
+            append_signed<int64_t>(output, value);
+        append_integer<uint32_t>(output, static_cast<uint32_t>(player.colonies.size()));
+        for (const auto& colony : player.colonies)
+        {
+            if (!std::isfinite(colony.funding_fraction) ||
+                !std::isfinite(colony.mining_fraction) ||
+                !std::isfinite(colony.terraforming_fraction))
+                return {};
+            append_integer<uint32_t>(output, colony.planet_id);
+            append_signed<int32_t>(output, colony.population);
+            append_signed<int32_t>(output, colony.income);
+            append_double(output, colony.funding_fraction);
+            append_double(output, colony.mining_fraction);
+            append_double(output, colony.terraforming_fraction);
+        }
+    }
+    return output;
+}
+
+bool decode_runtime_payload(const std::vector<uint8_t>& payload,
+                            RuntimeCheckpointPayload& checkpoint)
+{
+    if (payload.size() < 8 + 4 + 4 + 4 + 4 + 4)
+        return false;
+    size_t offset = 0;
+    for (char expected : kRuntimeMagic)
+        if (payload[offset++] != static_cast<uint8_t>(expected))
+            return false;
+
+    RuntimeCheckpointPayload parsed;
+    if (!read_integer(payload, offset, parsed.schema_version) ||
+        !read_integer(payload, offset, parsed.turn) ||
+        !read_integer(payload, offset, parsed.year) ||
+        !read_integer(payload, offset, parsed.deterministic_seed) ||
+        !read_integer(payload, offset, parsed.ai_seed) ||
+        !read_bytes(payload, offset, parsed.deterministic_rng_state, 1024 * 1024) ||
+        !read_bytes(payload, offset, parsed.ai_rng_state, 1024 * 1024))
+        return false;
+
+    uint32_t planet_count = 0;
+    if (!read_integer(payload, offset, planet_count) || planet_count > 500)
+        return false;
+    parsed.planets.resize(planet_count);
+    for (auto& planet : parsed.planets)
+    {
+        if (!read_integer(payload, offset, planet.id) ||
+            !read_signed<int32_t>(payload, offset, planet.owner) ||
+            !read_double(payload, offset, planet.true_temperature) ||
+            !read_signed<int32_t>(payload, offset, planet.metal))
+            return false;
+    }
+
+    uint32_t player_count = 0;
+    if (!read_integer(payload, offset, player_count) || player_count > 100)
+        return false;
+    parsed.players.resize(player_count);
+    for (auto& player : parsed.players)
+    {
+        if (!read_integer(payload, offset, player.id) ||
+            !read_bool(payload, offset, player.eliminated) ||
+            !read_signed<int64_t>(payload, offset, player.money_savings) ||
+            !read_signed<int64_t>(payload, offset, player.metal_reserve) ||
+            !read_signed<int64_t>(payload, offset, player.metal_income) ||
+            !read_double(payload, offset, player.savings_rate_modifier) ||
+            !read_signed<int64_t>(payload, offset, player.pending_dip_amount) ||
+            !read_bool(payload, offset, player.pending_dip_persistent) ||
+            !read_signed<int64_t>(payload, offset, player.locked_dip_amount) ||
+            !read_bool(payload, offset, player.locked_dip_persistent) ||
+            !read_double(payload, offset, player.savings_fraction) ||
+            !read_double(payload, offset, player.research_fraction) ||
+            !read_double(payload, offset, player.planets_fraction))
+            return false;
+        for (double& value : player.research_fractions)
+            if (!read_double(payload, offset, value))
+                return false;
+        for (int32_t& value : player.technology_levels)
+            if (!read_signed<int32_t>(payload, offset, value))
+                return false;
+        for (int64_t& value : player.partial_research)
+            if (!read_signed<int64_t>(payload, offset, value))
+                return false;
+
+        uint32_t colony_count = 0;
+        if (!read_integer(payload, offset, colony_count) || colony_count > planet_count)
+            return false;
+        player.colonies.resize(colony_count);
+        for (auto& colony : player.colonies)
+        {
+            if (!read_integer(payload, offset, colony.planet_id) ||
+                !read_signed<int32_t>(payload, offset, colony.population) ||
+                !read_signed<int32_t>(payload, offset, colony.income) ||
+                !read_double(payload, offset, colony.funding_fraction) ||
+                !read_double(payload, offset, colony.mining_fraction) ||
+                !read_double(payload, offset, colony.terraforming_fraction))
+                return false;
+        }
+    }
+
+    if (offset != payload.size() ||
+        parsed.schema_version != RuntimeCheckpointPayload::CURRENT_SCHEMA_VERSION)
+        return false;
+    checkpoint = std::move(parsed);
+    return true;
+}
+
 bool append_record(std::ofstream& output,
                    uint32_t turn,
                    SaveRecordPhase phase,
@@ -453,6 +661,19 @@ bool decode_game_definition(const std::vector<uint8_t>& payload,
                             GameDefinition& definition)
 {
     return decode_definition_payload(payload, definition);
+}
+
+std::vector<uint8_t> encode_runtime_checkpoint(
+    const RuntimeCheckpointPayload& checkpoint)
+{
+    return encode_runtime_payload(checkpoint);
+}
+
+bool decode_runtime_checkpoint(
+    const std::vector<uint8_t>& payload,
+    RuntimeCheckpointPayload& checkpoint)
+{
+    return decode_runtime_payload(payload, checkpoint);
 }
 
 bool SaveFile::create(const std::string& path,

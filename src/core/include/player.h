@@ -72,11 +72,13 @@ public:
 		  gender(GENDER_OTHER),
 		  type(PLAYER_HUMAN),
 		  iq(0),
+		  eliminated(false),
 		  game_state(game_state_ref),
 		  money_savings(0),
 		  metal_reserve(0),
 		  ideal_temperature(0.0),
 		  ideal_gravity(0.0),
+		  savings_rate_modifier(1.0),
 		  money_income(0),
 		  effective_income(0),
 		  pending_dip_amount(0),
@@ -112,6 +114,10 @@ public:
 	double get_ideal_temperature() const { return ideal_temperature; }
 	/// Get this player's ideal gravity for planets
 	double get_ideal_gravity() const { return ideal_gravity; }
+	/// Whether this player has been eliminated from the game.
+	bool is_eliminated() const { return eliminated; }
+	/// Set this player's elimination state.
+	void set_eliminated(bool value) { eliminated = value; }
 	
 	/// Get all fleets owned by this player
 	const std::vector<Fleet>& get_fleets() const { return fleets; }
@@ -173,6 +179,10 @@ public:
 	
 	/// Get this player's current money savings
 	int64_t get_money() const { return money_savings; }
+	/// Get the modifier applied to positive savings interest.
+	double get_savings_rate_modifier() const { return savings_rate_modifier; }
+	/// Set the modifier applied to positive savings interest.
+	void set_savings_rate_modifier(double value);
 	
 	/// Get this player's current metal reserve
 	int64_t get_metal() const { return metal_reserve; }
@@ -249,6 +259,9 @@ public:
 	[[nodiscard]] bool delete_ship_design(uint32_t design_id);
 
 private:
+	// Explicit game-status flag; it is not inferred from current ownership.
+	bool eliminated;
+
 	// GameState reference for validation and fleet_id allocation
 	class GameState* game_state;
 	
@@ -259,6 +272,7 @@ private:
 	// Ideal planetary conditions (hidden from player)
 	double ideal_temperature;
 	double ideal_gravity;
+	double savings_rate_modifier;
 	
 	// Calculated properties
 	int64_t money_income;  // Per turn

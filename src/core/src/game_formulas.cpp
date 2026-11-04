@@ -214,6 +214,11 @@ namespace GameFormulas
 	// ============================================================================
 	int64_t calculate_money_interest(int64_t savings)
 	{
+		return calculate_money_interest(savings, 1.0);
+	}
+
+	int64_t calculate_money_interest(int64_t savings, double positive_rate_modifier)
+	{
 		if (savings < 0)
 		{
 			// Negative savings (debt): apply the provisional debt-interest rate.
@@ -222,8 +227,9 @@ namespace GameFormulas
 		}
 		else
 		{
-			// Positive savings: apply 10 * sqrt(savings) interest
-			double interest = 10.0 * std::sqrt(static_cast<double>(savings));
+			// Positive savings: apply the modifier to the positive-interest rule.
+			double interest = GameConstants::Provisional_Positive_Savings_Interest_Coefficient *
+				positive_rate_modifier * std::sqrt(static_cast<double>(savings));
 			return static_cast<int64_t>(interest);
 		}
 	}

@@ -3,6 +3,7 @@
 
 #include "game_setup.h"
 #include "galaxy.h"
+#include <array>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -44,6 +45,66 @@ struct GameDefinition
 [[nodiscard]] std::vector<uint8_t> encode_game_definition(const GameDefinition& definition);
 [[nodiscard]] bool decode_game_definition(const std::vector<uint8_t>& payload,
                                           GameDefinition& definition);
+
+struct RuntimePlanetState
+{
+    uint32_t id = 0;
+    int32_t owner = 0;
+    double true_temperature = 0.0;
+    int32_t metal = 0;
+};
+
+struct RuntimeColonyState
+{
+    uint32_t planet_id = 0;
+    int32_t population = 0;
+    int32_t income = 0;
+    double funding_fraction = 0.0;
+    double mining_fraction = 0.0;
+    double terraforming_fraction = 0.0;
+};
+
+struct RuntimePlayerState
+{
+    uint32_t id = 0;
+    bool eliminated = false;
+    int64_t money_savings = 0;
+    int64_t metal_reserve = 0;
+    int64_t metal_income = 0;
+    double savings_rate_modifier = 1.0;
+    int64_t pending_dip_amount = 0;
+    bool pending_dip_persistent = false;
+    int64_t locked_dip_amount = 0;
+    bool locked_dip_persistent = false;
+    double savings_fraction = 0.0;
+    double research_fraction = 0.0;
+    double planets_fraction = 0.0;
+    std::array<double, 6> research_fractions{};
+    std::array<int32_t, 6> technology_levels{};
+    std::array<int64_t, 6> partial_research{};
+    std::vector<RuntimeColonyState> colonies;
+};
+
+struct RuntimeCheckpointPayload
+{
+    static constexpr uint32_t CURRENT_SCHEMA_VERSION = 2;
+
+    uint32_t schema_version = CURRENT_SCHEMA_VERSION;
+    uint32_t turn = 0;
+    uint32_t year = 2000;
+    uint64_t deterministic_seed = 0;
+    uint64_t ai_seed = 0;
+    std::vector<uint8_t> deterministic_rng_state;
+    std::vector<uint8_t> ai_rng_state;
+    std::vector<RuntimePlanetState> planets;
+    std::vector<RuntimePlayerState> players;
+};
+
+[[nodiscard]] std::vector<uint8_t> encode_runtime_checkpoint(
+    const RuntimeCheckpointPayload& checkpoint);
+[[nodiscard]] bool decode_runtime_checkpoint(
+    const std::vector<uint8_t>& payload,
+    RuntimeCheckpointPayload& checkpoint);
 
 /// Logical phase at which a save record was created.
 enum class SaveRecordPhase : uint8_t

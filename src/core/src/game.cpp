@@ -10,6 +10,7 @@
 #include <iostream>
 #include <random>
 #include <stdexcept>
+#include <unordered_set>
 
 // ============================================================================
 // GameState Constructor
@@ -374,16 +375,197 @@ std::vector<uint8_t> GameState::serialize_immutable_definition() const
 
 std::vector<uint8_t> GameState::serialize_state() const
 {
-	// Placeholder for serialization
-	// This will be implemented in serialization.cpp
-	std::vector<uint8_t> buffer;
-	return buffer;
+	RuntimeCheckpointPayload checkpoint;
+	checkpoint.turn = current_turn;
+	checkpoint.year = current_year;
+	checkpoint.deterministic_seed = rng->getDeterministicSeed();
+	checkpoint.ai_seed = rng->getAISeed();
+	checkpoint.deterministic_rng_state = rng->serialize_deterministic_rng_state();
+	checkpoint.ai_rng_state = rng->serialize_ai_rng_state();
+	checkpoint.planets.reserve(galaxy->planets.size());
+	for (const Planet& planet : galaxy->planets)
+	{
+		RuntimePlanetState state;
+		state.id = planet.id;
+		state.owner = planet.owner;
+		state.true_temperature = planet.true_temperature;
+		state.metal = planet.metal;
+		checkpoint.planets.push_back(state);
+	}
+
+	checkpoint.players.reserve(players.size());
+	for (const Player& player : players)
+	{
+		RuntimePlayerState state;
+		state.id = player.id;
+		state.eliminated = player.is_eliminated();
+		state.money_savings = player.money_savings;
+		state.metal_reserve = player.metal_reserve;
+		state.metal_income = player.metal_income;
+		state.savings_rate_modifier = player.savings_rate_modifier;
+		state.pending_dip_amount = player.pending_dip_amount;
+		state.pending_dip_persistent = player.pending_dip_persistent;
+		state.locked_dip_amount = player.locked_dip_amount;
+		state.locked_dip_persistent = player.locked_dip_persistent;
+		state.savings_fraction = player.allocation.savings_fraction;
+		state.research_fraction = player.allocation.research_fraction;
+		state.planets_fraction = player.allocation.planets_fraction;
+		state.research_fractions = {
+			player.allocation.research.research_range_fraction,
+			player.allocation.research.research_speed_fraction,
+			player.allocation.research.research_weapons_fraction,
+			player.allocation.research.research_shields_fraction,
+			player.allocation.research.research_mini_fraction,
+			player.allocation.research.research_radical_fraction};
+		state.technology_levels = {player.tech.range, player.tech.speed, player.tech.weapons,
+			player.tech.shields, player.tech.mini, player.tech.radical};
+		state.partial_research = {player.partial_research.research_points_range,
+			player.partial_research.research_points_speed,
+			player.partial_research.research_points_weapons,
+			player.partial_research.research_points_shields,
+			player.partial_research.research_points_mini,
+			player.partial_research.research_points_radical};
+		for (const ColonizedPlanet& colony : player.colonized_planets)
+		{
+			RuntimeColonyState colony_state;
+			colony_state.planet_id = colony.get_id();
+			colony_state.population = colony.get_population();
+			colony_state.income = colony.get_income();
+			colony_state.funding_fraction = colony.get_funding_fraction();
+			colony_state.mining_fraction = colony.get_mining_fraction();
+			colony_state.terraforming_fraction = colony.get_terraforming_fraction();
+			state.colonies.push_back(colony_state);
+		}
+		checkpoint.players.push_back(state);
+	}
+	return encode_runtime_checkpoint(checkpoint);
 }
 
 bool GameState::deserialize_state(const std::vector<uint8_t>& data)
 {
-	// Placeholder for deserialization
-	// This will be implemented in serialization.cpp
+	RuntimeCheckpointPayload checkpoint;
+	if (!decode_runtime_checkpoint(data, checkpoint) ||
+		checkpoint.planets.size() != galaxy->planets.size() ||
+		checkpoint.players.size() != players.size() ||
+		checkpoint.deterministic_rng_state.empty() ||
+		checkpoint.ai_rng_state.empty() ||
+		checkpoint.deterministic_seed != rng->getDeterministicSeed() ||
+		checkpoint.ai_seed != rng->getAISeed())
+		return false;
+
+	std::unordered_map<uint32_t, const RuntimePlanetState*> saved_planets;
+	for (const auto& state : checkpoint.planets)
+		if (!saved_planets.emplace(state.id, &state).second ||
+			planet_id_to_index.find(state.id) == planet_id_to_index.end())
+			return false;
+
+	std::unordered_map<uint32_t, const RuntimePlayerState*> saved_players;
+	for (const auto& state : checkpoint.players)
+		if (!saved_players.emplace(state.id, &state).second ||
+				player_id_to_index.find(state.id) == player_id_to_index.end())
+				return false;
+
+	std::unordered_map<uint32_t, size_t> owned_planet_counts;
+	std::unordered_map<uint32_t, int32_t> saved_populations;
+	for (const auto& state : checkpoint.planets)
+	{
+		Planet* planet = get_planet(state.id);
+		if (!planet || (state.owner != NOT_OWNED && saved_players.find(state.owner) == saved_players.end()))
+			return false;
+		if (state.owner != NOT_OWNED)
+			++owned_planet_counts[static_cast<uint32_t>(state.owner)];
+	}
+	for (const auto& player_state : checkpoint.players)
+	{
+		if (player_state.technology_levels[0] < 0 || player_state.technology_levels[1] < 0 ||
+			player_state.technology_levels[2] < 0 || player_state.technology_levels[3] < 0 ||
+			player_state.technology_levels[4] < 0 || player_state.technology_levels[5] < 0 ||
+			player_state.colonies.size() != owned_planet_counts[player_state.id])
+			return false;
+
+		std::unordered_set<uint32_t> colony_ids;
+		for (const auto& colony_state : player_state.colonies)
+		{
+			if (!colony_ids.insert(colony_state.planet_id).second)
+				return false;
+			const auto planet_it = saved_planets.find(colony_state.planet_id);
+			if (planet_it == saved_planets.end() ||
+				planet_it->second->owner != static_cast<int32_t>(player_state.id))
+				return false;
+			saved_populations[colony_state.planet_id] = colony_state.population;
+		}
+	}
+	for (const auto& player : players)
+		if (!player.fleets.empty())
+			return false;
+
+	for (auto& planet : galaxy->planets)
+	{
+		const RuntimePlanetState& state = *saved_planets.at(planet.id);
+		planet.owner = state.owner;
+		planet.true_temperature = state.true_temperature;
+		planet.metal = state.metal;
+		const auto population_it = saved_populations.find(planet.id);
+		planet.population = population_it == saved_populations.end() ? 0 : population_it->second;
+	}
+
+	for (auto& player : players)
+	{
+		const RuntimePlayerState& state = *saved_players.at(player.id);
+		player.set_eliminated(state.eliminated);
+		player.money_savings = state.money_savings;
+		player.metal_reserve = state.metal_reserve;
+		player.set_savings_rate_modifier(state.savings_rate_modifier);
+		player.pending_dip_amount = state.pending_dip_amount;
+		player.pending_dip_persistent = state.pending_dip_persistent;
+		player.locked_dip_amount = state.locked_dip_amount;
+		player.locked_dip_persistent = state.locked_dip_persistent;
+		player.allocation.savings_fraction = state.savings_fraction;
+		player.allocation.research_fraction = state.research_fraction;
+		player.allocation.planets_fraction = state.planets_fraction;
+		player.allocation.research = {state.research_fractions[0], state.research_fractions[1],
+			state.research_fractions[2], state.research_fractions[3],
+			state.research_fractions[4], state.research_fractions[5]};
+		player.tech = {state.technology_levels[0], state.technology_levels[1],
+			state.technology_levels[2], state.technology_levels[3],
+			state.technology_levels[4], state.technology_levels[5]};
+		player.partial_research = {state.partial_research[0], state.partial_research[1],
+			state.partial_research[2], state.partial_research[3],
+			state.partial_research[4], state.partial_research[5]};
+		player.colonized_planets.clear();
+		for (const RuntimeColonyState& colony_state : state.colonies)
+		{
+			Planet* planet = get_planet(colony_state.planet_id);
+			if (!planet || planet->owner != static_cast<PlayerID>(player.id))
+				return false;
+				player.colonized_planets.emplace_back(
+				planet, &player, colony_state.population, colony_state.income,
+				colony_state.funding_fraction,
+				ColonizedPlanet::PlanetaryBudgetSplit(
+						colony_state.mining_fraction, colony_state.terraforming_fraction));
+		}
+		player.turn_opening_savings = player.money_savings;
+		player.metal_income = state.metal_income;
+	}
+	calculate_player_incomes(false);
+	apply_money_interest();
+	apply_dip_into_savings();
+	int32_t maximum_technology_level = 0;
+	for (const Player& player : players)
+	{
+		maximum_technology_level = std::max({maximum_technology_level,
+			player.tech.range, player.tech.speed, player.tech.weapons,
+			player.tech.shields, player.tech.mini, player.tech.radical});
+	}
+	ensure_research_costs_available(maximum_technology_level);
+	rng->deserialize_deterministic_rng_state(checkpoint.deterministic_rng_state);
+	rng->deserialize_ai_rng_state(checkpoint.ai_rng_state);
+	current_turn = checkpoint.turn;
+	current_year = checkpoint.year;
+	for (auto& ready : turn_ready)
+		ready.second = false;
+	for (auto& bankruptcy : bankruptcy_limit_reached)
+		bankruptcy.second = false;
 	return true;
 }
 
@@ -671,13 +853,14 @@ void GameState::check_bankruptcy_limits()
 	}
 }
 
-void GameState::calculate_player_incomes()
+void GameState::calculate_player_incomes(bool reset_metal_income)
 {
 	// For each player, calculate total income from all owned planets
 	for (auto& player : players)
 	{
 		player.money_income = 0;
-		player.metal_income = 0;
+		if (reset_metal_income)
+			player.metal_income = 0;
 		player.current_turn_income = {0, 0, 0, 0};
 		
 		for (const auto& colonized : player.colonized_planets)
@@ -686,6 +869,11 @@ void GameState::calculate_player_incomes()
 			// Metal income calculation would go here
 		}
 		player.current_turn_income.planetary_income = player.money_income;
+		player.current_turn_income.windfall_income =
+			GameFormulas::calculate_windfall_income(player.id, this);
+		player.current_turn_income.total_income =
+			player.current_turn_income.planetary_income +
+			player.current_turn_income.windfall_income;
 	}
 }
 
@@ -747,11 +935,11 @@ void GameState::apply_money_interest()
 	// Add current-turn interest to the income pool. Interest is calculated from
 	// the savings snapshot taken before any current-turn economic changes.
 	for (auto& player : players)
-	{
-		const int64_t interest = GameFormulas::calculate_money_interest(
-			player.turn_opening_savings);
-		player.money_income += interest;
-		player.effective_income = player.money_income;
+		{
+				const int64_t interest = GameFormulas::calculate_money_interest(
+					player.turn_opening_savings, player.savings_rate_modifier);
+			player.money_income += player.current_turn_income.windfall_income + interest;
+			player.effective_income = player.money_income;
 		player.current_turn_income.interest_income = interest;
 		player.current_turn_income.total_income = player.money_income;
 	}

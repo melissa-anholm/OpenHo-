@@ -2,6 +2,7 @@
 #include "game_setup.h"
 #include "game_formulas.h"
 #include "save_file.h"
+#include "rng.h"
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
@@ -223,6 +224,18 @@ void test_ship_construction()
     game->clear_dip_amount(1);
 }
 
+void test_savings_rate_modifier()
+{
+    auto game = create_two_player_game();
+    Player& player = game->get_players().front();
+
+    assert(player.get_savings_rate_modifier() == 1.0);
+    player.set_savings_rate_modifier(2.0);
+    assert(player.get_savings_rate_modifier() == 2.0);
+    assert(GameFormulas::calculate_money_interest(100, player.get_savings_rate_modifier()) == 200);
+    assert(GameFormulas::calculate_money_interest(-100, player.get_savings_rate_modifier()) == -15);
+}
+
 void test_append_only_save_file()
 {
     auto game = create_two_player_game();
@@ -248,6 +261,34 @@ void test_append_only_save_file()
     assert(decoded_definition.planets.front().name == game->get_galaxy().planets.front().name);
     assert(decoded_definition.planets.front().true_gravity ==
            game->get_galaxy().planets.front().true_gravity);
+
+    game->get_players().front().set_savings_rate_modifier(2.0);
+    game->get_players().back().set_eliminated(true);
+    game->get_galaxy().planets.front().true_temperature += 12.5;
+    game->get_galaxy().planets.front().metal -= 3;
+    const std::vector<uint8_t> runtime_payload = game->serialize_state();
+    assert(!runtime_payload.empty());
+    RuntimeCheckpointPayload decoded_runtime;
+    assert(decode_runtime_checkpoint(runtime_payload, decoded_runtime));
+    assert(decoded_runtime.deterministic_seed == game->get_det_seed());
+    assert(decoded_runtime.ai_seed == game->get_ai_seed());
+    assert(!decoded_runtime.deterministic_rng_state.empty());
+    assert(!decoded_runtime.ai_rng_state.empty());
+
+    auto restored_game = create_two_player_game();
+    restored_game->get_players().front().set_savings_rate_modifier(1.0);
+    restored_game->get_galaxy().planets.front().true_temperature = 0.0;
+    restored_game->get_galaxy().planets.front().metal = 0;
+    assert(restored_game->deserialize_state(runtime_payload));
+    assert(restored_game->get_current_turn() == game->get_current_turn());
+    assert(restored_game->get_current_year() == game->get_current_year());
+    assert(restored_game->get_players().front().get_savings_rate_modifier() == 2.0);
+    assert(!restored_game->get_players().front().is_eliminated());
+    assert(restored_game->get_players().back().is_eliminated());
+    assert(restored_game->get_galaxy().planets.front().true_temperature ==
+           game->get_galaxy().planets.front().true_temperature);
+    assert(restored_game->get_galaxy().planets.front().metal ==
+           game->get_galaxy().planets.front().metal);
 
     const std::string path = "/tmp/openho_save_file_test.save";
     const std::vector<uint8_t> definition = definition_payload;
@@ -298,14 +339,37 @@ void test_append_only_save_file()
 
     std::remove(path.c_str());
 }
+
+void test_rng_state_continuation()
+{
+    DeterministicRNG original(1234, 5678);
+    for (int i = 0; i < 11; ++i)
+    {
+        (void)original.nextUInt64();
+        (void)original.nextAIUInt64();
+    }
+    const std::vector<uint8_t> deterministic_state = original.serialize_deterministic_rng_state();
+    const std::vector<uint8_t> ai_state = original.serialize_ai_rng_state();
+
+    DeterministicRNG restored(1234, 5678);
+    restored.deserialize_deterministic_rng_state(deterministic_state);
+    restored.deserialize_ai_rng_state(ai_state);
+    for (int i = 0; i < 8; ++i)
+    {
+        assert(original.nextUInt64() == restored.nextUInt64());
+        assert(original.nextAIUInt64() == restored.nextAIUInt64());
+    }
+}
 }
 
 int main()
 {
     test_game_initialization_and_readiness();
-    test_dip_and_turn_processing();
-    test_ship_construction();
-    test_append_only_save_file();
+	 test_dip_and_turn_processing();
+	 test_ship_construction();
+	 test_savings_rate_modifier();
+	 test_append_only_save_file();
+	 test_rng_state_continuation();
     std::cout << "Gameplay regression scenarios passed.\n";
     return 0;
 }

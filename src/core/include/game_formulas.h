@@ -84,8 +84,9 @@ namespace GameFormulas
 	/// Negative savings (debt) incur interest at MONEY_INTEREST_RATE_DEBT.
 	/// 
 	/// @param savings The player's current money savings (can be negative for debt)
-		/// @return The interest amount to add to savings (positive or negative)
+	/// @return The interest amount to add to the player's income (positive or negative)
 		int64_t calculate_money_interest(int64_t savings);
+		int64_t calculate_money_interest(int64_t savings, double positive_rate_modifier);
 
 		/// Calculate the provisional intentional-debt limit from summed planetary
 		/// income and the number of planets owned by the player.

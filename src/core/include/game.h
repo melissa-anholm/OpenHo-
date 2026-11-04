@@ -234,7 +234,7 @@ private:
 		void check_population_decreasing_events(uint32_t planet_id);
 		int64_t calculate_summed_planetary_income(const Player& player) const;
 		void check_bankruptcy_limits();
-		void calculate_player_incomes();
+		void calculate_player_incomes(bool reset_metal_income = true);
 	void update_planet_incomes();
 	void process_money_allocation();
 	void apply_money_interest();

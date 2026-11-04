@@ -4,6 +4,14 @@
 #include "game.h"
 #include "game_formulas.h"
 #include <cmath>
+#include <stdexcept>
+
+void Player::set_savings_rate_modifier(double value)
+{
+	if (!std::isfinite(value) || value < 0.0)
+		throw std::invalid_argument("savings rate modifier must be finite and non-negative");
+	savings_rate_modifier = value;
+}
 
 // ============================================================================
 // Money Allocation Calculation Helpers

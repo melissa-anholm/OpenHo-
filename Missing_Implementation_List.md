@@ -46,6 +46,8 @@
 - **Status:** Provisional functionality.  No idea whether this formula is correct.
 - **Formula:** `interest = 10.0 × sqrt(savings)` for positive savings.
 - Current-turn interest is calculated from beginning-of-turn savings before Dip Into Savings and allocation.
+- **Rate modifier:** `Player::savings_rate_modifier` now augments the positive base savings rate only: `actual_savings_rate = base_positive_savings_rate × savings_rate_modifier`. It defaults to `1.0` and is not yet serialized. Negative interest is a separate debt rule and is not modified by this factor under the current design.
+- **Application:** Calculated interest, whether positive or negative, is added to player income; it is not applied directly to the savings balance.
 - **Priority:** Medium-low
 
 #### Mining Efficiency
@@ -291,6 +293,25 @@ This testing should be performed before galaxy generation is considered producti
   - [x] Allocation fractions must sum to approximately `1.0`
   - [x] Allocation funds come from current income only
   - [ ] Current application/order may require correction; see the turn-processing note above.
+- **Allocation hierarchy reference:** The player-level planetary-development fraction is applied first, and each owned colony then receives a fraction of that planetary-development budget:
+  ```text
+  effective income
+  └── player allocation
+      ├── savings
+      ├── research
+      └── planetary development
+          └── per-planet funding fraction
+              ├── mining fraction
+              └── terraforming fraction
+  ```
+  The corresponding nominal calculation is:
+  ```text
+  total planetary-development budget = effective income × planets_fraction
+  per-planet budget = total planetary-development budget × funding_fraction
+  mining budget = per-planet budget × mining_fraction
+  terraforming budget = per-planet budget × terraforming_fraction
+  ```
+  This is a design reference, not a separate missing feature. Exact current-turn spending and refunds are not presently retained as fields.
 - **Priority:** High
 
 #### Turn Processing
@@ -310,7 +331,7 @@ This testing should be performed before galaxy generation is considered producti
  - [ ] Capture canonical Turn N snapshots at the beginning of each turn, with Turn 0/year 2000 initialization
  - [ ] Capture economic after-state and post-processing state for history, diagnostics, and display
  - [ ] Complete end-of-turn state/knowledge updates with public/private filtering from the same snapshot boundary
- - [ ] Serialize and restore the complete mutable mid-game state, including pending actions, readiness, knowledge, and RNG state; the immutable game-definition payload and append-only container are implemented separately
+ - [ ] Serialize and restore the complete mutable mid-game state, including fleets, pending actions, knowledge, history, and RNG state. The current bounded between-turn payload includes explicit player elimination status, both RNG engine states, and the previous turn’s cached metal income; the immutable game-definition payload and append-only container are implemented separately
  - [ ] Synchronize critical state at least once per turn for host migration
  - [ ] Enforce readiness in the core turn-processing entry point
  - [ ] Exclude eliminated players from readiness requirements

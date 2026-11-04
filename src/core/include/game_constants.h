@@ -129,6 +129,7 @@ namespace GameConstants
 	
 		// Provisional money-interest parameters. These values are placeholders for
 		// eventual data-driven economic rules.
+		constexpr double Provisional_Positive_Savings_Interest_Coefficient = 10.0;
 		constexpr double Provisional_Debt_Interest_Rate = 0.15;
 		constexpr int32_t Provisional_Intentional_Debt_Repayment_Turns = 10;
 		constexpr int32_t Provisional_Bankruptcy_Debt_Multiplier = 5;
