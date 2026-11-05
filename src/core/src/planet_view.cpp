@@ -48,7 +48,7 @@ void PlanetView::set_obs_fullcolony(const Planet& planet,
                                     int32_t current_year)
 {
     set_obs_friendly_ship_visit(planet, current_year);
-    apparent_population = colony.get_population();
+    apparent_population = planet.population;
     income = colony.get_income();
     funding_fraction = colony.get_funding_fraction();
     mining_fraction = colony.get_mining_fraction();

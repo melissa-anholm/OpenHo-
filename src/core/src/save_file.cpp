@@ -420,6 +420,7 @@ std::vector<uint8_t> encode_runtime_payload(const RuntimeCheckpointPayload& chec
         append_signed<int32_t>(output, planet.owner);
         append_double(output, planet.true_temperature);
         append_signed<int32_t>(output, planet.metal);
+        append_signed<int32_t>(output, planet.population);
         if (planet.nova_state < PLANET_NORMAL || planet.nova_state > PLANET_DESTROYED)
             return {};
         append_signed<int32_t>(output, planet.nova_state);
@@ -484,7 +485,6 @@ std::vector<uint8_t> encode_runtime_payload(const RuntimeCheckpointPayload& chec
                 !std::isfinite(colony.terraforming_fraction))
                 return {};
             append_integer<uint32_t>(output, colony.planet_id);
-            append_signed<int32_t>(output, colony.population);
             append_signed<int32_t>(output, colony.income);
             append_double(output, colony.funding_fraction);
             append_double(output, colony.mining_fraction);
@@ -524,6 +524,7 @@ bool decode_runtime_payload(const std::vector<uint8_t>& payload,
                 !read_signed<int32_t>(payload, offset, planet.owner) ||
                 !read_double(payload, offset, planet.true_temperature) ||
                 !read_signed<int32_t>(payload, offset, planet.metal) ||
+                !read_signed<int32_t>(payload, offset, planet.population) ||
                 !read_signed<int32_t>(payload, offset, planet.nova_state) ||
                 planet.nova_state < PLANET_NORMAL || planet.nova_state > PLANET_DESTROYED)
             return false;
@@ -588,7 +589,6 @@ bool decode_runtime_payload(const std::vector<uint8_t>& payload,
         for (auto& colony : player.colonies)
         {
             if (!read_integer(payload, offset, colony.planet_id) ||
-                !read_signed<int32_t>(payload, offset, colony.population) ||
                 !read_signed<int32_t>(payload, offset, colony.income) ||
                 !read_double(payload, offset, colony.funding_fraction) ||
                 !read_double(payload, offset, colony.mining_fraction) ||

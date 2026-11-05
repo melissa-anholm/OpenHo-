@@ -7,10 +7,10 @@
 // ColonizedPlanet Implementation
 // ============================================================================
 
+
 ColonizedPlanet::ColonizedPlanet(
 	Planet* p_base,
 	Player* p_owner,
-	int32_t p_pop,
 	int32_t p_income,
 	double p_funding,
 	PlanetaryBudgetSplit p_budget,
@@ -18,7 +18,6 @@ ColonizedPlanet::ColonizedPlanet(
 	: base_planet(p_base),
 	  owner_player(p_owner),
 	  planet_funding_fraction(p_funding),
-	  population(p_pop),
 	  income(p_income),
 	  budget_split(p_budget),
 	  apparent_gravity(GameFormulas::calculate_apparent_gravity(

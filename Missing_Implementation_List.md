@@ -331,7 +331,7 @@ This testing should be performed before galaxy generation is considered producti
  - [ ] Capture canonical Turn N snapshots at the beginning of each turn, with Turn 0/year 2000 initialization
  - [ ] Capture economic after-state and post-processing state for history, diagnostics, and display
  - [ ] Complete end-of-turn state/knowledge updates with public/private filtering from the same snapshot boundary
- - [ ] Serialize and restore the complete mutable mid-game state, including fleets, pending actions, knowledge, history, and RNG state. The current bounded between-turn payload includes explicit player elimination status, both RNG engine states, and the previous turn’s cached metal income; the immutable game-definition payload and append-only container are implemented separately
+ - [ ] Serialize and restore the complete mutable mid-game state, including fleets, pending actions, remaining knowledge/history systems, and RNG state. Planet-owned scalar `PlanetView` snapshots are now serialized alongside each planet, while fleet state, fleet sightings, and related public-information history remain incomplete. The current bounded between-turn payload includes explicit player elimination status, both RNG engine states, and the previous turn’s cached metal income; the immutable game-definition payload and append-only container are implemented separately
  - [ ] Synchronize critical state at least once per turn for host migration
  - [ ] Enforce readiness in the core turn-processing entry point
  - [ ] Exclude eliminated players from readiness requirements

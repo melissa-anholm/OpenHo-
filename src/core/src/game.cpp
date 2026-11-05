@@ -390,12 +390,13 @@ std::vector<uint8_t> GameState::serialize_state() const
 	{
 		RuntimePlanetState state;
 		state.id = planet.id;
-			state.owner = planet.owner;
-			state.true_temperature = planet.true_temperature;
-			state.metal = planet.metal;
-			state.nova_state = static_cast<int32_t>(planet.nova_state);
-			state.views.reserve(planet.Views.size());
-			for (const auto& [observer_id, view] : planet.Views)
+		state.owner = planet.owner;
+		state.true_temperature = planet.true_temperature;
+		state.metal = planet.metal;
+		state.population = planet.population;
+		state.nova_state = static_cast<int32_t>(planet.nova_state);
+		state.views.reserve(planet.Views.size());
+		for (const auto& [observer_id, view] : planet.Views)
 			{
 				RuntimePlanetState::View view_state;
 				view_state.observer_id = static_cast<uint32_t>(observer_id);
@@ -452,7 +453,6 @@ std::vector<uint8_t> GameState::serialize_state() const
 		{
 			RuntimeColonyState colony_state;
 			colony_state.planet_id = colony.get_id();
-			colony_state.population = colony.get_population();
 			colony_state.income = colony.get_income();
 			colony_state.funding_fraction = colony.get_funding_fraction();
 			colony_state.mining_fraction = colony.get_mining_fraction();
@@ -488,8 +488,7 @@ bool GameState::deserialize_state(const std::vector<uint8_t>& data)
 				player_id_to_index.find(state.id) == player_id_to_index.end())
 				return false;
 
-	std::unordered_map<uint32_t, size_t> owned_planet_counts;
-	std::unordered_map<uint32_t, int32_t> saved_populations;
+		std::unordered_map<uint32_t, size_t> owned_planet_counts;
 		for (const auto& state : checkpoint.planets)
 		{
 			Planet* planet = get_planet(state.id);
@@ -523,8 +522,7 @@ bool GameState::deserialize_state(const std::vector<uint8_t>& data)
 			if (planet_it == saved_planets.end() ||
 				planet_it->second->owner != static_cast<int32_t>(player_state.id))
 				return false;
-			saved_populations[colony_state.planet_id] = colony_state.population;
-		}
+			}
 	}
 	for (const auto& player : players)
 		if (!player.fleets.empty())
@@ -533,12 +531,11 @@ bool GameState::deserialize_state(const std::vector<uint8_t>& data)
 	for (auto& planet : galaxy->planets)
 	{
 		const RuntimePlanetState& state = *saved_planets.at(planet.id);
-			planet.owner = state.owner;
-			planet.true_temperature = state.true_temperature;
-			planet.metal = state.metal;
-			planet.nova_state = static_cast<PlanetNovaState>(state.nova_state);
-		const auto population_it = saved_populations.find(planet.id);
-			planet.population = population_it == saved_populations.end() ? 0 : population_it->second;
+		planet.owner = state.owner;
+		planet.true_temperature = state.true_temperature;
+		planet.metal = state.metal;
+		planet.population = state.population;
+		planet.nova_state = static_cast<PlanetNovaState>(state.nova_state);
 			planet.Views.clear();
 			const RuntimePlanetState& saved_state = state;
 			for (const auto& saved_view : saved_state.views)
@@ -589,8 +586,8 @@ bool GameState::deserialize_state(const std::vector<uint8_t>& data)
 			Planet* planet = get_planet(colony_state.planet_id);
 			if (!planet || planet->owner != static_cast<PlayerID>(player.id))
 				return false;
-				player.colonized_planets.emplace_back(
-				planet, &player, colony_state.population, colony_state.income,
+			player.colonized_planets.emplace_back(
+				planet, &player, colony_state.income,
 				colony_state.funding_fraction,
 				ColonizedPlanet::PlanetaryBudgetSplit(
 						colony_state.mining_fraction, colony_state.terraforming_fraction));
@@ -865,14 +862,13 @@ void GameState::process_population_growth()
 				continue;
 
 			const int64_t population_growth = GameFormulas::calculate_population_growth(
-				colonized.get_population(),
+				planet->population,
 				planet->true_temperature,
 				planet->true_gravity,
 				player.ideal_temperature,
 				player.ideal_gravity
 			);
-			const int64_t new_population = static_cast<int64_t>(colonized.get_population()) + population_growth;
-			colonized.set_population(static_cast<int32_t>(new_population));
+			const int64_t new_population = static_cast<int64_t>(planet->population) + population_growth;
 			planet->population = static_cast<int32_t>(new_population);
 		}
 	}
@@ -955,7 +951,7 @@ void GameState::update_planet_incomes()
 			double gravHappiness = std::max(0.0, 1.0 - gravDiff / 2.0);
 			double happiness = (tempHappiness + gravHappiness) / 2.0;
 			
-			colonized.set_income(static_cast<int32_t>(colonized.get_population() * happiness * 10));
+			colonized.set_income(static_cast<int32_t>(planet->population * happiness * 10));
 			
 			}
 		}
@@ -1523,10 +1519,9 @@ void GameState::assign_planets_random(const std::vector<Planet*>& suitable_plane
 			planet->metal = GameConstants::Starting_Colony_Metal[setup.starting_colony_quality];
 		
 		// Create ColonizedPlanet entry for this player with quality-based values
-		ColonizedPlanet colonized_planet(
-		planet, &player,
-		GameConstants::Starting_Colony_Population[setup.starting_colony_quality],
-		GameConstants::Starting_Colony_Income[setup.starting_colony_quality] );
+			ColonizedPlanet colonized_planet(
+			planet, &player,
+			GameConstants::Starting_Colony_Income[setup.starting_colony_quality] );
 		
 			// Add to player's colonized planets
 		player.colonized_planets.push_back(colonized_planet);

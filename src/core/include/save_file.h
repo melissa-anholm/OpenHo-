@@ -52,6 +52,7 @@ struct RuntimePlanetState
     int32_t owner = 0;
     double true_temperature = 0.0;
     int32_t metal = 0;
+    int32_t population = 0;
     int32_t nova_state = 0;
     struct View
     {
@@ -76,7 +77,6 @@ struct RuntimePlanetState
 struct RuntimeColonyState
 {
     uint32_t planet_id = 0;
-    int32_t population = 0;
     int32_t income = 0;
     double funding_fraction = 0.0;
     double mining_fraction = 0.0;
@@ -106,7 +106,7 @@ struct RuntimePlayerState
 
 struct RuntimeCheckpointPayload
 {
-    static constexpr uint32_t CURRENT_SCHEMA_VERSION = 4;
+    static constexpr uint32_t CURRENT_SCHEMA_VERSION = 5;
 
     uint32_t schema_version = CURRENT_SCHEMA_VERSION;
     uint32_t turn = 0;

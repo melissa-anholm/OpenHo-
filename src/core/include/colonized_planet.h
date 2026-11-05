@@ -68,7 +68,6 @@ private:
 	
 	// Player-specific data (Private)
 	double planet_funding_fraction;
-	int32_t population;
 	int32_t income;
 	PlanetaryBudgetSplit budget_split;
 	
@@ -84,7 +83,6 @@ public:
 	ColonizedPlanet(
 		Planet* p_base,
 		Player* p_owner,
-		int32_t p_pop = 10,
 		int32_t p_income = -7501,
 		double p_funding = 0.2,
 		PlanetaryBudgetSplit p_budget = PlanetaryBudgetSplit(),
@@ -105,7 +103,7 @@ public:
 	
 	// --- Getters for player-specific data ---
 	double get_funding_fraction() const { return planet_funding_fraction; }
-	int32_t get_population() const { return population; }
+	int32_t get_population() const { return base_planet->population; }
 	int32_t get_income() const { return income; }
 	double get_mining_fraction() const { return budget_split.mining_fraction; }
 	double get_terraforming_fraction() const { return budget_split.terraforming_fraction; }
@@ -115,7 +113,7 @@ public:
 	
 	// --- Setters for player-specific data ---
 	void set_funding_fraction(double p_val) { planet_funding_fraction = p_val; }
-	void set_population(int32_t p_val) { population = p_val; }
+	void set_population(int32_t p_val) { base_planet->population = p_val; }
 	void set_income(int32_t p_val) { income = p_val; }
 	void set_apparent_gravity(double p_val) { apparent_gravity = p_val; }
 	void set_apparent_temperature(double p_val) { apparent_temperature = p_val; }
