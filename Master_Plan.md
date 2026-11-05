@@ -126,6 +126,18 @@ The economic path applies population growth, refreshes planetary income using th
 - Per-colony funding, mining, and terraforming fractions remain in the owning player's `ColonizedPlanet` record and are the only values used by the next economic phase.
 - `PlanetView` no longer stores or serializes allocation fractions. For an owned colony, the UI obtains current allocation choices from `ColonizedPlanet`; `PlanetView` retains only observer-facing snapshot data such as projected income.
 
+**Economic Submission and After-State Records (Implemented November 5, 2026):**
+- `EconomicActionSubmission` represents the complete final, non-ordered economic choices for the next turn: player-wide allocations, research-stream allocations, per-colony allocations, and the Dip Into Savings selection.
+- `GameState::submit_economic_action()` validates and accepts the complete submission as one unit. Fleet actions, movement, construction ordering, transfers, abandonment, and other ordered actions are intentionally outside this record.
+- `EconomicAfterState` records the server-produced result of economic processing, including planetary income, interest, net/effective income, post-processing savings and metal reserve, and per-colony population/income.
+- Both records are included in the versioned runtime checkpoint and are restored on load. Allocation values remain authoritative in `Player` and `ColonizedPlanet`; the submission record is the explicit turn-boundary representation of those choices.
+
+**Economic Submission Gate (Implemented November 5, 2026):**
+- `current_turn` identifies the next economic turn awaiting processing, including Turn 0. Economic submissions target `current_turn`; after Turn N is processed, the after-state is captured as Turn N before the counter advances to N+1.
+- A turn cannot process until every non-eliminated player has a valid economic submission for `current_turn` and has explicitly marked themselves done/ready.
+- Marking ready freezes that player's accepted economic submission for the processing pass. Changing an allocation, Dip Into Savings selection, or submitting a replacement action clears readiness and requires readying again.
+- Calling `process_turn()` while the gate is incomplete is a no-op; the existing readiness query exposes whether processing may proceed. Fleet and other ordered actions remain outside this gate.
+
 **Validation Pattern:**
 - game_can_player_X() - Check validity (returns ErrorCode)
 - game_player_X() - Execute action (re-validates, then delegates)

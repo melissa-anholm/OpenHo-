@@ -7,6 +7,7 @@
 #include "knowledge_galaxy.h"
 #include "ship_design.h"
 #include "fleet.h"
+#include "economic_state.h"
 #include <cstdint>
 #include <unordered_map>
 #include <vector>
@@ -207,6 +208,8 @@ public:
 	
 	/// Get this player's spending allocation
 	const MoneyAllocation& get_spending_allocation() const { return allocation; }
+	const EconomicActionSubmission& get_economic_submission() const { return economic_submission; }
+	const EconomicAfterState& get_economic_afterstate() const { return economic_afterstate; }
 	
 	// ========================================================================
 	// Fleet Management
@@ -292,6 +295,8 @@ private:
 	MoneyAllocation allocation;
 	// Research progress (accumulated points per research stream)
 	PartialResearchProgress partial_research;
+	EconomicActionSubmission economic_submission;
+	EconomicAfterState economic_afterstate;
 	// Colonized planets (owned by this player with allocation information)
 	std::vector<ColonizedPlanet> colonized_planets;
 	// Player's knowledge of the galaxy

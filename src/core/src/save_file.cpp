@@ -449,6 +449,7 @@ std::vector<uint8_t> encode_runtime_payload(const RuntimeCheckpointPayload& chec
             player.colonies.size() > checkpoint.planets.size())
             return {};
         append_integer<uint32_t>(output, player.id);
+        append_integer<uint32_t>(output, player.economic_submission_target_turn);
         append_bool(output, player.eliminated);
         append_signed<int64_t>(output, player.money_savings);
         append_signed<int64_t>(output, player.metal_reserve);
@@ -483,6 +484,21 @@ std::vector<uint8_t> encode_runtime_payload(const RuntimeCheckpointPayload& chec
             append_double(output, colony.funding_fraction);
             append_double(output, colony.mining_fraction);
             append_double(output, colony.terraforming_fraction);
+        }
+        const auto& after = player.economic_afterstate;
+        append_integer<uint32_t>(output, after.turn);
+        append_signed<int64_t>(output, after.planetary_income);
+        append_signed<int64_t>(output, after.interest_income);
+        append_signed<int64_t>(output, after.net_income);
+        append_signed<int64_t>(output, after.effective_income);
+        append_signed<int64_t>(output, after.savings_after_processing);
+        append_signed<int64_t>(output, after.metal_reserve_after_processing);
+        append_integer<uint32_t>(output, static_cast<uint32_t>(after.colonies.size()));
+        for (const auto& colony : after.colonies)
+        {
+            append_integer<uint32_t>(output, colony.planet_id);
+            append_signed<int32_t>(output, colony.population);
+            append_signed<int32_t>(output, colony.income);
         }
     }
     return output;
@@ -550,6 +566,7 @@ bool decode_runtime_payload(const std::vector<uint8_t>& payload,
     for (auto& player : parsed.players)
     {
         if (!read_integer(payload, offset, player.id) ||
+            !read_integer(payload, offset, player.economic_submission_target_turn) ||
             !read_bool(payload, offset, player.eliminated) ||
             !read_signed<int64_t>(payload, offset, player.money_savings) ||
             !read_signed<int64_t>(payload, offset, player.metal_reserve) ||
@@ -584,6 +601,26 @@ bool decode_runtime_payload(const std::vector<uint8_t>& payload,
                 !read_double(payload, offset, colony.funding_fraction) ||
                 !read_double(payload, offset, colony.mining_fraction) ||
                 !read_double(payload, offset, colony.terraforming_fraction))
+                return false;
+        }
+        auto& after = player.economic_afterstate;
+        if (!read_integer(payload, offset, after.turn) ||
+            !read_signed<int64_t>(payload, offset, after.planetary_income) ||
+            !read_signed<int64_t>(payload, offset, after.interest_income) ||
+            !read_signed<int64_t>(payload, offset, after.net_income) ||
+            !read_signed<int64_t>(payload, offset, after.effective_income) ||
+            !read_signed<int64_t>(payload, offset, after.savings_after_processing) ||
+            !read_signed<int64_t>(payload, offset, after.metal_reserve_after_processing))
+            return false;
+        uint32_t after_colony_count = 0;
+        if (!read_integer(payload, offset, after_colony_count) || after_colony_count > planet_count)
+            return false;
+        after.colonies.resize(after_colony_count);
+        for (auto& colony : after.colonies)
+        {
+            if (!read_integer(payload, offset, colony.planet_id) ||
+                !read_signed<int32_t>(payload, offset, colony.population) ||
+                !read_signed<int32_t>(payload, offset, colony.income))
                 return false;
         }
     }

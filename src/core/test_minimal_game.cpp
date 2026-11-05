@@ -36,6 +36,13 @@ std::unique_ptr<GameState> create_ship_game()
     return std::make_unique<GameState>(setup);
 }
 
+void process_ready_turn(GameState& game)
+{
+    for (const Player& player : game.get_players())
+        assert(game.mark_player_turn_ready(player.id) == ErrorCode::SUCCESS);
+    game.process_turn();
+}
+
 void test_game_initialization_and_readiness()
 {
     auto game = create_two_player_game();
@@ -45,6 +52,8 @@ void test_game_initialization_and_readiness()
     assert(game->get_current_turn() == 0);
     assert(game->get_current_year() == 2000);
     assert(!game->all_players_ready());
+    game->process_turn();
+    assert(game->get_current_turn() == 0);
 
     for (const Player& player : game->get_players())
     {
@@ -60,6 +69,11 @@ void test_game_initialization_and_readiness()
     assert(game->get_player_turn_ready_status(1) == 1);
     assert(game->get_player_turn_ready_status(2) == 0);
     assert(!game->all_players_ready());
+    Player::MoneyAllocation unchanged = game->get_money_allocation(1);
+    game->set_money_allocation(1, unchanged);
+    assert(game->get_player_turn_ready_status(1) == 0);
+    assert(!game->all_players_ready());
+    assert(game->mark_player_turn_ready(1) == ErrorCode::SUCCESS);
     assert(game->mark_player_turn_ready(2) == ErrorCode::SUCCESS);
     assert(game->all_players_ready());
 }
@@ -117,7 +131,7 @@ void test_dip_and_turn_processing()
 
     assert(game->mark_player_turn_ready(1) == ErrorCode::SUCCESS);
     assert(game->mark_player_turn_ready(2) == ErrorCode::SUCCESS);
-    game->process_turn();
+    process_ready_turn(*game);
 
     assert(game->get_current_turn() == 1);
     assert(game->get_current_year() == 2010);
@@ -144,7 +158,7 @@ void test_dip_and_turn_processing()
     assert(game->get_dip_amount(2) == 0);
     assert(!game->is_dip_persistent(2));
 
-    game->process_turn();
+    process_ready_turn(*game);
     assert(game->get_players().front().get_effective_income() ==
            game->get_players().front().get_money_income() + persistent_dip_amount);
     assert(game->get_players()[1].get_effective_income() ==
@@ -157,7 +171,7 @@ void test_dip_and_turn_processing()
     assert(game->get_players().front().get_money() ==
            savings_before_clear + persistent_dip_amount);
 
-    game->process_turn();
+    process_ready_turn(*game);
     assert(game->get_players().front().get_effective_income() ==
            game->get_players().front().get_money_income());
     assert(game->get_current_turn() == 3);
@@ -167,7 +181,7 @@ void test_dip_and_turn_processing()
 void test_ship_construction()
 {
     auto game = create_ship_game();
-    game->process_turn();
+    process_ready_turn(*game);
 
     const uint32_t ship_planet_id =
         game->get_players().front().get_colonized_planets().front().get_id();
@@ -236,6 +250,50 @@ void test_savings_rate_modifier()
     assert(GameFormulas::calculate_money_interest(-100, player.get_savings_rate_modifier()) == -15);
 }
 
+void test_economic_submission_round_trip()
+{
+    auto game = create_two_player_game();
+    Player& player = *game->get_player(1);
+    const auto& allocation = player.get_spending_allocation();
+
+    EconomicActionSubmission submission;
+    submission.player_id = 1;
+    submission.target_turn = game->get_current_turn();
+    submission.savings_fraction = allocation.savings_fraction;
+    submission.research_fraction = allocation.research_fraction;
+    submission.planets_fraction = allocation.planets_fraction;
+    submission.research_fractions = {
+        allocation.research.research_range_fraction,
+        allocation.research.research_speed_fraction,
+        allocation.research.research_weapons_fraction,
+        allocation.research.research_shields_fraction,
+        allocation.research.research_mini_fraction,
+        allocation.research.research_radical_fraction};
+    for (const auto& colony : player.get_colonized_planets())
+        submission.colony_allocations.push_back({
+            colony.get_id(), colony.get_funding_fraction(),
+            colony.get_mining_fraction(), colony.get_terraforming_fraction()});
+
+    assert(game->submit_economic_action(1, submission) == ErrorCode::SUCCESS);
+    assert(game->get_economic_action_submission(1).target_turn == 0);
+    assert(game->get_economic_action_submission(1).colony_allocations.size() ==
+           player.get_colonized_planets().size());
+
+    process_ready_turn(*game);
+    const EconomicAfterState& after = game->get_economic_afterstate(1);
+    assert(after.turn == 0);
+    assert(after.colonies.size() == player.get_colonized_planets().size());
+    assert(game->get_current_turn() == 1);
+    assert(game->get_economic_action_submission(1).target_turn == 1);
+    const std::vector<uint8_t> payload = game->serialize_state();
+    auto restored_game = create_two_player_game();
+    assert(restored_game->deserialize_state(payload));
+    const EconomicAfterState& restored_after = restored_game->get_economic_afterstate(1);
+    assert(restored_after.turn == after.turn);
+    assert(restored_after.effective_income == after.effective_income);
+    assert(restored_after.colonies.size() == after.colonies.size());
+}
+
 void test_planet_view_observation_precedence()
 {
     auto game = create_two_player_game();
@@ -282,7 +340,7 @@ void test_planet_view_observation_precedence()
     const int32_t last_observation_year = unowned_planet->get_view(observer_id)->observation_year;
     assert(game->mark_player_turn_ready(1) == ErrorCode::SUCCESS);
     assert(game->mark_player_turn_ready(2) == ErrorCode::SUCCESS);
-    game->process_turn();
+    process_ready_turn(*game);
     assert(unowned_planet->get_view(observer_id)->observation_year == last_observation_year);
 }
 
@@ -442,7 +500,8 @@ int main()
     test_game_initialization_and_readiness();
 	 test_dip_and_turn_processing();
 	 test_ship_construction();
-	 test_savings_rate_modifier();
+    test_savings_rate_modifier();
+    test_economic_submission_round_trip();
 	 test_planet_view_observation_precedence();
 	 test_append_only_save_file();
 	 test_rng_state_continuation();

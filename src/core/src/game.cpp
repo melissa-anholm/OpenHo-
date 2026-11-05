@@ -175,6 +175,8 @@ void GameState::set_money_allocation(uint32_t player_id, const Player::MoneyAllo
 		{ throw std::runtime_error("Player not found"); }
 	
 	player->allocation = money_alloc;
+	turn_ready[player_id] = false;
+	capture_economic_action_submissions();
 }
 
 const Player::MoneyAllocation& GameState::get_money_allocation(uint32_t player_id) const
@@ -205,6 +207,8 @@ void GameState::set_dip_amount(uint32_t player_id, int64_t dip_amount)
 	player->money_savings += player->pending_dip_amount - permitted_dip;
 	player->pending_dip_amount = permitted_dip;
 	player->pending_dip_persistent = permitted_dip > 0;
+	turn_ready[player_id] = false;
+	capture_economic_action_submissions();
 }
 
 void GameState::set_one_time_dip_amount(uint32_t player_id, int64_t dip_amount)
@@ -226,6 +230,8 @@ void GameState::set_one_time_dip_amount(uint32_t player_id, int64_t dip_amount)
 	player->money_savings += player->pending_dip_amount - permitted_dip;
 	player->pending_dip_amount = permitted_dip;
 	player->pending_dip_persistent = false;
+	turn_ready[player_id] = false;
+	capture_economic_action_submissions();
 }
 
 void GameState::clear_dip_amount(uint32_t player_id)
@@ -237,6 +243,8 @@ void GameState::clear_dip_amount(uint32_t player_id)
 	player->money_savings += player->pending_dip_amount;
 	player->pending_dip_amount = 0;
 	player->pending_dip_persistent = false;
+	turn_ready[player_id] = false;
+	capture_economic_action_submissions();
 }
 
 int64_t GameState::get_dip_amount(uint32_t player_id) const
@@ -257,16 +265,105 @@ bool GameState::is_dip_persistent(uint32_t player_id) const
 	return player->pending_dip_persistent;
 }
 
+const EconomicActionSubmission& GameState::get_economic_action_submission(uint32_t player_id) const
+{
+	const Player* player = get_player(player_id);
+	if (!player)
+		throw std::runtime_error("Player not found");
+	return player->get_economic_submission();
+}
+
+const EconomicAfterState& GameState::get_economic_afterstate(uint32_t player_id) const
+{
+	const Player* player = get_player(player_id);
+	if (!player)
+		throw std::runtime_error("Player not found");
+	return player->get_economic_afterstate();
+}
+
+ErrorCode GameState::submit_economic_action(
+	uint32_t player_id, const EconomicActionSubmission& submission)
+{
+	Player* player = get_player(player_id);
+	if (!player || submission.player_id != player_id)
+		return ErrorCode::INVALID_PLAYER_ID;
+	if (player->is_eliminated())
+		return ErrorCode::INVALID_TURN_STATE;
+	turn_ready[player_id] = false;
+	if (submission.target_turn != current_turn)
+		return ErrorCode::INVALID_TURN_STATE;
+
+	if (check_player_set_spending_allocation(
+			player_id, submission.savings_fraction, submission.research_fraction,
+			submission.planets_fraction) != ErrorCode::SUCCESS)
+		return ErrorCode::INVALID_ALLOCATION;
+	double research_total = 0.0;
+	for (double fraction : submission.research_fractions)
+	{
+		if (!std::isfinite(fraction) || fraction < 0.0)
+			return ErrorCode::INVALID_ALLOCATION;
+		research_total += fraction;
+	}
+	if (std::abs(research_total - 1.0) > 0.001)
+		return ErrorCode::INVALID_ALLOCATION;
+	if (submission.dip_amount < 0)
+		return ErrorCode::INVALID_PARAMETER;
+
+	std::unordered_map<uint32_t, const EconomicColonyAllocation*> allocations;
+	for (const auto& allocation : submission.colony_allocations)
+	{
+		if (!allocations.emplace(allocation.planet_id, &allocation).second ||
+			!std::isfinite(allocation.funding_fraction) || allocation.funding_fraction < 0.0 ||
+			check_player_set_planet_allocation(
+				player_id, allocation.planet_id, allocation.mining_fraction,
+				allocation.terraforming_fraction) != ErrorCode::SUCCESS)
+			return ErrorCode::INVALID_ALLOCATION;
+	}
+	if (allocations.size() != player->colonized_planets.size())
+		return ErrorCode::INVALID_ALLOCATION;
+	for (const auto& colony : player->colonized_planets)
+		if (allocations.find(colony.get_id()) == allocations.end())
+			return ErrorCode::INVALID_ALLOCATION;
+
+	Player::MoneyAllocation money_allocation{
+		submission.savings_fraction, submission.research_fraction,
+		submission.planets_fraction,
+		{submission.research_fractions[0], submission.research_fractions[1],
+		 submission.research_fractions[2], submission.research_fractions[3],
+		 submission.research_fractions[4], submission.research_fractions[5]}};
+	player->allocation = money_allocation;
+	for (auto& colony : player->colonized_planets)
+	{
+		const auto& allocation = *allocations.at(colony.get_id());
+		colony.set_funding_fraction(allocation.funding_fraction);
+		colony.set_budget_split(allocation.mining_fraction, allocation.terraforming_fraction);
+	}
+	if (submission.dip_amount == 0)
+		clear_dip_amount(player_id);
+	else if (submission.dip_persistent)
+		set_dip_amount(player_id, submission.dip_amount);
+	else
+		set_one_time_dip_amount(player_id, submission.dip_amount);
+	capture_economic_action_submissions();
+	return ErrorCode::SUCCESS;
+}
+
 // ============================================================================
 // Turn Processing
 // ============================================================================
 
 ErrorCode GameState::mark_player_turn_ready(uint32_t player_id)
 {
-		if (!get_player(player_id))
-			return ErrorCode::INVALID_PLAYER_ID;
+			const Player* player = get_player(player_id);
+			if (!player)
+				return ErrorCode::INVALID_PLAYER_ID;
+			if (player->is_eliminated())
+				return ErrorCode::INVALID_TURN_STATE;
+			if (player->economic_submission.player_id != player_id ||
+				player->economic_submission.target_turn != current_turn)
+				return ErrorCode::INVALID_TURN_STATE;
 
-		turn_ready[player_id] = true;
+			turn_ready[player_id] = true;
 		return ErrorCode::SUCCESS;
 }
 
@@ -284,14 +381,21 @@ bool GameState::all_players_ready() const
 		if (players.empty())
 			return false;
 
-		for (const auto& player : players)
-		{
-			auto it = turn_ready.find(player.id);
-			if (it == turn_ready.end() || !it->second)
-				return false;
-		}
+			bool required_player_exists = false;
+			for (const auto& player : players)
+			{
+				if (player.is_eliminated())
+					continue;
+				required_player_exists = true;
+				if (player.economic_submission.player_id != player.id ||
+					player.economic_submission.target_turn != current_turn)
+					return false;
+				auto it = turn_ready.find(player.id);
+				if (it == turn_ready.end() || !it->second)
+					return false;
+			}
 
-		return true;
+			return required_player_exists;
 }
 
 void GameState::start_first_turn()
@@ -299,10 +403,14 @@ void GameState::start_first_turn()
 	// Initialize the first turn with initial game state
 	// This is called during game initialization before any process_turn() calls
 	capture_and_distribute_player_public_info();
+	capture_economic_action_submissions();
 }
 
 void GameState::process_turn()
 {
+	if (!all_players_ready())
+		return;
+
 	// Phase 1 economic order:
 	// 1. Capture beginning-of-turn savings and public information.
 	// 2. Apply population growth.
@@ -327,19 +435,69 @@ void GameState::process_turn()
 		process_ships();
 		process_novae();
 		// Refresh views once, after queued fleet effects and colonization
-		// processing have settled and before the next player-action phase.
-		refresh_player_planet_views();
-		
-		increment_turn();
-	increment_year();
+			// processing have settled and before the next player-action phase.
+			refresh_player_planet_views();
 
-	for (auto& ready : turn_ready)
-	ready.second = false;
-	renew_persistent_dips();
 	check_bankruptcy_limits();
+	capture_economic_afterstates();
+	increment_turn();
+	increment_year();
+	renew_persistent_dips();
+	capture_economic_action_submissions();
+	for (auto& ready : turn_ready)
+		ready.second = false;
 }
 
-// ============================================================================
+void GameState::capture_economic_action_submissions()
+{
+	for (auto& player : players)
+	{
+		EconomicActionSubmission& submission = player.economic_submission;
+		submission.player_id = player.id;
+			submission.target_turn = current_turn;
+		submission.savings_fraction = player.allocation.savings_fraction;
+		submission.research_fraction = player.allocation.research_fraction;
+		submission.planets_fraction = player.allocation.planets_fraction;
+		submission.research_fractions = {
+			player.allocation.research.research_range_fraction,
+			player.allocation.research.research_speed_fraction,
+			player.allocation.research.research_weapons_fraction,
+			player.allocation.research.research_shields_fraction,
+			player.allocation.research.research_mini_fraction,
+			player.allocation.research.research_radical_fraction};
+		submission.dip_amount = player.pending_dip_amount;
+		submission.dip_persistent = player.pending_dip_persistent;
+		submission.colony_allocations.clear();
+		for (const auto& colony : player.colonized_planets)
+			submission.colony_allocations.push_back({
+				colony.get_id(), colony.get_funding_fraction(),
+				colony.get_mining_fraction(), colony.get_terraforming_fraction()});
+	}
+}
+
+void GameState::capture_economic_afterstates()
+{
+	for (auto& player : players)
+	{
+		EconomicAfterState& after = player.economic_afterstate;
+		after.turn = current_turn == 0 ? 0 : current_turn - 1;
+		after.planetary_income = player.current_turn_income.planetary_income;
+		after.interest_income = player.current_turn_income.interest_income;
+		after.net_income = player.money_income;
+		after.effective_income = player.effective_income;
+		after.savings_after_processing = player.money_savings;
+		after.metal_reserve_after_processing = player.metal_reserve;
+		after.colonies.clear();
+		for (const auto& colony : player.colonized_planets)
+		{
+			const Planet* planet = get_planet(colony.get_id());
+			if (planet)
+				after.colonies.push_back({planet->id, planet->population, colony.get_income()});
+		}
+	}
+}
+
+// ==========================================================================
 // Serialization
 // ============================================================================
 std::vector<uint8_t> GameState::serialize_immutable_definition() const
@@ -419,6 +577,7 @@ std::vector<uint8_t> GameState::serialize_state() const
 	{
 		RuntimePlayerState state;
 		state.id = player.id;
+		state.economic_submission_target_turn = player.economic_submission.target_turn;
 		state.eliminated = player.is_eliminated();
 		state.money_savings = player.money_savings;
 		state.metal_reserve = player.metal_reserve;
@@ -456,6 +615,7 @@ std::vector<uint8_t> GameState::serialize_state() const
 			colony_state.terraforming_fraction = colony.get_terraforming_fraction();
 			state.colonies.push_back(colony_state);
 		}
+		state.economic_afterstate = player.economic_afterstate;
 		checkpoint.players.push_back(state);
 	}
 	return encode_runtime_checkpoint(checkpoint);
@@ -551,9 +711,12 @@ bool GameState::deserialize_state(const std::vector<uint8_t>& data)
 			}
 		}
 
-	for (auto& player : players)
-	{
-		const RuntimePlayerState& state = *saved_players.at(player.id);
+		for (auto& player : players)
+		{
+			const RuntimePlayerState& state = *saved_players.at(player.id);
+			player.economic_submission.player_id = player.id;
+			player.economic_submission.target_turn = state.economic_submission_target_turn;
+			player.economic_afterstate = state.economic_afterstate;
 		player.set_eliminated(state.eliminated);
 		player.money_savings = state.money_savings;
 		player.metal_reserve = state.metal_reserve;
@@ -584,9 +747,20 @@ bool GameState::deserialize_state(const std::vector<uint8_t>& data)
 				planet, &player, colony_state.income,
 				colony_state.funding_fraction,
 				ColonizedPlanet::PlanetaryBudgetSplit(
-						colony_state.mining_fraction, colony_state.terraforming_fraction));
-		}
-		player.turn_opening_savings = player.money_savings;
+					colony_state.mining_fraction, colony_state.terraforming_fraction));
+			}
+			player.economic_submission.colony_allocations.clear();
+			for (const auto& colony : player.colonized_planets)
+				player.economic_submission.colony_allocations.push_back({
+					colony.get_id(), colony.get_funding_fraction(),
+					colony.get_mining_fraction(), colony.get_terraforming_fraction()});
+			player.economic_submission.savings_fraction = player.allocation.savings_fraction;
+			player.economic_submission.research_fraction = player.allocation.research_fraction;
+			player.economic_submission.planets_fraction = player.allocation.planets_fraction;
+			player.economic_submission.research_fractions = state.research_fractions;
+			player.economic_submission.dip_amount = player.pending_dip_amount;
+			player.economic_submission.dip_persistent = player.pending_dip_persistent;
+			player.turn_opening_savings = player.money_savings;
 		player.metal_income = state.metal_income;
 	}
 	calculate_player_incomes(false);
@@ -1720,7 +1894,9 @@ ErrorCode GameState::check_player_set_spending_allocation(uint32_t player_id, do
 		return ErrorCode::INVALID_PLAYER_ID;
 	
 	// Check fractions are valid (all >= 0.0)
-	if (savings_frac < 0.0 || research_frac < 0.0 || planets_frac < 0.0)
+	if (!std::isfinite(savings_frac) || !std::isfinite(research_frac) ||
+		!std::isfinite(planets_frac) || savings_frac < 0.0 ||
+		research_frac < 0.0 || planets_frac < 0.0)
 		return ErrorCode::INVALID_ALLOCATION;
 	
 	// Check fractions sum to approximately 1.0 (allow small floating point error)
@@ -1781,7 +1957,8 @@ ErrorCode GameState::check_player_set_planet_allocation(uint32_t player_id, uint
 		return ErrorCode::PLANET_NOT_OWNED;
 	
 	// Check fractions are valid (all >= 0.0)
-	if (mining_frac < 0.0 || terraforming_frac < 0.0)
+	if (!std::isfinite(mining_frac) || !std::isfinite(terraforming_frac) ||
+		mining_frac < 0.0 || terraforming_frac < 0.0)
 		return ErrorCode::INVALID_ALLOCATION;
 	
 	// Check fractions sum to approximately 1.0 (allow small floating point error)

@@ -135,6 +135,10 @@ public:
 	void clear_dip_amount(uint32_t player_id);
 	int64_t get_dip_amount(uint32_t player_id) const;
 	bool is_dip_persistent(uint32_t player_id) const;
+	const EconomicActionSubmission& get_economic_action_submission(uint32_t player_id) const;
+	const EconomicAfterState& get_economic_afterstate(uint32_t player_id) const;
+	[[nodiscard]] ErrorCode submit_economic_action(uint32_t player_id,
+		const EconomicActionSubmission& submission);
 	
 	// ========================================================================
 	// Validation Methods (check_* pattern)
@@ -262,6 +266,8 @@ private:
 	
 	void process_ships();
 	void process_novae();
+	void capture_economic_action_submissions();
+	void capture_economic_afterstates();
 	
 };
 

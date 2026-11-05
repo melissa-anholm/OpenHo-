@@ -1,14 +1,14 @@
 # Turn Processing
 
-**Status:** Approved design direction; some data-dependent rules and implementation details remain open.
+**Status:** Approved design direction. The economic path and readiness/submission gate are implemented; beginning-of-turn actions, battle resolution, automatic colonization, and general ordered player-action execution remain future work.
 
 This document defines the intended order of economic processing, queued fleet actions, player actions, and state persistence. It distinguishes authoritative economic results from later projections.
 
 ## 1. Lifecycle and snapshot conventions
 
-The canonical snapshot labeled **Turn N** is the state at the beginning of Turn N, before that turn's economic processing. The first turn is **Turn 0**, beginning in year **2000**. `current_turn` and `current_year` are separate state variables; the rule for advancing the year after 2000 remains open.
+The canonical snapshot labeled **Turn N** is the state at the beginning of Turn N, before that turn's economic processing. The first turn is **Turn 0**, beginning in year **2000**. `current_turn` identifies the next economic turn awaiting processing; therefore the current accepted economic submission targets `current_turn`. `current_year` is separate state and currently advances by 10 years per processed turn.
 
-Each turn proceeds in this order:
+The approved eventual turn proceeds in this order:
 
 1. **Beginning-of-turn actions** — apply actions scheduled for the start of the new turn, including colony abandonment.
 2. **Economic processing** — calculate and apply the current turn's population, planetary income, interest, allocations, research, mining, and terraforming.
@@ -18,11 +18,23 @@ Each turn proceeds in this order:
 
 The canonical Turn N snapshot is the input to that turn's economic phase. The economic after-state is the committed result of that phase. The post-processing state is the live state after queued fleet actions and player actions, from which the next turn proceeds after its beginning-of-turn actions are applied.
 
+### Implemented processing path
+
+The current core implementation follows this narrower path:
+
+1. **Readiness gate** — require every non-eliminated player to have a valid economic submission targeting `current_turn` and to have explicitly marked themselves done.
+2. **Economic processing** — lock pending Dip Into Savings, capture opening savings, capture public information, grow population, refresh planetary income, calculate income and interest, apply Dip Into Savings, allocate money, research, and planet development.
+3. **Provisional post-economic processors** — process fleet arrivals through `process_ships()` and run the no-op nova placeholder. Battles, automatic colonization, and beginning-of-turn abandonment are not yet implemented.
+4. **View refresh** — refresh `PlanetView` snapshots after the current processors settle.
+5. **Turn boundary** — check the provisional bankruptcy boundary, capture `EconomicAfterState` as Turn N, advance `current_turn` and `current_year`, renew persistent dips, capture submissions for the new current turn, and clear readiness.
+
+The current implementation does not yet execute a separate general player-action phase inside `process_turn()`. Player-facing economic choices are submitted and accepted before readiness; changing one clears readiness and requires the player to mark themselves done again.
+
 ### State boundaries
 
 **Beginning-of-turn snapshot:** current turn/year; planet ownership, population, temperature, actual gravity, metal, and income inputs; player savings, metal reserves, technologies, research, and budget allocations from the previous turn.
 
-**Economic after-state:** population after growth; planetary income and interest used for the turn; net/effective income; savings; planet metal and temperature; metal reserve; technology and research progress.
+**Economic after-state:** population after growth; planetary income and interest used for the turn; net/effective income; savings; metal reserve; and per-colony population/income records. The broader runtime checkpoint also stores planet metal/temperature and technology/research state.
 
 **Post-processing state:** changes from combat, colonization, abandonment, ship/fleet actions, and immediate balance changes, plus recalculated projected interest and planetary income.
 
@@ -41,12 +53,12 @@ For each owned planet, calculate population growth using beginning-of-turn popul
 Calculate each planet's income once for current-turn economics using:
 
 - Population after growth.
-- Beginning-of-turn temperature.
+- The planet temperature present when income is refreshed during economic processing.
 - Actual gravity.
 - Current ownership.
 - The owning player's relevant conditions or ideals.
 
-Store that value as the authoritative income for the turn. Do not recalculate authoritative current-turn income after mining, terraforming, combat, colonization, or player actions. Thus, new population contributes to the current turn, while current-turn terraforming affects economic income beginning with a later turn.
+Store that value as the authoritative income for the turn. Do not recalculate authoritative current-turn income after mining, terraforming, combat, colonization, or player actions. Thus, new population contributes to the current turn. The implementation currently performs planet development after income refresh, so development changes do not alter the already-calculated current-turn income.
 
 This document uses actual gravity consistently; distinctions among actual, effective, apparent, and perceived gravity may be defined elsewhere.
 
@@ -112,7 +124,7 @@ disables a pension plan.
 
 ### 2.3 Effective income and allocations
 
-When effective income is positive, apply the previous turn's fractional allocations:
+When effective income is positive, apply the accepted current-turn submission's fractional allocations:
 
 ```text
 allocated_money = effective_income × allocation_fraction
@@ -175,15 +187,14 @@ The current implementation uses this refund destination provisionally; the final
 
 ### 2.5 Economic after-state
 
-At the end of economic processing, the authoritative after-state contains:
+At the current implementation's turn boundary, the captured economic after-state contains:
 
 - Population after growth.
 - Planetary income, interest, and net/effective income used for the turn.
 - Savings and accumulated metal reserve after economic processing.
-- Planet metal after mining.
-- Planet temperature after terraforming.
-- Technology and research progress.
-- The budget allocations carried forward to the next turn.
+- Per-colony population and income.
+
+The broader runtime checkpoint separately stores planet metal and temperature, technology and research progress, and the final allocations carried forward to the next turn.
 
 ## 3. Post-economic projections
 
@@ -203,6 +214,8 @@ Post-economic combat, colonization, abandonment, and player actions may change p
 ## 4. Queued fleet actions
 
 Queued fleet actions resolve after economic processing, in this order: travel, battle resolution, and automatic colonization.
+
+**Implementation status:** The general queued-fleet phase is not yet implemented. The current `process_ships()` placeholder only resolves existing fleet arrivals; it does not yet implement the full travel queue, battles, or automatic colonization described below.
 
 ### 4.1 Fleet travel
 
@@ -238,6 +251,8 @@ After battles, a ship of the colony-ship design arriving at an uncolonized plane
 
 Player actions occur after queued fleet actions. Immediate actions execute in the order specified by the player. Persistent balance changes take effect immediately, affect later same-phase actions, and do not alter the completed economic after-state.
 
+**Implementation status:** The current core has no separate ordered player-action executor. Economic choices are submitted as one final non-ordered `EconomicActionSubmission` before readiness, and the server processes them only after the readiness gate opens. Resource transfers and other ordered action lists remain deferred.
+
 ### 5.1 Ship construction and fleet assembly
 
 Building a ship costs money and metal, charges both immediately, and creates the ship immediately. The first ship of a given type also incurs a money-only prototyping cost, expected to be approximately ten times the individual ship's money construction cost until final formulas and data are established. Multiple ships may be built if each action is affordable when attempted. An unaffordable action fails atomically.
@@ -250,7 +265,7 @@ A player may immediately send money or metal to another player. Transfers are lo
 
 ### 5.3 Actions queued for the next turn
 
-Examples include Dip Into Savings, fleet movements, colony abandonment, and diplomatic actions whose rules eventually resolve later. Dip selection immediately updates the persistent savings balance but queues the income effect; its pending amount and persistence mode remain mutable until the player-action phase ends. Other queued actions remain mutable until processing begins.
+In the approved future model, examples include Dip Into Savings, fleet movements, colony abandonment, and diplomatic actions whose rules eventually resolve later. In the current implementation, Dip Into Savings is the principal queued action, while the remaining economic choices are submitted as one final non-ordered snapshot. Dip selection immediately updates the persistent savings balance but queues the income effect; its pending amount and persistence mode remain mutable until readiness freezes the submission.
 
 ### 5.4 Colony abandonment
 
@@ -279,7 +294,7 @@ The core turn-processing entry point enforces readiness; callers cannot bypass t
 - An AI becomes ready only after completing its planned actions. A configurable turn-length limit must prevent an AI loop from blocking the game indefinitely.
 - When all required players are ready and any disconnect decision is resolved, the engine processes the turn atomically and resets readiness for the next turn.
 
-At end-turn, persist the complete resumable state: pending actions, readiness, knowledge, RNG, players, planets, fleets, technologies, balances, and turn/year values. Synchronize critical state for host migration at least once per turn. Write history using the beginning-of-turn Turn N/year label, then advance to Turn N+1 according to the independent year rule.
+The current runtime checkpoint persists the implemented economic/planet state, PlanetView snapshots, RNG, players, technologies, balances, and turn/year values. Fleet state, readiness state, pending ordered actions, and complete public-information history remain outside the currently supported resumable checkpoint. The intended future policy is to persist the complete resumable state, synchronize critical state for host migration at least once per turn, and write history using the beginning-of-turn Turn N/year label before advancing to Turn N+1.
 
 ## 7. Open decisions
 
@@ -287,6 +302,4 @@ At end-turn, persist the complete resumable state: pending actions, readiness, k
 2. Immediate versus queued diplomatic actions; diplomacy is intentionally deferred.
 3. Final ship-design, construction, and scrapping cost formulas, including the typical prototyping-cost ratio.
 4. Remaining money and metal flows for combat.
-5. Whether an action after readying automatically re-readies the player or requires explicit readying.
-6. Exact year-increment rule after starting year 2000.
-7. Serialized save format and compatibility/versioning policy for complete mid-game resumes.
+5. Final serialization coverage and compatibility/versioning policy for complete mid-game resumes.

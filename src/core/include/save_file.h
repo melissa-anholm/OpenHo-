@@ -3,6 +3,7 @@
 
 #include "game_setup.h"
 #include "galaxy.h"
+#include "economic_state.h"
 #include <array>
 #include <cstdint>
 #include <string>
@@ -83,6 +84,7 @@ struct RuntimeColonyState
 struct RuntimePlayerState
 {
     uint32_t id = 0;
+    uint32_t economic_submission_target_turn = 0;
     bool eliminated = false;
     int64_t money_savings = 0;
     int64_t metal_reserve = 0;
@@ -99,11 +101,12 @@ struct RuntimePlayerState
     std::array<int32_t, 6> technology_levels{};
     std::array<int64_t, 6> partial_research{};
     std::vector<RuntimeColonyState> colonies;
+    EconomicAfterState economic_afterstate;
 };
 
 struct RuntimeCheckpointPayload
 {
-    static constexpr uint32_t CURRENT_SCHEMA_VERSION = 6;
+    static constexpr uint32_t CURRENT_SCHEMA_VERSION = 7;
 
     uint32_t schema_version = CURRENT_SCHEMA_VERSION;
     uint32_t turn = 0;
