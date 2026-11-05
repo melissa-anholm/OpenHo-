@@ -328,6 +328,16 @@ ErrorCode GameState::submit_economic_action(
 		return ErrorCode::INVALID_ALLOCATION;
 	if (submission.dip_amount < 0)
 		return ErrorCode::INVALID_PARAMETER;
+	std::unordered_set<uint32_t> abandonment_ids;
+	for (uint32_t planet_id : submission.planets_to_abandon)
+	{
+		if (!abandonment_ids.insert(planet_id).second ||
+			std::none_of(player->colonized_planets.begin(), player->colonized_planets.end(),
+				[planet_id](const ColonizedPlanet& colony) {
+					return colony.get_id() == planet_id;
+				}))
+			return ErrorCode::PLANET_NOT_OWNED;
+	}
 
 	std::unordered_map<uint32_t, const EconomicColonyAllocation*> allocations;
 	for (const auto& allocation : submission.colony_allocations)
@@ -352,6 +362,7 @@ ErrorCode GameState::submit_economic_action(
 		 submission.research_fractions[2], submission.research_fractions[3],
 		 submission.research_fractions[4], submission.research_fractions[5]}};
 	player->allocation = money_allocation;
+	player->economic_submission.planets_to_abandon = submission.planets_to_abandon;
 	for (auto& colony : player->colonized_planets)
 	{
 		const auto& allocation = *allocations.at(colony.get_id());
@@ -426,6 +437,63 @@ bool GameState::all_players_ready() const
 			return required_player_exists;
 }
 
+ErrorCode GameState::colonize_planet(uint32_t player_id, uint32_t planet_id)
+{
+	Player* player = get_player(player_id);
+	Planet* planet = get_planet(planet_id);
+	if (!player)
+		return ErrorCode::INVALID_PLAYER_ID;
+	if (player->is_eliminated())
+		return ErrorCode::INVALID_TURN_STATE;
+	if (!planet)
+		return ErrorCode::INVALID_PLANET_ID;
+	if (planet->owner != NOT_OWNED)
+		return ErrorCode::PLANET_ALREADY_OWNED;
+
+	planet->owner = static_cast<PlayerID>(player_id);
+	planet->population = GameConstants::Colonization_Initial_Population;
+	player->colonized_planets.emplace_back(planet, player);
+	player->colonized_planets.back().update_desirability();
+	capture_economic_action_submissions();
+	return ErrorCode::SUCCESS;
+}
+
+ErrorCode GameState::queue_planet_abandonment(uint32_t player_id, uint32_t planet_id)
+{
+	Player* player = get_player(player_id);
+	if (!player)
+		return ErrorCode::INVALID_PLAYER_ID;
+	if (player->is_eliminated())
+		return ErrorCode::INVALID_TURN_STATE;
+	if (std::none_of(player->colonized_planets.begin(), player->colonized_planets.end(),
+		[planet_id](const ColonizedPlanet& colony) { return colony.get_id() == planet_id; }))
+		return ErrorCode::PLANET_NOT_OWNED;
+	if (std::find(player->economic_submission.planets_to_abandon.begin(),
+		player->economic_submission.planets_to_abandon.end(), planet_id) !=
+		player->economic_submission.planets_to_abandon.end())
+		return ErrorCode::INVALID_TURN_STATE;
+
+	player->economic_submission.planets_to_abandon.push_back(planet_id);
+	turn_ready[player_id] = false;
+	capture_economic_action_submissions();
+	return ErrorCode::SUCCESS;
+}
+
+ErrorCode GameState::cancel_planet_abandonment(uint32_t player_id, uint32_t planet_id)
+{
+	Player* player = get_player(player_id);
+	if (!player)
+		return ErrorCode::INVALID_PLAYER_ID;
+	auto& abandonments = player->economic_submission.planets_to_abandon;
+	auto it = std::find(abandonments.begin(), abandonments.end(), planet_id);
+	if (it == abandonments.end())
+		return ErrorCode::INVALID_TURN_STATE;
+	abandonments.erase(it);
+	turn_ready[player_id] = false;
+	capture_economic_action_submissions();
+	return ErrorCode::SUCCESS;
+}
+
 void GameState::start_first_turn()
 {
 	// Initialize the first turn with initial game state
@@ -446,6 +514,7 @@ void GameState::process_turn()
 	// 4. Add interest calculated from beginning-of-turn savings.
 	// 5. Apply the resulting effective income to allocations and economic work.
 	// Later fleet and nova phases remain provisional or unimplemented.
+	process_queued_abandonments();
 	lock_pending_dips();
 	for (auto& player : players)
 		player.turn_opening_savings = player.money_savings;
@@ -641,9 +710,10 @@ std::vector<uint8_t> GameState::serialize_state() const
 			colony_state.funding_fraction = colony.get_funding_fraction();
 			colony_state.mining_fraction = colony.get_mining_fraction();
 			colony_state.terraforming_fraction = colony.get_terraforming_fraction();
-			state.colonies.push_back(colony_state);
-		}
-		state.economic_afterstate = player.economic_afterstate;
+				state.colonies.push_back(colony_state);
+			}
+			state.planets_to_abandon = player.economic_submission.planets_to_abandon;
+			state.economic_afterstate = player.economic_afterstate;
 		checkpoint.players.push_back(state);
 	}
 	return encode_runtime_checkpoint(checkpoint);
@@ -704,11 +774,14 @@ bool GameState::deserialize_state(const std::vector<uint8_t>& data)
 			if (!colony_ids.insert(colony_state.planet_id).second)
 				return false;
 			const auto planet_it = saved_planets.find(colony_state.planet_id);
-			if (planet_it == saved_planets.end() ||
-				planet_it->second->owner != static_cast<int32_t>(player_state.id))
-				return false;
-			}
-	}
+				if (planet_it == saved_planets.end() ||
+					planet_it->second->owner != static_cast<int32_t>(player_state.id))
+					return false;
+				}
+			for (uint32_t planet_id : player_state.planets_to_abandon)
+				if (colony_ids.find(planet_id) == colony_ids.end())
+					return false;
+		}
 	for (const auto& player : players)
 		if (!player.fleets.empty())
 			return false;
@@ -780,8 +853,9 @@ bool GameState::deserialize_state(const std::vector<uint8_t>& data)
 			player.economic_submission.colony_allocations.clear();
 			for (const auto& colony : player.colonized_planets)
 				player.economic_submission.colony_allocations.push_back({
-					colony.get_id(), colony.get_funding_fraction(),
-					colony.get_mining_fraction(), colony.get_terraforming_fraction()});
+						colony.get_id(), colony.get_funding_fraction(),
+						colony.get_mining_fraction(), colony.get_terraforming_fraction()});
+				player.economic_submission.planets_to_abandon = state.planets_to_abandon;
 			player.economic_submission.savings_fraction = player.allocation.savings_fraction;
 			player.economic_submission.research_fraction = player.allocation.research_fraction;
 			player.economic_submission.planets_fraction = player.allocation.planets_fraction;
@@ -1284,6 +1358,33 @@ void GameState::process_novae()
 	//   - Update player knowledge of destroyed planets
 }
 
+void GameState::process_queued_abandonments()
+{
+	for (auto& player : players)
+	{
+		for (uint32_t planet_id : player.economic_submission.planets_to_abandon)
+		{
+			auto colony_it = std::find_if(
+				player.colonized_planets.begin(), player.colonized_planets.end(),
+				[planet_id](const ColonizedPlanet& colony) {
+					return colony.get_id() == planet_id;
+				});
+			if (colony_it == player.colonized_planets.end())
+				continue;
+
+			Planet* planet = get_planet(planet_id);
+			if (planet && planet->owner == static_cast<PlayerID>(player.id))
+			{
+				planet->owner = NOT_OWNED;
+				planet->population = 0;
+			}
+			player.colonized_planets.erase(colony_it);
+		}
+		player.economic_submission.planets_to_abandon.clear();
+	}
+	capture_economic_action_submissions();
+}
+
 // ============================================================================
 // Player Public Information
 // ============================================================================
@@ -1678,58 +1779,45 @@ void GameState::assign_planets_random(const std::vector<Planet*>& suitable_plane
 		Planet* planet = shuffled_planets[player_idx];
 		const PlayerSetup& setup = player_setups[player_idx];
 		
-		// Set planet ownership
-		planet->owner = player.id;
-		
-		// Determine ideal_gravity based on starting colony quality
-		double ideal_gravity;
-		if (setup.starting_colony_quality == START_OUTPOST)
-		{
-			// For START_OUTPOST, randomize ideal_gravity within +/-0.20 of true_gravity
-			// But constrain to [Starting_Planet_Min_Gravity, Starting_Planet_Max_Gravity]
-			double min_ideal = std::max( planet->true_gravity - 0.20,
-				GameConstants::Starting_Planet_Min_Gravity );
-			double max_ideal = std::min( planet->true_gravity + 0.20,
-				GameConstants::Starting_Planet_Max_Gravity );
-			
-			// Generate random value in range [min_ideal, max_ideal]
-			double random_offset = rng->nextDouble() * (max_ideal - min_ideal);
-			ideal_gravity = min_ideal + random_offset;
-			
-			// Round to 2 decimal places
-			ideal_gravity = std::round(ideal_gravity * 100.0) / 100.0;
-		}
-		else
-		{
-			// For all other qualities, set ideal_gravity to match planet's true_gravity
-			ideal_gravity = planet->true_gravity;
-		}
-		
-		player.ideal_gravity = ideal_gravity;
-		
-		// Adjust homeworld temperature to match player's ideal_temperature
-		planet->true_temperature = player.ideal_temperature;
-		
-			// Set homeworld population based on starting colony quality
-			planet->population = GameConstants::Starting_Colony_Population[setup.starting_colony_quality];
-			planet->metal = GameConstants::Starting_Colony_Metal[setup.starting_colony_quality];
-		
-		// Create ColonizedPlanet entry for this player with quality-based values
-			ColonizedPlanet colonized_planet(
-			planet, &player,
-			GameConstants::Starting_Colony_Income[setup.starting_colony_quality] );
-		
-			// Add to player's colonized planets
-		player.colonized_planets.push_back(colonized_planet);
+			setup_home_planet(player, *planet, setup);
 		
 		
 		// Log assignment
 		std::cout << "Player " << player.name << " assigned starting planet: " 
-		          << planet->name << " (gravity: " << planet->true_gravity 
-		          << ", ideal_gravity: " << ideal_gravity << ")\n";
+		          << planet->name << " (gravity: " << planet->true_gravity
+		          << ", ideal_gravity: " << player.ideal_gravity << ")\n";
 	}
 	
 	std::cout << "Successfully assigned starting planets to all " << players.size() << " players.\n";
+}
+
+void GameState::setup_home_planet(
+	Player& player, Planet& planet, const PlayerSetup& setup)
+{
+	planet.owner = player.id;
+
+	double ideal_gravity;
+	if (setup.starting_colony_quality == START_OUTPOST)
+	{
+		double min_ideal = std::max(
+			planet.true_gravity - 0.20, GameConstants::Starting_Planet_Min_Gravity);
+		double max_ideal = std::min(
+			planet.true_gravity + 0.20, GameConstants::Starting_Planet_Max_Gravity);
+		ideal_gravity = min_ideal + rng->nextDouble() * (max_ideal - min_ideal);
+		ideal_gravity = std::round(ideal_gravity * 100.0) / 100.0;
+	}
+	else
+	{
+		ideal_gravity = planet.true_gravity;
+	}
+
+	player.ideal_gravity = ideal_gravity;
+	planet.true_temperature = player.ideal_temperature;
+	planet.population = GameConstants::Starting_Colony_Population[setup.starting_colony_quality];
+	planet.metal = GameConstants::Starting_Colony_Metal[setup.starting_colony_quality];
+	player.colonized_planets.emplace_back(
+		&planet, &player,
+		GameConstants::Starting_Colony_Income[setup.starting_colony_quality]);
 }
 
 

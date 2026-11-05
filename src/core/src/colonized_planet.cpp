@@ -26,8 +26,6 @@ ColonizedPlanet::ColonizedPlanet(
 	      p_owner->get_ideal_temperature(), p_base->true_temperature)),
 	  desirability(p_desirability)
 {
-	// Update the base planet's owner to this player
-	base_planet->owner = p_owner->id;
 }
 
 void ColonizedPlanet::update_desirability()

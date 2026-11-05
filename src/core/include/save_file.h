@@ -101,12 +101,13 @@ struct RuntimePlayerState
     std::array<int32_t, 6> technology_levels{};
     std::array<int64_t, 6> partial_research{};
     std::vector<RuntimeColonyState> colonies;
+    std::vector<uint32_t> planets_to_abandon;
     EconomicAfterState economic_afterstate;
 };
 
 struct RuntimeCheckpointPayload
 {
-    static constexpr uint32_t CURRENT_SCHEMA_VERSION = 7;
+    static constexpr uint32_t CURRENT_SCHEMA_VERSION = 8;
 
     uint32_t schema_version = CURRENT_SCHEMA_VERSION;
     uint32_t turn = 0;

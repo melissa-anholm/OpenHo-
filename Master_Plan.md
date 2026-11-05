@@ -139,6 +139,12 @@ The economic path applies population growth, refreshes planetary income using th
 - Calling `process_turn()` while the gate is incomplete is a no-op; the existing readiness query exposes whether processing may proceed. Fleet and other ordered actions remain outside this gate.
 - The public GameState/C API now supports explicit unready operations. The validated per-colony allocation action applies its change to the authoritative `ColonizedPlanet`, updates the economic submission, and clears readiness.
 
+**Colony Ownership Transitions (Implemented November 5, 2026):**
+- Starting colonies use the dedicated `GameState::setup_home_planet()` path. It applies starting-colony quality, player ideal-gravity setup, starting population/metal/income, and home-planet ownership.
+- Gameplay colonization uses the separate `GameState::colonize_planet()` transition. It requires an unowned planet, establishes a colony with an initial population of 10, recalculates and stores desirability, and updates the player's economic submission. It is callable by future fleet/battle resolution but is not yet automatically invoked by `process_ships()`.
+- Abandonment is queued through the economic submission, may be cancelled before readiness, and is applied at the beginning of economic processing. It removes the player colony and population, releases ownership, and preserves unmined metal.
+- `ColonizedPlanet` construction no longer mutates global planet ownership; ownership transitions are explicit GameState responsibilities.
+
 **Validation Pattern:**
 - game_can_player_X() - Check validity (returns ErrorCode)
 - game_player_X() - Execute action (re-validates, then delegates)

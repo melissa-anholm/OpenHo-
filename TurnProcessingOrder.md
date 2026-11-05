@@ -1,6 +1,6 @@
 # Turn Processing
 
-**Status:** Approved design direction. The economic path and readiness/submission gate are implemented; beginning-of-turn actions, battle resolution, automatic colonization, and general ordered player-action execution remain future work.
+**Status:** Approved design direction. The economic path, readiness/submission gate, and queued abandonment transition are implemented; battle resolution, automatic fleet-triggered colonization, and general ordered player-action execution remain future work.
 
 This document defines the intended order of economic processing, queued fleet actions, player actions, and state persistence. It distinguishes authoritative economic results from later projections.
 
@@ -24,11 +24,11 @@ The current core implementation follows this narrower path:
 
 1. **Readiness gate** — require every non-eliminated player to have a valid economic submission targeting `current_turn` and to have explicitly marked themselves done.
 2. **Economic processing** — lock pending Dip Into Savings, capture opening savings, capture public information, grow population, refresh planetary income, calculate income and interest, apply Dip Into Savings, allocate money, research, and planet development.
-3. **Provisional post-economic processors** — process fleet arrivals through `process_ships()` and run the no-op nova placeholder. Battles, automatic colonization, and beginning-of-turn abandonment are not yet implemented.
+3. **Provisional post-economic processors** — process fleet arrivals through `process_ships()` and run the no-op nova placeholder. Battles and automatic fleet-triggered colonization are not yet implemented. Beginning-of-turn abandonment is implemented through `process_queued_abandonments()`.
 4. **View refresh** — refresh `PlanetView` snapshots after the current processors settle.
 5. **Turn boundary** — check the provisional bankruptcy boundary, capture `EconomicAfterState` as Turn N, advance `current_turn` and `current_year`, renew persistent dips, capture submissions for the new current turn, and clear readiness.
 
-The current implementation does not yet execute a separate general player-action phase inside `process_turn()`. Player-facing economic choices are submitted and accepted before readiness; changing one clears readiness and requires the player to mark themselves done again.
+The current implementation does not yet execute a separate general player-action phase inside `process_turn()`. Player-facing economic choices and abandonment requests are submitted and accepted before readiness; changing one clears readiness and requires the player to mark themselves done again. Gameplay colonization is available as a GameState transition for future fleet/battle code, but is not a direct player action.
 
 ### State boundaries
 
@@ -236,6 +236,8 @@ Exact battle mechanics remain open, including damage, casualties, technology eff
 There is no separate planet-capture operation. Combat population loss immediately reduces displayed/projected income, but does not alter income already processed for the current turn. Any unextracted metal remains on the planet after colony destruction for whoever colonizes it later.
 
 ### 4.3 Automatic colonization
+
+**Implementation status:** `GameState::colonize_planet()` now provides the unified gameplay transition and can establish an unowned outpost colony. The automatic fleet-triggered call remains deferred until battle resolution and colony-ship qualification are implemented.
 
 After battles, a ship of the colony-ship design arriving at an uncolonized planet automatically establishes a colony. A colony ship is an ordinary ship of a particular design selected during construction, not a separate universal object.
 

@@ -304,6 +304,51 @@ void test_economic_submission_round_trip()
     assert(restored_after.colonies.size() == after.colonies.size());
 }
 
+void test_colonization_and_abandonment_transitions()
+{
+    auto game = create_two_player_game();
+    uint32_t unowned_planet_id = 0;
+    int32_t initial_metal = 0;
+    for (const Planet& planet : game->get_galaxy().planets)
+    {
+        if (planet.owner == NOT_OWNED)
+        {
+            unowned_planet_id = planet.id;
+            initial_metal = planet.metal;
+            break;
+        }
+    }
+    assert(unowned_planet_id != 0);
+
+    assert(game->colonize_planet(2, unowned_planet_id) == ErrorCode::SUCCESS);
+    Planet* planet = game->get_planet(unowned_planet_id);
+    assert(planet != nullptr);
+    assert(planet->owner == 2);
+    assert(planet->population == 10);
+    assert(game->get_player(2)->get_colonized_planets().size() == 2);
+    assert(game->get_player(2)->get_colonized_planets().back().get_desirability() == 3);
+
+    assert(game->queue_planet_abandonment(2, unowned_planet_id) == ErrorCode::SUCCESS);
+    assert(game->cancel_planet_abandonment(2, unowned_planet_id) == ErrorCode::SUCCESS);
+    assert(game->queue_planet_abandonment(2, unowned_planet_id) == ErrorCode::SUCCESS);
+    assert(planet->owner == 2);
+
+    const std::vector<uint8_t> payload = game->serialize_state();
+    auto restored_game = create_two_player_game();
+    assert(restored_game->deserialize_state(payload));
+    assert(restored_game->get_economic_action_submission(2).planets_to_abandon.size() == 1);
+    assert(restored_game->get_economic_action_submission(2).planets_to_abandon.front() ==
+           unowned_planet_id);
+
+    process_ready_turn(*restored_game);
+    Planet* restored_planet = restored_game->get_planet(unowned_planet_id);
+    assert(restored_planet != nullptr);
+    assert(restored_planet->owner == NOT_OWNED);
+    assert(restored_planet->population == 0);
+    assert(restored_planet->metal == initial_metal);
+    assert(restored_game->get_player(2)->get_colonized_planets().size() == 1);
+}
+
 void test_planet_view_observation_precedence()
 {
     auto game = create_two_player_game();
@@ -512,6 +557,7 @@ int main()
 	 test_ship_construction();
     test_savings_rate_modifier();
     test_economic_submission_round_trip();
+    test_colonization_and_abandonment_transitions();
 	 test_planet_view_observation_precedence();
 	 test_append_only_save_file();
 	 test_rng_state_continuation();

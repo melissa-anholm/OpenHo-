@@ -23,6 +23,7 @@ struct EconomicActionSubmission
     double planets_fraction = 0.0;
     std::array<double, 6> research_fractions{};
     std::vector<EconomicColonyAllocation> colony_allocations;
+    std::vector<uint32_t> planets_to_abandon;
     int64_t dip_amount = 0;
     bool dip_persistent = false;
 };

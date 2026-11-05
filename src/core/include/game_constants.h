@@ -205,6 +205,7 @@ namespace GameConstants
 	// ========================================================================
 	// Future Balance Parameters
 	// ========================================================================
+	constexpr int32_t Colonization_Initial_Population = 10;
 	// Add new constants here as needed for game balance tuning.
 	
 }  // namespace GameConstants

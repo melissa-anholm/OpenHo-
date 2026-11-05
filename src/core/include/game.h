@@ -127,6 +127,9 @@ public:
 		[[nodiscard]] ErrorCode mark_player_turn_unready(uint32_t player_id);
 		[[nodiscard]] int32_t get_player_turn_ready_status(uint32_t player_id) const;
 		[[nodiscard]] bool all_players_ready() const;
+		[[nodiscard]] ErrorCode colonize_planet(uint32_t player_id, uint32_t planet_id);
+		[[nodiscard]] ErrorCode queue_planet_abandonment(uint32_t player_id, uint32_t planet_id);
+		[[nodiscard]] ErrorCode cancel_planet_abandonment(uint32_t player_id, uint32_t planet_id);
 	
 	// Money allocation
 	void set_money_allocation(uint32_t player_id, const Player::MoneyAllocation& alloc);
@@ -247,7 +250,8 @@ private:
 
 	// Assign suitable planets to players based on their starting colony quality
 	// Takes the suitable planets vector to avoid recalculating it
-	void assign_planets_random(const std::vector<Planet*>& suitable_planets);
+		void assign_planets_random(const std::vector<Planet*>& suitable_planets);
+		void setup_home_planet(Player& player, Planet& planet, const PlayerSetup& setup);
 		void process_population_growth();
 		void check_population_decreasing_events(uint32_t planet_id);
 		int64_t calculate_summed_planetary_income(const Player& player) const;
@@ -269,6 +273,7 @@ private:
 	
 	void process_ships();
 	void process_novae();
+	void process_queued_abandonments();
 	void capture_economic_action_submissions();
 	void capture_economic_afterstates();
 	

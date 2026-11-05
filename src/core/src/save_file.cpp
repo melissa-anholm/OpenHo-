@@ -485,6 +485,9 @@ std::vector<uint8_t> encode_runtime_payload(const RuntimeCheckpointPayload& chec
             append_double(output, colony.mining_fraction);
             append_double(output, colony.terraforming_fraction);
         }
+        append_integer<uint32_t>(output, static_cast<uint32_t>(player.planets_to_abandon.size()));
+        for (uint32_t planet_id : player.planets_to_abandon)
+            append_integer<uint32_t>(output, planet_id);
         const auto& after = player.economic_afterstate;
         append_integer<uint32_t>(output, after.turn);
         append_signed<int64_t>(output, after.planetary_income);
@@ -603,6 +606,13 @@ bool decode_runtime_payload(const std::vector<uint8_t>& payload,
                 !read_double(payload, offset, colony.terraforming_fraction))
                 return false;
         }
+        uint32_t abandonment_count = 0;
+        if (!read_integer(payload, offset, abandonment_count) || abandonment_count > planet_count)
+            return false;
+        player.planets_to_abandon.resize(abandonment_count);
+        for (uint32_t& planet_id : player.planets_to_abandon)
+            if (!read_integer(payload, offset, planet_id))
+                return false;
         auto& after = player.economic_afterstate;
         if (!read_integer(payload, offset, after.turn) ||
             !read_signed<int64_t>(payload, offset, after.planetary_income) ||
