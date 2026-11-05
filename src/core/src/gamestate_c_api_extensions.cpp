@@ -16,6 +16,13 @@ ErrorCode game_mark_player_turn_ready(GameState* game_state, uint32_t player_id)
 	return game_state->mark_player_turn_ready(player_id);
 }
 
+ErrorCode game_mark_player_turn_unready(GameState* game_state, uint32_t player_id)
+{
+	if (!game_state)
+		return ErrorCode::INVALID_PARAMETER;
+	return game_state->mark_player_turn_unready(player_id);
+}
+
 int32_t game_get_player_turn_ready_status(const GameState* game_state, uint32_t player_id)
 {
 	if (!game_state)
@@ -172,6 +179,10 @@ ErrorCode game_player_set_spending_allocation(
 	alloc.savings_fraction = savings_fraction;
 	alloc.research_fraction = research_fraction;
 	alloc.planets_fraction = planets_fraction;
+	const Player* player = game_state->get_player(player_id);
+	if (!player)
+		return ErrorCode::INVALID_PLAYER_ID;
+	alloc.research = player->get_spending_allocation().research;
 	game_state->set_money_allocation(player_id, alloc);
 	return ErrorCode::SUCCESS;
 }
@@ -305,6 +316,7 @@ ErrorCode game_player_set_planet_allocation(
 	if (game_state->check_player_set_planet_allocation(player_id, planet_id, mining_fraction, terraforming_fraction) != ErrorCode::SUCCESS)
 		return ErrorCode::INVALID_ALLOCATION;
 	
-	// TODO: Implement actual allocation setting in GameState
+	game_state->set_planet_allocation(
+		player_id, planet_id, mining_fraction, terraforming_fraction);
 	return ErrorCode::SUCCESS;
 }

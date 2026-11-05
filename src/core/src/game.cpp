@@ -179,6 +179,26 @@ void GameState::set_money_allocation(uint32_t player_id, const Player::MoneyAllo
 	capture_economic_action_submissions();
 }
 
+void GameState::set_planet_allocation(
+	uint32_t player_id, uint32_t planet_id,
+	double mining_fraction, double terraforming_fraction)
+{
+	Player* player = get_player(player_id);
+	if (!player)
+		throw std::runtime_error("Player not found");
+
+	for (auto& colony : player->colonized_planets)
+	{
+		if (colony.get_id() != planet_id)
+			continue;
+		colony.set_budget_split(mining_fraction, terraforming_fraction);
+		turn_ready[player_id] = false;
+		capture_economic_action_submissions();
+		return;
+	}
+	throw std::runtime_error("Planet is not owned by player");
+}
+
 const Player::MoneyAllocation& GameState::get_money_allocation(uint32_t player_id) const
 {
 	const Player* player = get_player(player_id);
@@ -364,7 +384,15 @@ ErrorCode GameState::mark_player_turn_ready(uint32_t player_id)
 				return ErrorCode::INVALID_TURN_STATE;
 
 			turn_ready[player_id] = true;
-		return ErrorCode::SUCCESS;
+			return ErrorCode::SUCCESS;
+}
+
+ErrorCode GameState::mark_player_turn_unready(uint32_t player_id)
+{
+	if (!get_player(player_id))
+		return ErrorCode::INVALID_PLAYER_ID;
+	turn_ready[player_id] = false;
+	return ErrorCode::SUCCESS;
 }
 
 int32_t GameState::get_player_turn_ready_status(uint32_t player_id) const

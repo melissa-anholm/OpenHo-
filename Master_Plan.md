@@ -137,6 +137,7 @@ The economic path applies population growth, refreshes planetary income using th
 - A turn cannot process until every non-eliminated player has a valid economic submission for `current_turn` and has explicitly marked themselves done/ready.
 - Marking ready freezes that player's accepted economic submission for the processing pass. Changing an allocation, Dip Into Savings selection, or submitting a replacement action clears readiness and requires readying again.
 - Calling `process_turn()` while the gate is incomplete is a no-op; the existing readiness query exposes whether processing may proceed. Fleet and other ordered actions remain outside this gate.
+- The public GameState/C API now supports explicit unready operations. The validated per-colony allocation action applies its change to the authoritative `ColonizedPlanet`, updates the economic submission, and clears readiness.
 
 **Validation Pattern:**
 - game_can_player_X() - Check validity (returns ErrorCode)

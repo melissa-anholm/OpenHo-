@@ -22,6 +22,12 @@ typedef struct GameState GameState;
 ErrorCode game_mark_player_turn_ready(GameState* game_state, uint32_t player_id);
 
 /**
+ * Explicitly mark a player as not done with their turn.
+ * Returns: error code
+ */
+ErrorCode game_mark_player_turn_unready(GameState* game_state, uint32_t player_id);
+
+/**
  * Get turn status for a specific player
  * Returns: 1 if player is ready, 0 if not ready, -1 if invalid player_id
  */

@@ -74,6 +74,16 @@ void test_game_initialization_and_readiness()
     assert(game->get_player_turn_ready_status(1) == 0);
     assert(!game->all_players_ready());
     assert(game->mark_player_turn_ready(1) == ErrorCode::SUCCESS);
+    const uint32_t player_one_planet_id =
+        game->get_player(1)->get_colonized_planets().front().get_id();
+    game->set_planet_allocation(1, player_one_planet_id, 0.6, 0.4);
+    assert(game->get_player_turn_ready_status(1) == 0);
+    assert(game->mark_player_turn_ready(1) == ErrorCode::SUCCESS);
+    assert(game->mark_player_turn_ready(2) == ErrorCode::SUCCESS);
+    assert(game->all_players_ready());
+    assert(game->mark_player_turn_unready(2) == ErrorCode::SUCCESS);
+    assert(game->get_player_turn_ready_status(2) == 0);
+    assert(!game->all_players_ready());
     assert(game->mark_player_turn_ready(2) == ErrorCode::SUCCESS);
     assert(game->all_players_ready());
 }

@@ -124,11 +124,14 @@ public:
 		// Turn processing
 		void process_turn();
 		[[nodiscard]] ErrorCode mark_player_turn_ready(uint32_t player_id);
+		[[nodiscard]] ErrorCode mark_player_turn_unready(uint32_t player_id);
 		[[nodiscard]] int32_t get_player_turn_ready_status(uint32_t player_id) const;
 		[[nodiscard]] bool all_players_ready() const;
 	
 	// Money allocation
 	void set_money_allocation(uint32_t player_id, const Player::MoneyAllocation& alloc);
+	void set_planet_allocation(uint32_t player_id, uint32_t planet_id,
+		double mining_fraction, double terraforming_fraction);
 	const Player::MoneyAllocation& get_money_allocation(uint32_t player_id) const;
 	void set_dip_amount(uint32_t player_id, int64_t dip_amount);
 	void set_one_time_dip_amount(uint32_t player_id, int64_t dip_amount);
