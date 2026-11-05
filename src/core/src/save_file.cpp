@@ -427,10 +427,7 @@ std::vector<uint8_t> encode_runtime_payload(const RuntimeCheckpointPayload& chec
         append_integer<uint32_t>(output, static_cast<uint32_t>(planet.views.size()));
         for (const auto& view : planet.views)
         {
-            if (!std::isfinite(view.apparent_temperature) ||
-                !std::isfinite(view.funding_fraction) ||
-                !std::isfinite(view.mining_fraction) ||
-                !std::isfinite(view.terraforming_fraction))
+            if (!std::isfinite(view.apparent_temperature))
                 return {};
             append_integer<uint32_t>(output, view.observer_id);
             append_double(output, view.apparent_temperature);
@@ -440,9 +437,6 @@ std::vector<uint8_t> encode_runtime_payload(const RuntimeCheckpointPayload& chec
             append_signed<int32_t>(output, view.apparent_population);
             append_signed<int32_t>(output, view.observation_year);
             append_signed<int32_t>(output, view.income);
-            append_double(output, view.funding_fraction);
-            append_double(output, view.mining_fraction);
-            append_double(output, view.terraforming_fraction);
             append_signed<int32_t>(output, view.can_be_profitable);
             append_signed<int32_t>(output, view.perceived_value);
         }
@@ -543,9 +537,6 @@ bool decode_runtime_payload(const std::vector<uint8_t>& payload,
                 !read_signed<int32_t>(payload, offset, view.apparent_population) ||
                 !read_signed<int32_t>(payload, offset, view.observation_year) ||
                 !read_signed<int32_t>(payload, offset, view.income) ||
-                !read_double(payload, offset, view.funding_fraction) ||
-                !read_double(payload, offset, view.mining_fraction) ||
-                !read_double(payload, offset, view.terraforming_fraction) ||
                 !read_signed<int32_t>(payload, offset, view.can_be_profitable) ||
                 !read_signed<int32_t>(payload, offset, view.perceived_value))
                 return false;

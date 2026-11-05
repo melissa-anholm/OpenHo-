@@ -64,9 +64,6 @@ struct RuntimePlanetState
         int32_t apparent_population = 0;
         int32_t observation_year = 0;
         int32_t income = 0;
-        double funding_fraction = 0.0;
-        double mining_fraction = 0.0;
-        double terraforming_fraction = 0.0;
         int32_t can_be_profitable = 0;
         int32_t perceived_value = 0;
     };
@@ -106,7 +103,7 @@ struct RuntimePlayerState
 
 struct RuntimeCheckpointPayload
 {
-    static constexpr uint32_t CURRENT_SCHEMA_VERSION = 5;
+    static constexpr uint32_t CURRENT_SCHEMA_VERSION = 6;
 
     uint32_t schema_version = CURRENT_SCHEMA_VERSION;
     uint32_t turn = 0;

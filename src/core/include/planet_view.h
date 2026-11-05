@@ -33,12 +33,9 @@ public:
     int32_t apparent_population;
     int32_t observation_year;
 
-    // Populated only by an OWNED_COLONY observation. These are snapshots,
-    // not a second ColonizedPlanet object.
+    // Populated only by an OWNED_COLONY observation. Income is a player-facing
+    // snapshot; authoritative allocation choices remain in ColonizedPlanet.
     int32_t income;
-    double funding_fraction;
-    double mining_fraction;
-    double terraforming_fraction;
 
     int32_t can_be_profitable;
     int32_t perceived_value;

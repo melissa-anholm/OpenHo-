@@ -407,9 +407,6 @@ std::vector<uint8_t> GameState::serialize_state() const
 				view_state.apparent_population = view.apparent_population;
 				view_state.observation_year = view.observation_year;
 				view_state.income = view.income;
-				view_state.funding_fraction = view.funding_fraction;
-				view_state.mining_fraction = view.mining_fraction;
-				view_state.terraforming_fraction = view.terraforming_fraction;
 				view_state.can_be_profitable = view.can_be_profitable;
 				view_state.perceived_value = view.perceived_value;
 				state.views.push_back(std::move(view_state));
@@ -546,13 +543,10 @@ bool GameState::deserialize_state(const std::vector<uint8_t>& data)
 				view.has_observed_gravity = saved_view.has_observed_gravity;
 				view.metal = saved_view.metal;
 				view.apparent_owner = saved_view.apparent_owner;
-				view.apparent_population = saved_view.apparent_population;
-				view.observation_year = saved_view.observation_year;
-				view.income = saved_view.income;
-				view.funding_fraction = saved_view.funding_fraction;
-				view.mining_fraction = saved_view.mining_fraction;
-				view.terraforming_fraction = saved_view.terraforming_fraction;
-				view.can_be_profitable = saved_view.can_be_profitable;
+					view.apparent_population = saved_view.apparent_population;
+					view.observation_year = saved_view.observation_year;
+					view.income = saved_view.income;
+					view.can_be_profitable = saved_view.can_be_profitable;
 				view.perceived_value = saved_view.perceived_value;
 			}
 		}
