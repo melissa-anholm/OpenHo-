@@ -1,6 +1,6 @@
 # OpenHo Master Plan
 
-**Last Updated:** November 5, 2026 (PlanetView checkpoint persistence)
+**Last Updated:** November 5, 2026 (native UI readiness assessment)
 **Project Status:** Phase 2 - Minimal playable game first; feature completeness follows incrementally
 
 ---
@@ -10,10 +10,9 @@
 OpenHo is a re-implementation of the classic game "Spaceward Ho!" as a native macOS application. The project is being developed in three phases:
 
 1. **Phase 2 (Current):** C++ game engine with deterministic gameplay and C API interface
-2. **Phase 3a:** Objective-C++ bridging layer for macOS integration
-3. **Phase 3b:** Native SwiftUI user interface for macOS
+2. **Phase 3a:** Objective-C++/Cocoa bridge and native AppKit interface for macOS
 
-The project uses a command-line build system (no Xcode dependency) with CMake for C++ components and Swift Package Manager for the final application.
+The project uses a command-line build system (no Xcode dependency) with CMake for the C++ core, Objective-C++ bridge, and native AppKit application.
 
 ---
 
@@ -22,7 +21,7 @@ The project uses a command-line build system (no Xcode dependency) with CMake fo
 **Goal:** Create a fully functional, native macOS version of Spaceward Ho! that:
 - Runs natively on macOS 10.14 (Mojave) and later
 - Maintains deterministic gameplay for multiplayer synchronization
-- Uses modern Swift/SwiftUI for the user interface
+- Uses native AppKit for the user interface, accessed through Objective-C++
 - Provides a clean C++ core engine with well-defined API boundaries
 
 **Inspiration:** Based on the original Delta Tao game and informed by the Mr-Twave Open_Spaceward_Ho- project.
@@ -33,7 +32,7 @@ The project uses a command-line build system (no Xcode dependency) with CMake fo
 
 ### Phase 2: C++ Core Implementation (Current)
 
-**Overall Status:** The minimal playable game is operational through a deterministic RANDOM-galaxy path and multiple turns, but the current RANDOM generator has known planet-count and density defects. Current priority is to correct and validate that path before expanding ship construction, exploration, and combat.
+**Overall Status:** The minimal playable game is operational through a deterministic RANDOM-galaxy path and multiple turns. The core now has economic submissions/readiness gating, checkpoint persistence, PlanetView snapshots, explicit home-planet setup, gameplay colonization, and queued abandonment. The next architectural transition may be a native macOS UI, while fleet battles, complete action processing, and some formula/data validation remain future work.
 
 **Economic policy decision:** The provisional intentional-debt limit is calculated from summed planetary income over a ten-turn repayment horizon, with the current 15% per-turn debt-interest rate. The provisional bankruptcy limit is five times the debt at which interest equals `max(summed planetary income, 50,000)`. Debt-limit functions accept summed planetary income and planet count explicitly; planet count is reserved for a future data-driven refinement.
 
@@ -81,9 +80,21 @@ Ideal temperature/gravity assignment and apparent-condition formulas are impleme
 
 #### Phase 2f: Economic Mechanics
 
-**Status:** Phase 1 economic-kernel ordering is implemented and regression-tested; the Dip Into Savings action model requires replacement before this part of the economic system is complete.
+**Status:** Phase 1 economic-kernel ordering, the Dip Into Savings action model, economic submissions, readiness gating, and regression coverage are implemented. Population growth, planetary-income, research, mining, terraforming, and interest formulas remain provisional or require data-driven validation. Full beginning/economic/post-processing snapshots, queued fleet actions, and later fleet phases remain future work.
 
-The economic path applies population growth, refreshes planetary income using the resulting population, calculates interest from beginning-of-turn savings, commits one effective-income value, and then applies allocations, research, mining, and terraforming. The authoritative Dip Into Savings design is an action-phase selection with an immediate reversible savings adjustment and a locked amount applied to the following turn's effective income. Persistent pension-plan mode is the default, with a separate one-time option. The current implementation applies the dip at the wrong phase and must be replaced with separate pending/locked state. The dip is allowed to exceed current savings for now; the permitted-debt and bankruptcy limit remains a data-driven future rule. Population growth, planetary-income, research, mining, terraforming, and interest formulas remain provisional or require data-driven validation. Full beginning/economic/post-processing snapshots, queued actions, and later fleet phases remain future work. See the [data-driven implementation checklist](Missing_Implementation_List.md#data-driven-values-require-reverse-engineering).
+The economic path applies population growth, refreshes planetary income using the resulting population, calculates interest from beginning-of-turn savings, commits one effective-income value, and then applies allocations, research, mining, and terraforming. The Dip Into Savings action uses an immediate reversible savings adjustment and a locked amount applied during the following economic phase; persistent pension-plan mode is the default, with a separate one-time option. The dip is allowed to exceed current savings for now; the permitted-debt and bankruptcy limit remains a data-driven future rule. See the [data-driven implementation checklist](Missing_Implementation_List.md#data-driven-values-require-reverse-engineering).
+
+#### Phase 3: Native macOS UI Transition Assessment
+
+**Status:** Ready for a first UI spike; implementation not yet started.
+
+The repository currently contains no Objective-C++, AppKit, Xcode, or application-target scaffolding. The C++ core builds as a static library and exposes a mixture of direct C++ APIs, a legacy C API, and GameState C API extensions. Because macOS 10.14 Mojave support is a firm requirement, the native interface will use AppKit rather than SwiftUI; SwiftUI is not available on Mojave. A first native UI should use a thin Objective-C++ adapter that owns a `GameState`, translates stable value snapshots into UI-friendly models, and keeps internal C++ entities out of AppKit view/controller code. The first vertical slice should display the galaxy and selected planet/player information, edit economic choices, show readiness, and process a turn through the existing gate; fleet battles and broader ordered actions should remain outside the initial UI scope.
+
+#### Future Portability Policy
+
+The C++ game core and its versioned save format must remain platform-neutral so that later macOS, Linux, or Windows frontends can be added without changing game rules. Platform frameworks, windowing, event-loop code, filesystem conventions, and UI types belong only in replaceable platform adapters. UI boundaries should use value-oriented snapshots and validated commands rather than exposing raw core-object ownership, and serialization must use explicit, versioned fields rather than C++ object memory or pointers. CMake remains the common build system for the portable core; the current Objective-C++/AppKit layer is a macOS adapter, not part of the engine.
+
+RNG engine checkpoints now use a project-owned versioned little-endian binary state record rather than Boost's textual stream representation. Continuation tests verify that both the deterministic and AI engines produce identical subsequent values after restoration.
 
 ### Key Design Decisions
 

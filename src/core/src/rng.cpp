@@ -1,5 +1,110 @@
 #include "rng.h"
 #include <algorithm>
+#include <array>
+#include <limits>
+#include <sstream>
+
+namespace
+{
+constexpr std::array<uint8_t, 4> kRngStateMagic = {'O', 'H', 'R', '1'};
+constexpr uint32_t kRngStateVersion = 1;
+// Boost's mt19937_64 stream format contains 312 uint64_t values: the
+// position/state representation is carried in that fixed sequence.
+constexpr uint32_t kMt19937StateWords = 312;
+
+void append_u32(std::vector<uint8_t>& output, uint32_t value)
+{
+	for (size_t i = 0; i < sizeof(value); ++i)
+		output.push_back(static_cast<uint8_t>((value >> (i * 8)) & 0xffu));
+}
+
+void append_u64(std::vector<uint8_t>& output, uint64_t value)
+{
+	for (size_t i = 0; i < sizeof(value); ++i)
+		output.push_back(static_cast<uint8_t>((value >> (i * 8)) & 0xffu));
+}
+
+bool read_u32(const std::vector<uint8_t>& input, size_t& offset, uint32_t& value)
+{
+	if (offset > input.size() || input.size() - offset < sizeof(value))
+		return false;
+	value = 0;
+	for (size_t i = 0; i < sizeof(value); ++i)
+		value |= static_cast<uint32_t>(input[offset++]) << (i * 8);
+	return true;
+}
+
+bool read_u64(const std::vector<uint8_t>& input, size_t& offset, uint64_t& value)
+{
+	if (offset > input.size() || input.size() - offset < sizeof(value))
+		return false;
+	value = 0;
+	for (size_t i = 0; i < sizeof(value); ++i)
+		value |= static_cast<uint64_t>(input[offset++]) << (i * 8);
+	return true;
+}
+
+template <typename Engine>
+std::vector<uint8_t> serialize_engine(const Engine& engine)
+{
+	std::ostringstream stream;
+	stream << engine;
+	if (!stream)
+		return {};
+
+	std::istringstream state_stream(stream.str());
+	std::vector<uint64_t> state_words;
+	uint64_t word = 0;
+	while (state_stream >> word)
+		state_words.push_back(word);
+	if (!state_stream.eof() || state_words.size() != kMt19937StateWords)
+		return {};
+
+	std::vector<uint8_t> output;
+	output.insert(output.end(), kRngStateMagic.begin(), kRngStateMagic.end());
+	append_u32(output, kRngStateVersion);
+	append_u32(output, static_cast<uint32_t>(state_words.size()));
+	for (uint64_t state_word : state_words)
+		append_u64(output, state_word);
+	return output;
+}
+
+template <typename Engine>
+bool deserialize_engine(const std::vector<uint8_t>& data, Engine& engine)
+{
+	constexpr size_t header_size = kRngStateMagic.size() + sizeof(uint32_t) * 2;
+	if (data.size() < header_size)
+		return false;
+
+	for (size_t i = 0; i < kRngStateMagic.size(); ++i)
+	{
+		if (data[i] != kRngStateMagic[i])
+			return false;
+	}
+
+	size_t offset = kRngStateMagic.size();
+	uint32_t version = 0;
+	uint32_t word_count = 0;
+	if (!read_u32(data, offset, version) || !read_u32(data, offset, word_count) ||
+		version != kRngStateVersion || word_count != kMt19937StateWords ||
+		data.size() != header_size + static_cast<size_t>(word_count) * sizeof(uint64_t))
+		return false;
+
+	std::ostringstream state_stream;
+	for (uint32_t i = 0; i < word_count; ++i)
+	{
+		uint64_t state_word = 0;
+		if (!read_u64(data, offset, state_word))
+			return false;
+		if (i != 0)
+			state_stream << ' ';
+		state_stream << state_word;
+	}
+	std::istringstream input(state_stream.str());
+	input >> engine;
+	return static_cast<bool>(input) && offset == data.size();
+}
+}
 
 // ============================================================================
 // DeterministicRNG Implementation
@@ -177,41 +282,28 @@ double DeterministicRNG::nextAIDoubleRange(double min, double max)
 // ============================================================================
 std::vector<uint8_t> DeterministicRNG::serialize_ai_rng_state() const
 {
-	std::ostringstream oss;
-	oss << aiEngine;
-	const std::string& str = oss.str();
-	return std::vector<uint8_t>(str.begin(), str.end());
+	return serialize_engine(aiEngine);
 }
 
 void DeterministicRNG::deserialize_ai_rng_state(const std::vector<uint8_t>& data)
 {
-	std::string str(data.begin(), data.end());
-	std::istringstream iss(str);
-	iss >> aiEngine;
+	(void)deserialize_engine(data, aiEngine);
 }
 
 size_t DeterministicRNG::get_serialized_ai_rng_state_size()
 {
-	// MT19937-64 has 312 uint64_t values + 1 position index
-	// Text serialization is roughly 20-30 bytes per uint64_t
-	// Approximate size: ~10-15 KB for text serialization
-	// This is a rough estimate; actual size depends on the serialization format
-	return 15000;  // Conservative estimate
+	return kRngStateMagic.size() + sizeof(uint32_t) * 2 +
+	       static_cast<size_t>(kMt19937StateWords) * sizeof(uint64_t);
 }
 
 std::vector<uint8_t> DeterministicRNG::serialize_deterministic_rng_state() const
 {
-	std::ostringstream oss;
-	oss << deterministicEngine;
-	const std::string& str = oss.str();
-	return std::vector<uint8_t>(str.begin(), str.end());
+	return serialize_engine(deterministicEngine);
 }
 
 void DeterministicRNG::deserialize_deterministic_rng_state(const std::vector<uint8_t>& data)
 {
-	std::string str(data.begin(), data.end());
-	std::istringstream iss(str);
-	iss >> deterministicEngine;
+	(void)deserialize_engine(data, deterministicEngine);
 }
 
 

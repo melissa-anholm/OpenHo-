@@ -4,7 +4,7 @@ This document is the practical entry point for the OpenHo project. It explains t
 
 ## Current project state
 
-OpenHo is a native re-implementation of *Spaceward Ho!* with a C++17 game core and a planned native macOS interface. The current priority is a minimal, inspectable game loop rather than feature completeness.
+OpenHo is a native re-implementation of *Spaceward Ho!* with a C++17 game core and a planned native macOS interface. Mojave compatibility is a firm requirement, so the approved UI direction is AppKit through an Objective-C++ bridge rather than SwiftUI.
 
 The core currently has:
 
@@ -44,7 +44,7 @@ From the repository root:
 ./clean.sh
 ```
 
-`build.sh` builds the existing C++ core with CMake. It does not attempt to build the future Objective-C++ or SwiftUI layers, which do not yet exist in this checkout.
+`build.sh` builds the existing C++ core with CMake. It does not yet build the future Objective-C++/AppKit layer, which does not yet exist in this checkout.
 
 The smoke test must currently be run from the repository root because the core loads text assets through the relative `TextAssets/` path. A successful run reports that a minimal RANDOM-galaxy game advanced through three turns.
 

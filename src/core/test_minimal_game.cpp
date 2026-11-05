@@ -539,6 +539,10 @@ void test_rng_state_continuation()
     const std::vector<uint8_t> deterministic_state = original.serialize_deterministic_rng_state();
     const std::vector<uint8_t> ai_state = original.serialize_ai_rng_state();
 
+    assert(!deterministic_state.empty());
+    assert(deterministic_state.size() == DeterministicRNG::get_serialized_ai_rng_state_size());
+    assert(ai_state.size() == DeterministicRNG::get_serialized_ai_rng_state_size());
+
     DeterministicRNG restored(1234, 5678);
     restored.deserialize_deterministic_rng_state(deterministic_state);
     restored.deserialize_ai_rng_state(ai_state);

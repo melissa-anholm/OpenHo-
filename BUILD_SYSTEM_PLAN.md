@@ -52,8 +52,8 @@ src/macos/
 **CMakeLists.txt additions:**
 ```cmake
 # Enable Objective-C++
-enable_language(OBJC)
-set(CMAKE_OBJC_COMPILER clang)
+enable_language(OBJCXX)
+set(CMAKE_OBJCXX_COMPILER clang++)
 
 # Link against macOS frameworks
 target_link_libraries(OpenHoMacOS PUBLIC
@@ -72,67 +72,36 @@ cmake ..
 make -j$(sysctl -n hw.ncpu)
 ```
 
-### Phase 3b: SwiftUI Application
+### Phase 3b: Native AppKit Application
 
-**Build Tool:** Swift Package Manager (SPM)
-**Compiler:** Swift compiler (swiftc)
-**Output:** Executable macOS app (`OpenHo.app`)
+**Build Tool:** CMake 3.10+ (extended)
+**Compiler:** Clang with Objective-C++ support
+**Deployment target:** macOS 10.14 (Mojave) and later
+**Output:** Native macOS application (`OpenHo.app`)
+
+SwiftUI is intentionally not part of this plan: it is unavailable on macOS 10.14. If Swift is used later for non-UI utility code, it must not raise the application deployment target or become a requirement for the AppKit interface.
 
 ```
-macos-app/
-├── Package.swift           # SPM manifest
-├── Sources/
-│   └── OpenHo/
-│       ├── main.swift      # App entry point
-│       ├── ContentView.swift
-│       ├── GameViewController.swift
-│       ├── Models/
-│       ├── Views/
-│       └── ...
-└── Tests/
-    └── OpenHoTests/
+src/macos/
+├── CMakeLists.txt
+├── include/
+│   ├── OpenHoMacOS.h       # Objective-C++ bridge declarations
+│   └── GameBridge.h        # Stable UI-facing value/command boundary
+└── src/
+    ├── main.mm             # NSApplication entry point
+    ├── GameBridge.mm       # Owns and adapts GameState
+    ├── MainWindowController.mm
+    ├── GalaxyView.mm
+    └── PlanetInspectorViewController.mm
 ```
 
-**Package.swift structure:**
-```swift
-// swift-tools-version:5.5
-import PackageDescription
-
-let package = Package(
-    name: "OpenHo",
-    platforms: [
-        .macOS(.v10_14)
-    ],
-    products: [
-        .executable(name: "OpenHo", targets: ["OpenHo"])
-    ],
-    targets: [
-        .executableTarget(
-            name: "OpenHo",
-            dependencies: ["OpenHoMacOS"],
-            swiftSettings: [
-                .unsafeFlags(["-suppress-warnings"])
-            ]
-        ),
-        // Bridge target linking C++ libraries
-        .target(
-            name: "OpenHoMacOS",
-            dependencies: [],
-            linkerSettings: [
-                .linkedLibrary("OpenHoCore"),
-                .linkedLibrary("OpenHoMacOS"),
-                .linkedFramework("Foundation"),
-                .linkedFramework("AppKit")
-            ]
-        )
-    ]
-)
-```
+The bridge should expose immutable UI snapshots and validated commands. AppKit view and controller code must not retain raw pointers to C++ domain objects.
 
 **Build process:**
 ```bash
-cd macos-app
-swift build -c release
+cd src/macos/build
+cmake .. -DCMAKE_OSX_DEPLOYMENT_TARGET=10.14
+make -j$(sysctl -n hw.ncpu)
 ```
 
 ## Master Build Script
@@ -170,13 +139,15 @@ if [ -d "src/macos" ]; then
     echo -e "${GREEN}✓ Objective-C++ Bridge built${NC}"
 fi
 
-# Phase 3b: Build SwiftUI Application (if exists)
-if [ -d "macos-app" ]; then
-    echo -e "${BLUE}Building SwiftUI Application...${NC}"
-    cd macos-app
-    swift build -c release
-    cd ..
-    echo -e "${GREEN}✓ SwiftUI Application built${NC}"
+# Phase 3b: Build native AppKit application (if exists)
+if [ -d "src/macos" ]; then
+    echo -e "${BLUE}Building native AppKit application...${NC}"
+    mkdir -p src/macos/build
+    cd src/macos/build
+    cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.14
+    make -j$(sysctl -n hw.ncpu)
+    cd ../../..
+    echo -e "${GREEN}✓ Native AppKit application built${NC}"
 fi
 
 echo -e "${GREEN}Build complete!${NC}"
@@ -197,8 +168,9 @@ echo -e "${GREEN}Build complete!${NC}"
   - Objective-C runtime
 
 ### Phase 3b Dependencies
-- **Swift Standard Library** - Included with Swift compiler
-- **SwiftUI** - Included with macOS 10.14+
+- **Foundation** - Included with macOS
+- **AppKit** - Included with macOS 10.14+
+- **Objective-C runtime** - Included with the system toolchain
 
 ## Build Configurations
 
@@ -209,7 +181,8 @@ cmake .. -DCMAKE_BUILD_TYPE=Debug
 make
 
 # Phase 3b
-swift build
+cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_OSX_DEPLOYMENT_TARGET=10.14
+make
 ```
 
 ### Release Build
@@ -219,7 +192,8 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 make
 
 # Phase 3b
-swift build -c release
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.14
+make
 ```
 
 ### Optimized Build
@@ -229,7 +203,8 @@ cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-O3"
 make
 
 # Phase 3b
-swift build -c release -Xswiftc -Osize
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.14 -DCMAKE_CXX_FLAGS="-O3"
+make
 ```
 
 ## Clean and Rebuild
@@ -247,7 +222,6 @@ swift build -c release -Xswiftc -Osize
 #!/bin/bash
 rm -rf src/core/build
 rm -rf src/macos/build
-rm -rf macos-app/.build
 echo "Clean complete"
 ```
 
@@ -266,10 +240,10 @@ cd src/core/build
 ctest
 ```
 
-### Phase 3b: Swift Unit Tests
+### Phase 3b: Native UI Tests
 ```bash
-cd macos-app
-swift test
+cd src/macos/build
+ctest
 ```
 
 ## Continuous Integration
@@ -300,10 +274,10 @@ After successful build, the application can be installed:
 
 ```bash
 # Copy to Applications folder
-cp -r macos-app/.build/release/OpenHo.app /Applications/
+cp -r src/macos/build/OpenHo.app /Applications/
 
 # Or create a symlink for development
-ln -s $(pwd)/macos-app/.build/release/OpenHo.app /Applications/OpenHo
+ln -s $(pwd)/src/macos/build/OpenHo.app /Applications/OpenHo
 ```
 
 ## Development Workflow
@@ -311,7 +285,7 @@ ln -s $(pwd)/macos-app/.build/release/OpenHo.app /Applications/OpenHo
 1. **Edit code** in any editor (VS Code, Vim, etc.)
 2. **Build** with `./build.sh` or individual phase builds
 3. **Test** with `./test.sh`
-4. **Run** with `./macos-app/.build/release/OpenHo.app/Contents/MacOS/OpenHo`
+4. **Run** with `./src/macos/build/OpenHo.app/Contents/MacOS/OpenHo`
 5. **Debug** with `lldb` command-line debugger
 
 ## Debugging
@@ -324,18 +298,23 @@ make
 lldb ./libOpenHoCore.a
 ```
 
-### Debug Swift Application
+### Debug Native AppKit Application
 ```bash
-cd macos-app
-swift build
-lldb .build/debug/OpenHo
+cd src/macos/build
+cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_OSX_DEPLOYMENT_TARGET=10.14
+make
+lldb ./OpenHo.app/Contents/MacOS/OpenHo
 ```
 
 ## Cross-Platform Considerations
 
-This build system is designed for macOS but could be extended to support:
-- **Linux:** Use same CMake/Swift build process
-- **Windows:** Requires MSVC compiler and different framework linking
+The C++ core is intended to remain portable across macOS, Linux, and Windows. Future ports should add a platform adapter and UI target rather than introducing platform frameworks into `src/core`:
+
+- **macOS:** Objective-C++ and AppKit, with macOS-specific filesystem and application-lifecycle code confined to `src/macos`.
+- **Linux:** A future adapter/UI target using a framework selected when the port is undertaken; the core can continue to use CMake.
+- **Windows:** A future adapter/UI target using a framework selected when the port is undertaken; the core can continue to use CMake with the appropriate compiler.
+
+The core/public boundary should exchange value-oriented snapshots and validated commands. It should not expose UI objects, platform handles, or ownership of internal domain objects to a frontend. The save format must remain an explicit, versioned, checksum-protected format independent of C++ object layout, pointers, host endianness, or platform-specific paths.
 
 ## Future Enhancements
 
