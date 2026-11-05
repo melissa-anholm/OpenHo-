@@ -3,7 +3,7 @@
 
 #include <cstdint>
 #include <vector>
-#include "knowledge_planet.h"
+#include "planet_view.h"
 
 // ============================================================================
 // Forward Declarations
@@ -11,7 +11,7 @@
 
 typedef int32_t PlayerID;
 
-class Galaxy;
+struct Galaxy;
 class Planet;
 class Player;
 
@@ -19,36 +19,32 @@ class Player;
 // KnowledgeGalaxy Class
 // ============================================================================
 
-// Player's knowledge of the galaxy
-// Contains KnowledgePlanets representing the player's view of each planet
-// Primarily self-sufficient for validation; can reference real galaxy if needed
+// Temporary player-view compatibility facade.
+// Planet owns the PlanetView records; this class delegates lookups and keeps
+// the current fleet-transit compatibility behavior until query APIs exist.
 class KnowledgeGalaxy
 {
 private:
-	const Galaxy* real_galaxy;  // Reference to the real galaxy (for edge cases)
-	std::vector<KnowledgePlanet> knowledge_planets;  // Player's knowledge of each planet (indexed by planet_id)
+	Galaxy* real_galaxy;  // Reference to the real galaxy (for compatibility queries)
 	std::vector<std::vector<double>> distance_matrix;  // Local copy of distance matrix for O(1) access
 	PlayerID player_id;
 	
 	// Space planets for holding in-transit fleets
 	Planet* space_real_planet;  // Virtual planet owned by this KnowledgeGalaxy
-	KnowledgePlanet* space_knowledge_planet;  // Player's knowledge view of the space planet
+	PlanetView* space_planet_view;  // Player's view of the virtual transit planet
 
 public:
-	// Constructor - initializes with partial info for all planets
-	KnowledgeGalaxy(const Galaxy& galaxy, PlayerID player_id);
+	// Constructor - ensures this player's PlanetView exists for every planet
+	KnowledgeGalaxy(Galaxy& galaxy, PlayerID player_id);
 	
 	// Destructor - cleans up space_real_planet
 	~KnowledgeGalaxy();
 	
 	// Accessors
-	KnowledgePlanet* get_planet(uint32_t planet_id);
-	const KnowledgePlanet* get_planet(uint32_t planet_id) const;
+	PlanetView* get_planet(uint32_t planet_id);
+	const PlanetView* get_planet(uint32_t planet_id) const;
 	
-	size_t get_planet_count() const { return knowledge_planets.size(); }
-	
-	// Update player's knowledge of a planet
-	void observe_planet(uint32_t planet_id, const Planet& real_planet, const Player* observer, int32_t current_year);
+	size_t get_planet_count() const;
 	
 	// Access to real galaxy (for edge cases)
 	const Planet* get_real_planet(uint32_t planet_id) const;
@@ -62,8 +58,8 @@ public:
 	Planet* get_space_real_planet() { return space_real_planet; }
 	const Planet* get_space_real_planet() const { return space_real_planet; }
 	
-	KnowledgePlanet* get_space_knowledge_planet() { return space_knowledge_planet; }
-	const KnowledgePlanet* get_space_knowledge_planet() const { return space_knowledge_planet; }
+	PlanetView* get_space_knowledge_planet() { return space_planet_view; }
+	const PlanetView* get_space_knowledge_planet() const { return space_planet_view; }
 };
 
 #endif // OPENHO_KNOWLEDGE_GALAXY_H

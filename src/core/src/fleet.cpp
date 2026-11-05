@@ -101,11 +101,5 @@ void Fleet::move_to(Planet* destination, KnowledgeGalaxy* knowledge_galaxy, uint
 	{
 		current_planet = space_planet;
 		
-		// Add fleet to space knowledge planet's fleet list
-		KnowledgePlanet* space_knowledge = knowledge_galaxy->get_space_knowledge_planet();
-		if (space_knowledge)
-		{
-			space_knowledge->add_my_fleet(this);
 		}
-	}
 }

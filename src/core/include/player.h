@@ -3,7 +3,7 @@
 
 #include "planet.h"
 #include "colonized_planet.h"
-#include "knowledge_planet.h"
+#include "planet_view.h"
 #include "knowledge_galaxy.h"
 #include "ship_design.h"
 #include "fleet.h"

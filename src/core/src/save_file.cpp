@@ -414,12 +414,37 @@ std::vector<uint8_t> encode_runtime_payload(const RuntimeCheckpointPayload& chec
     append_integer<uint32_t>(output, static_cast<uint32_t>(checkpoint.planets.size()));
     for (const auto& planet : checkpoint.planets)
     {
-        if (!std::isfinite(planet.true_temperature))
+        if (!std::isfinite(planet.true_temperature) || planet.views.size() > 100)
             return {};
         append_integer<uint32_t>(output, planet.id);
         append_signed<int32_t>(output, planet.owner);
         append_double(output, planet.true_temperature);
         append_signed<int32_t>(output, planet.metal);
+        if (planet.nova_state < PLANET_NORMAL || planet.nova_state > PLANET_DESTROYED)
+            return {};
+        append_signed<int32_t>(output, planet.nova_state);
+        append_integer<uint32_t>(output, static_cast<uint32_t>(planet.views.size()));
+        for (const auto& view : planet.views)
+        {
+            if (!std::isfinite(view.apparent_temperature) ||
+                !std::isfinite(view.funding_fraction) ||
+                !std::isfinite(view.mining_fraction) ||
+                !std::isfinite(view.terraforming_fraction))
+                return {};
+            append_integer<uint32_t>(output, view.observer_id);
+            append_double(output, view.apparent_temperature);
+            append_bool(output, view.has_observed_gravity);
+            append_signed<int32_t>(output, view.metal);
+            append_signed<int32_t>(output, view.apparent_owner);
+            append_signed<int32_t>(output, view.apparent_population);
+            append_signed<int32_t>(output, view.observation_year);
+            append_signed<int32_t>(output, view.income);
+            append_double(output, view.funding_fraction);
+            append_double(output, view.mining_fraction);
+            append_double(output, view.terraforming_fraction);
+            append_signed<int32_t>(output, view.can_be_profitable);
+            append_signed<int32_t>(output, view.perceived_value);
+        }
     }
 
     append_integer<uint32_t>(output, static_cast<uint32_t>(checkpoint.players.size()));
@@ -495,11 +520,35 @@ bool decode_runtime_payload(const std::vector<uint8_t>& payload,
     parsed.planets.resize(planet_count);
     for (auto& planet : parsed.planets)
     {
-        if (!read_integer(payload, offset, planet.id) ||
-            !read_signed<int32_t>(payload, offset, planet.owner) ||
-            !read_double(payload, offset, planet.true_temperature) ||
-            !read_signed<int32_t>(payload, offset, planet.metal))
+            if (!read_integer(payload, offset, planet.id) ||
+                !read_signed<int32_t>(payload, offset, planet.owner) ||
+                !read_double(payload, offset, planet.true_temperature) ||
+                !read_signed<int32_t>(payload, offset, planet.metal) ||
+                !read_signed<int32_t>(payload, offset, planet.nova_state) ||
+                planet.nova_state < PLANET_NORMAL || planet.nova_state > PLANET_DESTROYED)
             return false;
+
+        uint32_t view_count = 0;
+        if (!read_integer(payload, offset, view_count) || view_count > 100)
+            return false;
+        planet.views.resize(view_count);
+        for (auto& view : planet.views)
+        {
+            if (!read_integer(payload, offset, view.observer_id) ||
+                !read_double(payload, offset, view.apparent_temperature) ||
+                !read_bool(payload, offset, view.has_observed_gravity) ||
+                !read_signed<int32_t>(payload, offset, view.metal) ||
+                !read_signed<int32_t>(payload, offset, view.apparent_owner) ||
+                !read_signed<int32_t>(payload, offset, view.apparent_population) ||
+                !read_signed<int32_t>(payload, offset, view.observation_year) ||
+                !read_signed<int32_t>(payload, offset, view.income) ||
+                !read_double(payload, offset, view.funding_fraction) ||
+                !read_double(payload, offset, view.mining_fraction) ||
+                !read_double(payload, offset, view.terraforming_fraction) ||
+                !read_signed<int32_t>(payload, offset, view.can_be_profitable) ||
+                !read_signed<int32_t>(payload, offset, view.perceived_value))
+                return false;
+        }
     }
 
     uint32_t player_count = 0;

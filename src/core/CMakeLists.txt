@@ -30,8 +30,8 @@ set(CORE_SOURCES
 	src/game_setup.cpp
 	src/player.cpp
 	src/planet.cpp
+	src/planet_view.cpp
 	src/colonized_planet.cpp
-	src/knowledge_planet.cpp
 	src/knowledge_galaxy.cpp
 	src/fleet.cpp
 	src/text_assets.cpp

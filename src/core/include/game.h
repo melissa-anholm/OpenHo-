@@ -92,12 +92,23 @@ public:
 	double get_player_ideal_temperature(uint32_t player_id) const;
 	double get_player_ideal_gravity(uint32_t player_id) const;
 	
-	// Player public information management
+		// Player public information management
 	/// Capture current player info and distribute to all players
 	void capture_and_distribute_player_public_info();
 	
 	/// Get full player info history (for resync after disconnection)
-	[[nodiscard]] const std::vector<PlayerPublicInfo>& get_full_player_info_history(uint32_t player_id) const;
+		[[nodiscard]] const std::vector<PlayerPublicInfo>& get_full_player_info_history(uint32_t player_id) const;
+
+		// Player-specific PlanetView observation events and refresh infrastructure.
+		[[nodiscard]] bool set_obs_lost_battle_quickly(
+			uint32_t player_id, uint32_t planet_id, PlayerID apparent_owner);
+		[[nodiscard]] bool set_obs_lost_battle_eventually(
+			uint32_t player_id, uint32_t planet_id);
+		[[nodiscard]] bool set_obs_friendly_ship_visit(
+			uint32_t player_id, uint32_t planet_id);
+		[[nodiscard]] bool set_obs_fullcolony(
+			uint32_t player_id, uint32_t planet_id);
+		void refresh_player_planet_views();
 	
 	// Ship design management - use Player methods directly
 	// Player::create_ship_design(), Player::get_ship_design(), Player::get_ship_designs(), Player::delete_ship_design()
@@ -224,7 +235,7 @@ private:
 	
 	std::vector<Player> initialize_players(const std::vector<PlayerSetup>& player_setups);
 	std::unique_ptr<Galaxy> initialize_galaxy(const GalaxyGenerationParams& params);
-	void initialize_player_knowledge();
+		void initialize_player_knowledge();
 	void build_entity_maps(const Galaxy& galaxy_ref);
 
 	// Assign suitable planets to players based on their starting colony quality

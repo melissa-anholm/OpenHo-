@@ -1,90 +1,68 @@
 #include "knowledge_galaxy.h"
 #include "galaxy.h"
 #include "planet.h"
-#include "player.h"
 #include "game_constants.h"
 
-// ============================================================================
-// KnowledgeGalaxy Implementation
-// ============================================================================
-KnowledgeGalaxy::KnowledgeGalaxy(const Galaxy& galaxy, PlayerID player_id)
-	: real_galaxy(&galaxy),
-	  player_id(player_id)
+KnowledgeGalaxy::KnowledgeGalaxy(Galaxy& galaxy, PlayerID observer_id)
+    : real_galaxy(&galaxy),
+      distance_matrix(galaxy.distance_matrix),
+      player_id(observer_id),
+      space_real_planet(nullptr),
+      space_planet_view(nullptr)
 {
-	// Initialize KnowledgePlanets for all planets in the galaxy
-	// Start with partial info (id, name, coordinates only)
-	knowledge_planets.reserve(galaxy.planets.size());
-	for (const auto& planet : galaxy.planets) 
-		{ knowledge_planets.emplace_back(planet, player_id); }
-	
-	// Copy distance matrix from Galaxy for O(1) local access
-	// No network latency for distance queries
-	distance_matrix = galaxy.distance_matrix;
-	
-	// Create virtual space planet for holding in-transit fleets
-	// Each player gets their own space planet to prevent cross-player conflicts
-	// Use INT32_MAX for coordinates to ensure they cannot conflict with real planets
-	space_real_planet = new Planet(
-		UINT32_MAX,                           // Special ID for space planet
-		"Transit",                            // Name
-		static_cast<double>(INT32_MAX),       // x coordinate (unreachable)
-		static_cast<double>(INT32_MAX),       // y coordinate (unreachable)
-		1.0,                                  // true_gravity (neutral)
-		GameConstants::best_perceived_temperature_K,  // true_temperature
-		0,                                    // metal
-		player_id  );                         // owner (assigned to this player)
-	
-	// Create knowledge planet for the space planet
-	// This represents the player's knowledge view of the space planet
-	space_knowledge_planet = new KnowledgePlanet(*space_real_planet, player_id);
+    // Planet owns the persistent observer-specific snapshot. This facade only
+    // ensures that the current observer has a view record for every planet.
+    for (auto& planet : galaxy.planets)
+        planet.get_or_create_view(observer_id);
+
+    space_real_planet = new Planet(
+        UINT32_MAX,
+        "Transit",
+        static_cast<double>(INT32_MAX),
+        static_cast<double>(INT32_MAX),
+        1.0,
+        GameConstants::best_perceived_temperature_K,
+        0,
+        observer_id);
+    space_planet_view = new PlanetView(*space_real_planet, observer_id);
 }
 
 KnowledgeGalaxy::~KnowledgeGalaxy()
 {
-	// Clean up the space planets
-	delete space_knowledge_planet;
-	space_knowledge_planet = nullptr;
-	
-	delete space_real_planet;
-	space_real_planet = nullptr;
+    delete space_planet_view;
+    space_planet_view = nullptr;
+
+    delete space_real_planet;
+    space_real_planet = nullptr;
 }
 
-KnowledgePlanet* KnowledgeGalaxy::get_planet(uint32_t planet_id)
+PlanetView* KnowledgeGalaxy::get_planet(uint32_t planet_id)
 {
-	if (planet_id < knowledge_planets.size()) 
-	{
-		return &knowledge_planets[planet_id];
-	}
-	return nullptr;
+    if (!real_galaxy || planet_id >= real_galaxy->planets.size())
+        return nullptr;
+    return real_galaxy->planets[planet_id].get_view(player_id);
 }
 
-const KnowledgePlanet* KnowledgeGalaxy::get_planet(uint32_t planet_id) const
+const PlanetView* KnowledgeGalaxy::get_planet(uint32_t planet_id) const
 {
-	if (planet_id < knowledge_planets.size()) 
-	{
-		return &knowledge_planets[planet_id];
-	}
-	return nullptr;
+    if (!real_galaxy || planet_id >= real_galaxy->planets.size())
+        return nullptr;
+    return real_galaxy->planets[planet_id].get_view(player_id);
 }
 
-void KnowledgeGalaxy::observe_planet(uint32_t planet_id, const Planet& real_planet, const Player* observer, int32_t current_year)
+size_t KnowledgeGalaxy::get_planet_count() const
 {
-	if (planet_id < knowledge_planets.size()) 
-	{
-		knowledge_planets[planet_id].observe_planet(real_planet, observer, current_year);
-	}
+    return real_galaxy ? real_galaxy->planets.size() : 0;
 }
 
 const Planet* KnowledgeGalaxy::get_real_planet(uint32_t planet_id) const
 {
-	if (real_galaxy && planet_id < real_galaxy->planets.size()) 
-	{
-		return &real_galaxy->planets[planet_id];
-	}
-	return nullptr;
+    if (!real_galaxy || planet_id >= real_galaxy->planets.size())
+        return nullptr;
+    return &real_galaxy->planets[planet_id];
 }
 
 double KnowledgeGalaxy::get_distance(uint32_t from_id, uint32_t to_id) const
 {
-	return distance_matrix.at(from_id).at(to_id);
+    return distance_matrix.at(from_id).at(to_id);
 }

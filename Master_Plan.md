@@ -1,6 +1,6 @@
 # OpenHo Master Plan
 
-**Last Updated:** November 2, 2026 (Append-only save architecture)
+**Last Updated:** November 5, 2026 (PlanetView checkpoint persistence)
 **Project Status:** Phase 2 - Minimal playable game first; feature completeness follows incrementally
 
 ---
@@ -100,6 +100,20 @@ The economic path applies population growth, refreshes planetary income using th
 - Player holds a pointer to GameState for fleet ID allocation.
 - Player keeps internal bookkeeping opaque to the UI.
 - GameState coordinates public validation and state transitions; Player owns player-specific fleet and ship-design operations, with validation responsibilities currently split between the two layers.
+
+**PlanetView Ownership Refactor (Approved November 4, 2026):**
+- `Planet` remains the authoritative physical planet owned by `Galaxy`.
+- Each `Planet` owns a mapping from stable `PlayerID` values to `PlanetView` records.
+- `PlanetView` contains observer-specific, potentially stale knowledge and does not own or contain a `ColonizedPlanet`.
+- The authoritative colony record remains the `ColonizedPlanet` stored in the owning `Player`.
+- The former `KnowledgePlanet` class has been removed. `KnowledgeGalaxy` currently remains as a temporary compatibility facade over Planet-owned views; individual-planet and whole-galaxy player-view query APIs remain future work.
+
+**PlanetView Checkpoint Persistence (Approved November 5, 2026):**
+- Each planet's runtime checkpoint record stores its observer-specific `PlanetView` snapshots alongside the planet's other mutable state.
+- Snapshot scalar fields are serialized and restored; identity/geometry fields are reconstructed from the authoritative `Planet` and observer ID.
+- Gravity knowledge is represented by a Boolean because true gravity is immutable; the gravity value itself is derived from the authoritative planet once observed.
+- Nova state belongs to the authoritative planet and is serialized in the planet runtime record, not in `PlanetView`.
+- Fleet information is not part of `PlanetView`; fleet presence and fleet observations belong to the separate fleet/observation systems.
 
 **Validation Pattern:**
 - game_can_player_X() - Check validity (returns ErrorCode)

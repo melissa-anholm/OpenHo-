@@ -236,6 +236,56 @@ void test_savings_rate_modifier()
     assert(GameFormulas::calculate_money_interest(-100, player.get_savings_rate_modifier()) == -15);
 }
 
+void test_planet_view_observation_precedence()
+{
+    auto game = create_two_player_game();
+    const uint32_t observer_id = 1;
+    const uint32_t owned_planet_id = game->get_player(observer_id)->get_colonized_planets().front().get_id();
+    Planet* owned_planet = game->get_planet(owned_planet_id);
+    assert(owned_planet != nullptr);
+
+    uint32_t unowned_planet_id = 0;
+    for (const Planet& planet : game->get_galaxy().planets)
+    {
+        if (planet.owner == 0)
+        {
+            unowned_planet_id = planet.id;
+            break;
+        }
+    }
+    assert(unowned_planet_id != 0);
+
+    // A quickly lost battle can report an explicitly supplied, incorrect owner.
+    assert(game->set_obs_lost_battle_quickly(observer_id, unowned_planet_id, 2));
+    Planet* unowned_planet = game->get_planet(unowned_planet_id);
+    assert(unowned_planet != nullptr);
+    PlanetView* view = unowned_planet->get_view(observer_id);
+    assert(view != nullptr);
+    assert(view->apparent_owner == 2);
+    assert(view->observation_year == game->get_current_year());
+
+    // Later event types may only report authoritative planet data.
+    assert(game->set_obs_lost_battle_eventually(observer_id, unowned_planet_id));
+    assert(view->apparent_owner == 0);
+    assert(view->apparent_population == 0);
+    assert(game->set_obs_friendly_ship_visit(observer_id, unowned_planet_id));
+    assert(view->metal == unowned_planet->metal);
+
+    // Owned-colony knowledge has precedence over any weaker observation.
+    assert(game->set_obs_fullcolony(observer_id, owned_planet_id));
+    view = owned_planet->get_view(observer_id);
+    assert(view != nullptr);
+    assert(view->apparent_owner == static_cast<PlayerID>(observer_id));
+    assert(view->income == game->get_player(observer_id)->get_colonized_planets().front().get_income());
+
+    // A planet with no current observation source retains its last observation.
+    const int32_t last_observation_year = unowned_planet->get_view(observer_id)->observation_year;
+    assert(game->mark_player_turn_ready(1) == ErrorCode::SUCCESS);
+    assert(game->mark_player_turn_ready(2) == ErrorCode::SUCCESS);
+    game->process_turn();
+    assert(unowned_planet->get_view(observer_id)->observation_year == last_observation_year);
+}
+
 void test_append_only_save_file()
 {
     auto game = create_two_player_game();
@@ -266,6 +316,22 @@ void test_append_only_save_file()
     game->get_players().back().set_eliminated(true);
     game->get_galaxy().planets.front().true_temperature += 12.5;
     game->get_galaxy().planets.front().metal -= 3;
+    game->get_galaxy().planets.front().nova_state = PLANET_WARNING;
+    uint32_t observed_planet_id = 0;
+    for (const Planet& planet : game->get_galaxy().planets)
+    {
+        if (planet.owner == 0)
+        {
+            observed_planet_id = planet.id;
+            break;
+        }
+    }
+    assert(observed_planet_id != 0);
+    assert(game->set_obs_lost_battle_quickly(1, observed_planet_id, 2));
+    Planet* observed_planet = game->get_planet(observed_planet_id);
+    assert(observed_planet != nullptr);
+    observed_planet->get_or_create_view(1).income = 12345;
+    observed_planet->get_or_create_view(1).has_observed_gravity = true;
     const std::vector<uint8_t> runtime_payload = game->serialize_state();
     assert(!runtime_payload.empty());
     RuntimeCheckpointPayload decoded_runtime;
@@ -289,6 +355,15 @@ void test_append_only_save_file()
            game->get_galaxy().planets.front().true_temperature);
     assert(restored_game->get_galaxy().planets.front().metal ==
            game->get_galaxy().planets.front().metal);
+    assert(restored_game->get_galaxy().planets.front().nova_state == PLANET_WARNING);
+    const Planet* restored_observed_planet = restored_game->get_planet(observed_planet_id);
+    assert(restored_observed_planet != nullptr);
+    const PlanetView* restored_view = restored_observed_planet->get_view(1);
+    assert(restored_view != nullptr);
+    assert(restored_view->apparent_owner == 2);
+    assert(restored_view->observation_year == game->get_current_year());
+    assert(restored_view->income == 12345);
+    assert(restored_view->has_observed_gravity);
 
     const std::string path = "/tmp/openho_save_file_test.save";
     const std::vector<uint8_t> definition = definition_payload;
@@ -368,6 +443,7 @@ int main()
 	 test_dip_and_turn_processing();
 	 test_ship_construction();
 	 test_savings_rate_modifier();
+	 test_planet_view_observation_precedence();
 	 test_append_only_save_file();
 	 test_rng_state_continuation();
     std::cout << "Gameplay regression scenarios passed.\n";

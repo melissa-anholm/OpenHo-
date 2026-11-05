@@ -323,11 +323,14 @@ void GameState::process_turn()
 	apply_dip_into_savings();
 	process_money_allocation();
 	process_research();
-	process_planets();
-	process_ships();
-	process_novae();
-	
-	increment_turn();
+		process_planets();
+		process_ships();
+		process_novae();
+		// Refresh views once, after queued fleet effects and colonization
+		// processing have settled and before the next player-action phase.
+		refresh_player_planet_views();
+		
+		increment_turn();
 	increment_year();
 
 	for (auto& ready : turn_ready)
@@ -387,10 +390,30 @@ std::vector<uint8_t> GameState::serialize_state() const
 	{
 		RuntimePlanetState state;
 		state.id = planet.id;
-		state.owner = planet.owner;
-		state.true_temperature = planet.true_temperature;
-		state.metal = planet.metal;
-		checkpoint.planets.push_back(state);
+			state.owner = planet.owner;
+			state.true_temperature = planet.true_temperature;
+			state.metal = planet.metal;
+			state.nova_state = static_cast<int32_t>(planet.nova_state);
+			state.views.reserve(planet.Views.size());
+			for (const auto& [observer_id, view] : planet.Views)
+			{
+				RuntimePlanetState::View view_state;
+				view_state.observer_id = static_cast<uint32_t>(observer_id);
+				view_state.apparent_temperature = view.apparent_temperature;
+				view_state.has_observed_gravity = view.has_observed_gravity;
+				view_state.metal = view.metal;
+				view_state.apparent_owner = view.apparent_owner;
+				view_state.apparent_population = view.apparent_population;
+				view_state.observation_year = view.observation_year;
+				view_state.income = view.income;
+				view_state.funding_fraction = view.funding_fraction;
+				view_state.mining_fraction = view.mining_fraction;
+				view_state.terraforming_fraction = view.terraforming_fraction;
+				view_state.can_be_profitable = view.can_be_profitable;
+				view_state.perceived_value = view.perceived_value;
+				state.views.push_back(std::move(view_state));
+			}
+			checkpoint.planets.push_back(state);
 	}
 
 	checkpoint.players.reserve(players.size());
@@ -467,14 +490,22 @@ bool GameState::deserialize_state(const std::vector<uint8_t>& data)
 
 	std::unordered_map<uint32_t, size_t> owned_planet_counts;
 	std::unordered_map<uint32_t, int32_t> saved_populations;
-	for (const auto& state : checkpoint.planets)
-	{
-		Planet* planet = get_planet(state.id);
-		if (!planet || (state.owner != NOT_OWNED && saved_players.find(state.owner) == saved_players.end()))
-			return false;
-		if (state.owner != NOT_OWNED)
-			++owned_planet_counts[static_cast<uint32_t>(state.owner)];
-	}
+		for (const auto& state : checkpoint.planets)
+		{
+			Planet* planet = get_planet(state.id);
+			if (!planet || (state.owner != NOT_OWNED && saved_players.find(state.owner) == saved_players.end()))
+				return false;
+			if (state.owner != NOT_OWNED)
+				++owned_planet_counts[static_cast<uint32_t>(state.owner)];
+
+			std::unordered_set<uint32_t> observer_ids;
+			for (const auto& view : state.views)
+			{
+				if (!observer_ids.insert(view.observer_id).second ||
+					saved_players.find(view.observer_id) == saved_players.end())
+					return false;
+			}
+		}
 	for (const auto& player_state : checkpoint.players)
 	{
 		if (player_state.technology_levels[0] < 0 || player_state.technology_levels[1] < 0 ||
@@ -502,12 +533,32 @@ bool GameState::deserialize_state(const std::vector<uint8_t>& data)
 	for (auto& planet : galaxy->planets)
 	{
 		const RuntimePlanetState& state = *saved_planets.at(planet.id);
-		planet.owner = state.owner;
-		planet.true_temperature = state.true_temperature;
-		planet.metal = state.metal;
+			planet.owner = state.owner;
+			planet.true_temperature = state.true_temperature;
+			planet.metal = state.metal;
+			planet.nova_state = static_cast<PlanetNovaState>(state.nova_state);
 		const auto population_it = saved_populations.find(planet.id);
-		planet.population = population_it == saved_populations.end() ? 0 : population_it->second;
-	}
+			planet.population = population_it == saved_populations.end() ? 0 : population_it->second;
+			planet.Views.clear();
+			const RuntimePlanetState& saved_state = state;
+			for (const auto& saved_view : saved_state.views)
+			{
+				PlanetView& view = planet.get_or_create_view(
+					static_cast<PlayerID>(saved_view.observer_id));
+				view.apparent_temperature = saved_view.apparent_temperature;
+				view.has_observed_gravity = saved_view.has_observed_gravity;
+				view.metal = saved_view.metal;
+				view.apparent_owner = saved_view.apparent_owner;
+				view.apparent_population = saved_view.apparent_population;
+				view.observation_year = saved_view.observation_year;
+				view.income = saved_view.income;
+				view.funding_fraction = saved_view.funding_fraction;
+				view.mining_fraction = saved_view.mining_fraction;
+				view.terraforming_fraction = saved_view.terraforming_fraction;
+				view.can_be_profitable = saved_view.can_be_profitable;
+				view.perceived_value = saved_view.perceived_value;
+			}
+		}
 
 	for (auto& player : players)
 	{
@@ -1764,35 +1815,91 @@ void GameState::initialize_player_knowledge()
 		// Create KnowledgeGalaxy for this player
 		player.knowledge_galaxy = new KnowledgeGalaxy(*galaxy, player.id);
 		
-		// Find this player's homeworld
-		// The homeworld is the first (and only) colonized planet at game start
-		if (!player.colonized_planets.empty())
+		}
+		
+	refresh_player_planet_views();
+	std::cout << "Successfully initialized KnowledgeGalaxy for all " << players.size() << " players.\n";
+}
+
+bool GameState::set_obs_lost_battle_quickly(uint32_t player_id,
+                                            uint32_t planet_id,
+                                            PlayerID apparent_owner)
+{
+	Player* player = get_player(player_id);
+	Planet* planet = get_planet(planet_id);
+	if (!player || !planet)
+		return false;
+	planet->get_or_create_view(static_cast<PlayerID>(player_id))
+		.set_obs_lost_battle_quickly(apparent_owner, static_cast<int32_t>(current_year));
+	return true;
+}
+
+bool GameState::set_obs_lost_battle_eventually(uint32_t player_id, uint32_t planet_id)
+{
+	Player* player = get_player(player_id);
+	Planet* planet = get_planet(planet_id);
+	if (!player || !planet)
+		return false;
+	planet->get_or_create_view(static_cast<PlayerID>(player_id))
+		.set_obs_lost_battle_eventually(*planet, static_cast<int32_t>(current_year));
+	return true;
+}
+
+
+bool GameState::set_obs_friendly_ship_visit(uint32_t player_id, uint32_t planet_id)
+
+{
+	Player* player = get_player(player_id);
+	Planet* planet = get_planet(planet_id);
+	if (!player || !planet)
+		return false;
+	planet->get_or_create_view(static_cast<PlayerID>(player_id))
+		.set_obs_friendly_ship_visit(*planet, static_cast<int32_t>(current_year));
+	return true;
+}
+
+bool GameState::set_obs_fullcolony(uint32_t player_id, uint32_t planet_id)
+{
+	Player* player = get_player(player_id);
+	Planet* planet = get_planet(planet_id);
+	if (!player || !planet || planet->owner != static_cast<PlayerID>(player_id))
+		return false;
+
+	for (const ColonizedPlanet& colony : player->colonized_planets)
+	{
+		if (colony.get_id() == planet_id)
 		{
-			const ColonizedPlanet& homeworld_colonized = player.colonized_planets[0];
-			Planet* homeworld = get_planet(homeworld_colonized.get_id());
-			
-			// Observe the homeworld to populate full knowledge
-			// This updates all observable fields in the KnowledgePlanet
-			player.knowledge_galaxy->observe_planet(homeworld->id, *homeworld, &player, current_year);
-			
-			// Get the KnowledgePlanet for the homeworld
-			if (homeworld)
-			{
-				KnowledgePlanet* homeworld_knowledge = player.knowledge_galaxy->get_planet(homeworld->id);
-				if (homeworld_knowledge)
-				{
-					// Create a ColonizedPlanet in the KnowledgePlanet
-					// This represents the player's knowledge of their own colonized homeworld
-					homeworld_knowledge->colonization = std::make_unique<ColonizedPlanet>(
-						homeworld,
-						&player,
-						homeworld_colonized.get_population(),
-						homeworld_colonized.get_income()
-					);
-				}
-			}
+			planet->get_or_create_view(static_cast<PlayerID>(player_id))
+				.set_obs_fullcolony(*planet, colony, static_cast<int32_t>(current_year));
+			return true;
 		}
 	}
-	
-	std::cout << "Successfully initialized KnowledgeGalaxy for all " << players.size() << " players.\n";
+
+	return false;
+}
+
+void GameState::refresh_player_planet_views()
+{
+	for (auto& player : players)
+	{
+		for (auto& planet : galaxy->planets)
+		{
+			if (set_obs_fullcolony(player.id, planet.id))
+				continue;
+
+			bool stationed_fleet = false;
+			for (const Fleet& fleet : player.fleets)
+			{
+				if (!fleet.in_transit && fleet.ship_count > 0 &&
+					fleet.current_planet == &planet)
+				{
+					stationed_fleet = true;
+					break;
+				}
+			}
+
+			if (stationed_fleet)
+				set_obs_friendly_ship_visit(player.id, planet.id);
+		}
+	}
 }

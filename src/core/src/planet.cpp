@@ -21,6 +21,25 @@ Planet::Planet(
 	  true_temperature(p_true_temperature),
 	  metal(p_metal),
 	  population(0),
-	  owner(p_owner),
-	  nova_state(PLANET_NORMAL)
-{ }
+		  owner(p_owner),
+		  nova_state(PLANET_NORMAL)
+	{ }
+
+PlanetView& Planet::get_or_create_view(PlayerID observer_id)
+{
+	auto [it, inserted] = Views.try_emplace(observer_id, *this, observer_id);
+	(void)inserted;
+	return it->second;
+}
+
+PlanetView* Planet::get_view(PlayerID observer_id)
+{
+	auto it = Views.find(observer_id);
+	return it == Views.end() ? nullptr : &it->second;
+}
+
+const PlanetView* Planet::get_view(PlayerID observer_id) const
+{
+	auto it = Views.find(observer_id);
+	return it == Views.end() ? nullptr : &it->second;
+}

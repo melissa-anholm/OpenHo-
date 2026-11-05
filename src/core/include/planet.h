@@ -3,7 +3,9 @@
 
 #include <cstdint>
 #include <string>
+#include <unordered_map>
 #include "enums.h"
+#include "planet_view.h"
 
 // ============================================================================
 // Forward Declarations
@@ -35,6 +37,10 @@ public:
 	
 	// Nova state
 	PlanetNovaState nova_state;
+
+	// Observer-specific knowledge snapshots. Planet owns the records, while
+	// PlanetView contains only potentially stale player-specific information.
+	std::unordered_map<PlayerID, PlanetView> Views;
 	
 	// Constructor
 	Planet(
@@ -46,6 +52,10 @@ public:
 		double p_true_temperature,
 		int32_t p_metal,
 		PlayerID p_owner = 0 );
+
+	PlanetView& get_or_create_view(PlayerID observer_id);
+	PlanetView* get_view(PlayerID observer_id);
+	const PlanetView* get_view(PlayerID observer_id) const;
 };
 
 #endif // OPENHO_PLANET_H

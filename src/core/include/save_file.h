@@ -52,6 +52,25 @@ struct RuntimePlanetState
     int32_t owner = 0;
     double true_temperature = 0.0;
     int32_t metal = 0;
+    int32_t nova_state = 0;
+    struct View
+    {
+        uint32_t observer_id = 0;
+        double apparent_temperature = 0.0;
+        bool has_observed_gravity = false;
+        int32_t metal = 0;
+        int32_t apparent_owner = 0;
+        int32_t apparent_population = 0;
+        int32_t observation_year = 0;
+        int32_t income = 0;
+        double funding_fraction = 0.0;
+        double mining_fraction = 0.0;
+        double terraforming_fraction = 0.0;
+        int32_t can_be_profitable = 0;
+        int32_t perceived_value = 0;
+    };
+
+    std::vector<View> views;
 };
 
 struct RuntimeColonyState
@@ -87,7 +106,7 @@ struct RuntimePlayerState
 
 struct RuntimeCheckpointPayload
 {
-    static constexpr uint32_t CURRENT_SCHEMA_VERSION = 2;
+    static constexpr uint32_t CURRENT_SCHEMA_VERSION = 4;
 
     uint32_t schema_version = CURRENT_SCHEMA_VERSION;
     uint32_t turn = 0;
