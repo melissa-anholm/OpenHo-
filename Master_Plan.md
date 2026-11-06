@@ -1,6 +1,6 @@
 # OpenHo Master Plan
 
-**Last Updated:** November 5, 2026 (Linux-to-macOS UI build strategy)
+**Last Updated:** November 6, 2026 (minimal AppKit target cross-build)
 **Project Status:** Phase 2 - Minimal playable game first; feature completeness follows incrementally
 
 ---
@@ -86,9 +86,9 @@ The economic path applies population growth, refreshes planetary income using th
 
 #### Phase 3: Native macOS UI Transition Assessment
 
-**Status:** Ready for a first UI spike; implementation not yet started.
+**Status:** Minimal native build spike complete; interactive UI implementation not yet started.
 
-The repository currently contains no Objective-C++, AppKit, Xcode, or application-target scaffolding. The C++ core builds as a static library and exposes a mixture of direct C++ APIs, a legacy C API, and GameState C API extensions. Because macOS 10.14 Mojave support is a firm requirement, the native interface will use AppKit rather than SwiftUI; SwiftUI is not available on Mojave. A first native UI should use a thin Objective-C++ adapter that owns a `GameState`, translates stable value snapshots into UI-friendly models, and keeps internal C++ entities out of AppKit view/controller code. The first vertical slice should display the galaxy and selected planet/player information, edit economic choices, show readiness, and process a turn through the existing gate; fleet battles and broader ordered actions should remain outside the initial UI scope.
+The repository now contains a minimal Objective-C++/AppKit application target in `src/macos`. It compiles and links a non-interactive `OpenHo.app` against Foundation, AppKit, the portable UI adapter boundary, and `OpenHoCore`. The target validates the native build and linkage path; it is not yet the player-facing game interface. Because macOS 10.14 Mojave support is a firm requirement, the native interface will use AppKit rather than SwiftUI. A first real UI should use a thin Objective-C++ adapter that owns a `GameState`, translates stable value snapshots into UI-friendly models, and keeps internal C++ entities out of AppKit view/controller code. The first interactive vertical slice should display the galaxy and selected planet/player information, edit economic choices, show readiness, and process a turn through the existing gate; fleet battles and broader ordered actions should remain outside the initial UI scope.
 
 #### Future Portability Policy
 
@@ -100,9 +100,9 @@ The first portable adapter-facing API is implemented in `src/core/include/ui_ada
 
 #### macOS UI Build and Runtime Verification Strategy
 
-The native macOS UI will be compiled primarily in the Linux development sandbox rather than relying on the user's personal computer for primary compilation. Linux-to-macOS cross-compilation is technically feasible with OSXCross: it combines Clang, Darwin-compatible linker tools, a packaged Apple macOS SDK, and CMake toolchain support. The UI build must use Objective-C++, the x86_64 target architecture, a macOS 10.14 SDK where available, and a deployment target of macOS 10.14.3. The SDK must be obtained from an Apple-licensed Xcode installation and kept outside the repository.
+The native macOS UI is compiled primarily in the Linux development sandbox rather than relying on the user's personal computer for primary compilation. Linux-to-macOS cross-compilation is working with OSXCross: it combines Clang, Darwin-compatible linker tools, a packaged Apple macOS SDK, and CMake toolchain support. The verified build uses Objective-C++, the x86_64 target architecture, the supplied macOS 10.14 SDK, and a deployment target of macOS 10.14. The SDK and OSXCross toolchain are obtained from an Apple-licensed Xcode installation and kept outside the repository. Portable Boost headers are also staged outside the repository for the cross-build; a Darwin-built Boost binary or removal of the unnecessary compiled Boost.Random link dependency remains a future dependency-cleanup option.
 
-The Linux cross-build will verify Objective-C++ syntax, AppKit/Foundation headers, CMake configuration, Darwin linking, Mach-O output, deployment-target metadata, and linkage to the portable core and `GameUiAdapter`. A modern macOS or Linux host cannot prove Mojave runtime behavior, so the user's computer will be used for occasional launch and UI smoke testing on the required runtime. The responsibilities are therefore deliberately split: Linux is the primary reproducible compilation and automated-test environment; a real macOS 10.14.3-capable machine is the runtime compatibility environment.
+The Linux cross-build now verifies Objective-C++ syntax, AppKit/Foundation headers, CMake configuration, Darwin linking, Mach-O output, deployment-target metadata, and linkage to the portable core and `GameUiAdapter`. The resulting executable has been verified as x86_64 Mach-O with SDK and minimum OS metadata of 10.14. A modern macOS or Linux host cannot prove Mojave runtime behavior, so the user's computer will be used for occasional launch and UI smoke testing on the required runtime. The responsibilities are therefore deliberately split: Linux is the primary reproducible compilation and automated-test environment; a real macOS 10.14.3-capable machine is the runtime compatibility environment.
 
 GitHub-hosted macOS runners may later provide an additional modern-macOS compile gate, but they are not a substitute for the Linux OSXCross build or Mojave runtime testing. Current hosted and self-hosted GitHub runner environments do not provide macOS 10.14.3 execution.
 

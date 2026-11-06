@@ -36,40 +36,39 @@ make -j$(sysctl -n hw.ncpu)
 
 **Build Tool:** CMake 3.10+ (extended)
 **Compiler:** Clang with Objective-C++ support
-**Output:** Static library (`libOpenHoMacOS.a`)
+**Current output:** The bridge is currently compiled as part of the minimal `OpenHoMinimalApp` target rather than as a separate library.
 
 ```
 src/macos/
-├── CMakeLists.txt          # Defines bridge library
-├── include/
-│   ├── OpenHoMacOS.h       # Objective-C++ wrapper classes
-│   └── GameBridge.h
+├── CMakeLists.txt          # Defines the native application target
 └── src/
-    ├── OpenHoMacOS.mm      # Implementation
-    └── GameBridge.mm
+    ├── main.mm             # Minimal NSApplication entry point
+    └── ui_bridge.mm        # Objective-C++ compile/link boundary smoke code
 ```
 
-**CMakeLists.txt additions:**
-```cmake
-# Enable Objective-C++
-enable_language(OBJCXX)
-set(CMAKE_OBJCXX_COMPILER clang++)
-
-# Link against macOS frameworks
-target_link_libraries(OpenHoMacOS PUBLIC
-    "-framework Foundation"
-    "-framework AppKit"
-)
-
-# Link against C++ core
-target_link_libraries(OpenHoMacOS PUBLIC OpenHoCore)
-```
+The current bridge checks that Objective-C++ can include the portable `GameUiAdapter` boundary and that the native target links against `OpenHoCore`. It intentionally does not yet own a full `GameState` controller or expose window/view classes.
 
 **Build process:**
 ```bash
-cd src/macos/build
-cmake ..
-make -j$(sysctl -n hw.ncpu)
+cmake -S src/macos -B build/macos-native -G Ninja \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_OSX_DEPLOYMENT_TARGET=10.14
+cmake --build build/macos-native --target OpenHoMinimalApp
+```
+
+For the reproducible Linux build, use the OSXCross architecture-specific CMake launcher and keep the Apple SDK/toolchain outside the repository:
+
+```bash
+export OSX_CMAKE=/path/to/osxcross/target/bin/x86_64-apple-darwin18-cmake
+export BOOST_HEADERS=/path/to/portable/boost-headers
+
+"$OSX_CMAKE" -S src/macos -B build/macos-cross -G Ninja \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_OSX_ARCHITECTURES=x86_64 \
+  -DCMAKE_OSX_DEPLOYMENT_TARGET=10.14 \
+  -DCMAKE_CXX_FLAGS="-isystem$BOOST_HEADERS" \
+  -DCMAKE_OBJCXX_FLAGS="-isystem$BOOST_HEADERS"
+cmake --build build/macos-cross --target OpenHoMinimalApp
 ```
 
 ### Phase 3b: Native AppKit Application
@@ -77,81 +76,39 @@ make -j$(sysctl -n hw.ncpu)
 **Build Tool:** CMake 3.10+ (extended)
 **Compiler:** Clang with Objective-C++ support
 **Deployment target:** macOS 10.14 (Mojave) and later
-**Output:** Native macOS application (`OpenHo.app`)
+**Current output:** Minimal native macOS application (`OpenHo.app`); interactive application work remains future work.
 
 SwiftUI is intentionally not part of this plan: it is unavailable on macOS 10.14. If Swift is used later for non-UI utility code, it must not raise the application deployment target or become a requirement for the AppKit interface.
 
 ```
 src/macos/
 ├── CMakeLists.txt
-├── include/
-│   ├── OpenHoMacOS.h       # Objective-C++ bridge declarations
-│   └── GameBridge.h        # Stable UI-facing value/command boundary
 └── src/
-    ├── main.mm             # NSApplication entry point
-    ├── GameBridge.mm       # Owns and adapts GameState
-    ├── MainWindowController.mm
-    ├── GalaxyView.mm
-    └── PlanetInspectorViewController.mm
+    ├── main.mm             # Current minimal NSApplication entry point
+    └── ui_bridge.mm        # Current portable-boundary smoke translation unit
 ```
 
 The bridge should expose immutable UI snapshots and validated commands. AppKit view and controller code must not retain raw pointers to C++ domain objects.
 
+The eventual application will add window controllers, galaxy views, and planet/player inspectors only after the non-interactive target is replaced by a real UI vertical slice.
+
 **Build process:**
 ```bash
-cd src/macos/build
-cmake .. -DCMAKE_OSX_DEPLOYMENT_TARGET=10.14
-make -j$(sysctl -n hw.ncpu)
+cmake -S src/macos -B build/macos-native -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_OSX_DEPLOYMENT_TARGET=10.14
+cmake --build build/macos-native --target OpenHoMinimalApp
 ```
 
 ## Master Build Script
 
-A top-level `build.sh` script orchestrates the entire build:
+The checked-in `build.sh` currently orchestrates the portable C++ core only. It configures `src/core` and builds the core library plus its regression executables; it does not silently select an Apple SDK or attempt the macOS application build.
 
 ```bash
-#!/bin/bash
-set -e
-
-# Colors for output
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-echo -e "${BLUE}OpenHo Build System${NC}"
-
-# Phase 2: Build C++ Core
-echo -e "${BLUE}Building C++ Core...${NC}"
-mkdir -p src/core/build
-cd src/core/build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j$(sysctl -n hw.ncpu)
-cd ../../..
-echo -e "${GREEN}✓ C++ Core built${NC}"
-
-# Phase 3a: Build Objective-C++ Bridge (if exists)
-if [ -d "src/macos" ]; then
-    echo -e "${BLUE}Building Objective-C++ Bridge...${NC}"
-    mkdir -p src/macos/build
-    cd src/macos/build
-    cmake .. -DCMAKE_BUILD_TYPE=Release
-    make -j$(sysctl -n hw.ncpu)
-    cd ../../..
-    echo -e "${GREEN}✓ Objective-C++ Bridge built${NC}"
-fi
-
-# Phase 3b: Build native AppKit application (if exists)
-if [ -d "src/macos" ]; then
-    echo -e "${BLUE}Building native AppKit application...${NC}"
-    mkdir -p src/macos/build
-    cd src/macos/build
-    cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.14
-    make -j$(sysctl -n hw.ncpu)
-    cd ../../..
-    echo -e "${GREEN}✓ Native AppKit application built${NC}"
-fi
-
-echo -e "${GREEN}Build complete!${NC}"
+./build.sh
 ```
+
+The macOS target is intentionally a separate invocation because it requires either a native Apple toolchain or the externally installed OSXCross toolchain and SDK. This separation keeps ordinary Linux core builds reproducible and prevents accidental use of host libraries in a Darwin link.
 
 ## Dependency Management
 

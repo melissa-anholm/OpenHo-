@@ -4,7 +4,7 @@ This document is the practical entry point for the OpenHo project. It explains t
 
 ## Current project state
 
-OpenHo is a native re-implementation of *Spaceward Ho!* with a C++17 game core and a planned native macOS interface. Mojave compatibility is a firm requirement, so the approved UI direction is AppKit through an Objective-C++ bridge rather than SwiftUI.
+OpenHo is a native re-implementation of *Spaceward Ho!* with a C++17 game core and an initial native macOS build target. Mojave compatibility is a firm requirement, so the approved UI direction is AppKit through an Objective-C++ bridge rather than SwiftUI. The current AppKit target is a non-interactive build spike; the full game interface remains planned work.
 
 The core currently has:
 
@@ -44,7 +44,18 @@ From the repository root:
 ./clean.sh
 ```
 
-`build.sh` builds the existing C++ core with CMake. It does not yet build the future Objective-C++/AppKit layer, which does not yet exist in this checkout.
+`build.sh` currently builds the ordinary C++ core and its regression executables. The repository also now contains a separate minimal Objective-C++/AppKit target under `src/macos`; it is not yet part of the default root build because the Linux development workflow uses an OSXCross toolchain for that target.
+
+On a macOS development machine, the current native smoke target can be configured and built with:
+
+```sh
+cmake -S src/macos -B build/macos-native -G Ninja \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_OSX_DEPLOYMENT_TARGET=10.14
+cmake --build build/macos-native --target OpenHoMinimalApp
+```
+
+The reproducible Linux cross-build uses an architecture-specific OSXCross CMake launcher, a macOS 10.14 SDK, and portable Boost headers staged outside the repository. It produces an x86_64 `OpenHo.app` and verifies Objective-C++, AppKit/Foundation linkage, Mach-O output, and linkage to `OpenHoCore`. The current application is intentionally non-interactive; the real windowed UI remains future work.
 
 The smoke test must currently be run from the repository root because the core loads text assets through the relative `TextAssets/` path. A successful run reports that a minimal RANDOM-galaxy game advanced through three turns.
 
