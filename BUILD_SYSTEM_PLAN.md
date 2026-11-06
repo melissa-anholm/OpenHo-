@@ -112,7 +112,7 @@ The macOS target is intentionally a separate invocation because it requires eith
 
 ### Portable CLI frontend
 
-The current CLI target lives under `src/cli` and links only against the single `OpenHoCore` target in the shared root graph:
+The current CLI target lives under `src/cli` and links only against the single `OpenHoCore` target in the shared root graph. It accepts `--players N`, `--planets N`, and `--humans N` at startup; the remaining players are configured as no-action AI players that automatically mark themselves ready. The CLI selects the first human as its initial active player, and `play_as NAME` switches among non-eliminated human players without changing the other players' readiness. The `players` command explicitly displays each player's human/AI type, readiness, elimination state, and active-player marker. Each human player retains an independent pending economic submission while the CLI switches between them.
 
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug

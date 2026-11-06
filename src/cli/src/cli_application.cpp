@@ -18,8 +18,6 @@
 
 namespace
 {
-constexpr uint32_t kDefaultPlanetCount = 10;
-constexpr uint32_t kDefaultPlayerCount = 2;
 constexpr double kDefaultDensity = 0.5;
 constexpr uint64_t kDefaultSeed = 42;
 
@@ -65,8 +63,14 @@ size_t research_stream_index(const std::string& name)
 }
 }
 
-CliApplication::CliApplication(std::string assets_directory)
-    : assets_directory_(std::move(assets_directory))
+CliApplication::CliApplication(std::string assets_directory,
+                               uint32_t player_count,
+                               uint32_t planet_count,
+                               uint32_t human_count)
+    : player_count_(player_count),
+      planet_count_(planet_count),
+      human_count_(human_count),
+      assets_directory_(std::move(assets_directory))
 {
     if (assets_directory_.empty())
         assets_directory_ = "TextAssets";
@@ -77,6 +81,14 @@ CliApplication::~CliApplication() = default;
 
 bool CliApplication::initialize_new_session()
 {
+    if (player_count_ == 0 || player_count_ > 8 ||
+        planet_count_ < player_count_ || planet_count_ > 500 ||
+        human_count_ > player_count_)
+    {
+        print_error("create game", "players, planets, or humans out of range");
+        return false;
+    }
+
     TextAssets text_assets;
     if (!text_assets.load_assets(assets_directory_))
     {
@@ -84,18 +96,28 @@ bool CliApplication::initialize_new_session()
         return false;
     }
 
-    const std::string female_name = text_assets.get_random_female_player_name(0);
-    const std::string male_name = text_assets.get_random_male_player_name(0);
-    std::vector<PlayerSetup> player_setups = {
-        {female_name.empty() ? "Player One" : female_name,
-         GENDER_F, PLAYER_HUMAN, 100, START_NORMAL},
-        {male_name.empty() ? "Player Two" : male_name,
-         GENDER_M, PLAYER_HUMAN, 100, START_NORMAL}
-    };
+    const std::vector<std::string> female_names =
+        text_assets.get_player_name_list(GENDER_F);
+    const std::vector<std::string> male_names =
+        text_assets.get_player_name_list(GENDER_M);
+    std::vector<PlayerSetup> player_setups;
+    for (uint32_t index = 0; index < player_count_; ++index)
+    {
+        const bool female = (index % 2) == 0;
+        const auto& names = female ? female_names : male_names;
+        std::string name = names.empty()
+            ? "Player " + std::to_string(index + 1)
+            : names[index % names.size()];
+        name += " " + std::to_string(index + 1);
+        player_setups.push_back({
+            name, female ? GENDER_F : GENDER_M,
+            index < human_count_ ? PLAYER_HUMAN : PLAYER_COMPUTER,
+            index < human_count_ ? 100 : 50, START_NORMAL});
+    }
     GameSetup setup(
         GalaxyGenerationParams(
-            kDefaultPlanetCount,
-            kDefaultPlayerCount,
+            planet_count_,
+            player_count_,
             kDefaultDensity,
             GALAXY_RANDOM,
             kDefaultSeed),
@@ -118,6 +140,15 @@ bool CliApplication::initialize_new_session()
         return false;
     }
 
+    for (const Player& player : session_->state()->get_players())
+    {
+        if (player.type != PLAYER_HUMAN)
+            continue;
+        if (local_player_id_ == 0)
+            local_player_id_ = player.id;
+        pending_submissions_.emplace(player.id, UiEconomicSubmission{});
+    }
+
     if (!mark_non_local_players_ready())
         return false;
     return synchronize_pending_submission();
@@ -130,7 +161,7 @@ bool CliApplication::mark_non_local_players_ready()
 
     for (const Player& player : session_->state()->get_players())
     {
-        if (player.id == local_player_id_)
+        if (player.type == PLAYER_HUMAN)
             continue;
         const ErrorCode result = session_->ui()->mark_ready(player.id);
         if (result != ErrorCode::SUCCESS && result != ErrorCode::PLAYER_ALREADY_READY)
@@ -141,6 +172,48 @@ bool CliApplication::mark_non_local_players_ready()
         }
     }
     return true;
+}
+
+bool CliApplication::save_pending_submission_for_active_player()
+{
+    if (local_player_id_ != 0)
+        pending_submissions_[local_player_id_] = pending_submission_;
+    return true;
+}
+
+bool CliApplication::switch_local_player(const std::string& player_name,
+                                          std::string& error)
+{
+    if (!session_ || !session_->state())
+    {
+        error = "no active game";
+        return false;
+    }
+    const Player* target = nullptr;
+    for (const Player& player : session_->state()->get_players())
+        if (player.name == player_name)
+        {
+            target = &player;
+            break;
+        }
+    if (!target)
+    {
+        error = "unknown player name";
+        return false;
+    }
+    if (target->type != PLAYER_HUMAN)
+    {
+        error = "cannot play as an AI player";
+        return false;
+    }
+    if (target->is_eliminated())
+    {
+        error = "cannot play as an eliminated player";
+        return false;
+    }
+    save_pending_submission_for_active_player();
+    local_player_id_ = target->id;
+    return synchronize_pending_submission();
 }
 
 bool CliApplication::synchronize_pending_submission()
@@ -154,6 +227,15 @@ bool CliApplication::synchronize_pending_submission()
         [this](const UiPlayerSnapshot& value) { return value.id == local_player_id_; });
     if (player == snapshot.players.end())
         return false;
+
+    const auto saved = pending_submissions_.find(local_player_id_);
+    if (saved != pending_submissions_.end() &&
+        !saved->second.colony_allocations.empty())
+    {
+        pending_submission_ = saved->second;
+        submission_dirty_ = true;
+        return true;
+    }
 
     pending_submission_.savings_fraction = player->savings_fraction;
     pending_submission_.research_fraction = player->research_fraction;
@@ -180,6 +262,7 @@ bool CliApplication::synchronize_pending_submission()
     }
     pending_submission_.planets_to_abandon.clear();
     submission_dirty_ = false;
+    pending_submissions_[local_player_id_] = pending_submission_;
     return true;
 }
 
@@ -381,8 +464,9 @@ void CliApplication::print_help() const
               << "  dip AMOUNT [once|persistent] Set pending Dip Into Savings.\n"
               << "  abandon NAME                 Queue a colony abandonment.\n"
               << "  cancel_abandon NAME          Cancel a queued abandonment.\n"
-              << "  ready                        Submit choices and mark player 1 ready.\n"
-              << "  unready                      Mark player 1 unready.\n"
+              << "  play_as NAME                 Switch the active human player.\n"
+              << "  ready                        Submit choices and mark the active player ready.\n"
+              << "  unready                      Mark the active player unready.\n"
               << "  process                      Process the turn and autosave.\n"
               << "  save <path>                  Save a manual checkpoint.\n"
               << "  load <path>                  Load the latest checkpoint.\n"
@@ -413,7 +497,11 @@ void CliApplication::print_players() const
     const UiGameSnapshot snapshot = session_->ui()->snapshot(local_player_id_);
     for (const UiPlayerSnapshot& player : snapshot.players)
     {
-        std::cout << "Player " << player.id << ": " << player.name
+        const Player* domain_player = session_->state()->get_player(player.id);
+        const bool human = domain_player && domain_player->type == PLAYER_HUMAN;
+        std::cout << (player.id == local_player_id_ ? "* " : "  ")
+                  << "Player " << player.id << ": " << player.name
+                  << ", type=" << (human ? "human" : "AI")
                   << ", ready=" << (player.ready ? "yes" : "no")
                   << ", eliminated=" << (player.eliminated ? "yes" : "no");
         if (player.id == local_player_id_)
@@ -518,6 +606,14 @@ bool CliApplication::handle_command(const std::string& raw_line)
     else if (command == "players")
     {
         print_players();
+    }
+    else if (command == "play_as")
+    {
+        std::string error;
+        if (!switch_local_player(trim(line.substr(command.size())), error))
+            print_error(command, error);
+        else
+            std::cout << "Now playing as " << trim(line.substr(command.size())) << ".\n";
     }
     else if (command == "planets")
     {
@@ -874,7 +970,7 @@ int CliApplication::run()
     if (!session_)
         return 1;
 
-    std::cout << "OpenHo CLI skeleton. Player 1 is local; player 2 is automatically ready.\n";
+    std::cout << "OpenHo CLI. The active human player is marked with '*'; AI players are automatically ready.\n";
     std::cout << "Type 'help' for commands.\n";
     print_status();
 

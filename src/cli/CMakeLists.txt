@@ -32,6 +32,12 @@ add_test(
             "$<TARGET_FILE:openho_cli>"
             "${CMAKE_CURRENT_SOURCE_DIR}/../../TextAssets"
 )
+add_test(
+    NAME openho_cli_multiplayer_smoke
+    COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/test_cli_multiplayer.sh"
+            "$<TARGET_FILE:openho_cli>"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../../TextAssets"
+)
 
 if(MSVC)
     target_compile_options(openho_cli PRIVATE /W4)

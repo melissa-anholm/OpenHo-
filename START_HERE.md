@@ -55,7 +55,13 @@ After building, run the CLI with either an explicit asset directory or the defau
 ./build/openho_cli
 ```
 
-The `OPENHO_ASSETS_DIR` environment variable is also supported. The initial CLI uses a deterministic 10-planet game. Player 1 is the local player, the other player is automatically readied, and commands are entered one per line. Type `help` to see the available commands.
+The `OPENHO_ASSETS_DIR` environment variable is also supported. The CLI can create a configurable deterministic game, for example:
+
+```sh
+./build/openho_cli --players 4 --planets 12 --humans 2
+```
+
+The remaining players are no-action AI players and are automatically readied. The first human is initially active; use `play_as NAME` to switch among human players. The `players` command explicitly displays each player's human/AI type, readiness, elimination status, and active-player marker. Each human player retains independent pending economic choices while switching. Commands are entered one per line; type `help` to see the available commands.
 
 On a macOS development machine, the current native smoke target can be configured and built with:
 
