@@ -2,6 +2,7 @@
 #define OPENHO_GAME_CONSTANTS_H
 
 #include <cstdint>
+#include <limits>
 #include "enums.h"
 
 // ============================================================================
@@ -12,6 +13,8 @@
 
 namespace GameConstants
 {
+	constexpr double Allocation_Sum_Tolerance = std::numeric_limits<double>::epsilon();
+
 	constexpr double min_gravity = 0.3;
 	constexpr double max_gravity = 4.5;
 		

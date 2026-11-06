@@ -4,6 +4,7 @@
 #include "planet.h"
 #include "planet_view.h"
 #include "player.h"
+#include "game_constants.h"
 #include <cmath>
 
 namespace
@@ -59,7 +60,7 @@ bool valid_research_fractions(const std::array<double, 6>& fractions)
             return false;
         total += fraction;
     }
-    return std::abs(total - 1.0) <= 0.001;
+    return std::abs(total - 1.0) <= GameConstants::Allocation_Sum_Tolerance;
 }
 }
 

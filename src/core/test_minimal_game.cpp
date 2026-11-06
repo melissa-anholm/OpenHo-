@@ -575,9 +575,15 @@ void test_ui_adapter_boundary()
     assert(adapter.set_spending_allocation(
                1, 0.5, 0.25, 0.25, research_fractions) == ErrorCode::SUCCESS);
     assert(adapter.set_spending_allocation(
+               1, 0.5, 0.25, 0.250000000001, research_fractions) ==
+           ErrorCode::INVALID_ALLOCATION);
+    assert(adapter.set_spending_allocation(
                1, 0.5, 0.25, 0.25,
                std::array<double, 6>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}) ==
            ErrorCode::INVALID_ALLOCATION);
+    const uint32_t colony_id = game->get_player(1)->get_colonized_planets().front().get_id();
+    assert(game->check_player_set_planet_allocation(
+               1, colony_id, 0.6, 0.400000000001) == ErrorCode::INVALID_ALLOCATION);
     assert(adapter.mark_ready(1) == ErrorCode::SUCCESS);
     assert(adapter.process_turn() == ErrorCode::GAME_NOT_READY);
 }

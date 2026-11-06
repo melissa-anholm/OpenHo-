@@ -331,7 +331,7 @@ ErrorCode GameState::submit_economic_action(
 			return ErrorCode::INVALID_ALLOCATION;
 		research_total += fraction;
 	}
-	if (std::abs(research_total - 1.0) > 0.001)
+	if (std::abs(research_total - 1.0) > GameConstants::Allocation_Sum_Tolerance)
 		return ErrorCode::INVALID_ALLOCATION;
 	if (submission.dip_amount < 0)
 		return ErrorCode::INVALID_PARAMETER;
@@ -2022,9 +2022,9 @@ ErrorCode GameState::check_player_set_spending_allocation(uint32_t player_id, do
 		research_frac < 0.0 || planets_frac < 0.0)
 		return ErrorCode::INVALID_ALLOCATION;
 	
-	// Check fractions sum to approximately 1.0 (allow small floating point error)
+	// Check fractions sum to 1.0 within one double machine epsilon.
 	double total = savings_frac + research_frac + planets_frac;
-	if (std::abs(total - 1.0) > 0.001)  // Allow 0.1% error
+	if (std::abs(total - 1.0) > GameConstants::Allocation_Sum_Tolerance)
 		return ErrorCode::INVALID_ALLOCATION;
 	
 	return ErrorCode::SUCCESS;
@@ -2084,9 +2084,9 @@ ErrorCode GameState::check_player_set_planet_allocation(uint32_t player_id, uint
 		mining_frac < 0.0 || terraforming_frac < 0.0)
 		return ErrorCode::INVALID_ALLOCATION;
 	
-	// Check fractions sum to approximately 1.0 (allow small floating point error)
+	// Check fractions sum to 1.0 within one double machine epsilon.
 	double total = mining_frac + terraforming_frac;
-	if (std::abs(total - 1.0) > 0.001)  // Allow 0.1% error
+	if (std::abs(total - 1.0) > GameConstants::Allocation_Sum_Tolerance)
 		return ErrorCode::INVALID_ALLOCATION;
 	
 	return ErrorCode::SUCCESS;
