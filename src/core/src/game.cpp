@@ -99,6 +99,13 @@ const Player* GameState::get_player_by_name(const std::string& name) const
 	return nullptr;
 }
 
+const std::vector<PlayerPublicInfo>& GameState::get_full_player_info_history(uint32_t player_id) const
+{
+	static const std::vector<PlayerPublicInfo> empty_history;
+	auto it = player_info_history.find(player_id);
+	return it == player_info_history.end() ? empty_history : it->second;
+}
+
 int64_t GameState::get_player_money_income(uint32_t player_id) const
 {
 	const Player* player = get_player(player_id);
