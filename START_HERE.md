@@ -44,7 +44,17 @@ From the repository root:
 ./clean.sh
 ```
 
-`build.sh` currently builds the ordinary C++ core and its regression executables. The repository also now contains a separate minimal Objective-C++/AppKit target under `src/macos`; it is not yet part of the default root build because the Linux development workflow uses an OSXCross toolchain for that target.
+`build.sh` builds the ordinary C++ core, its regression executables, and the portable `openho_cli` frontend. The repository also contains a separate minimal Objective-C++/AppKit target under `src/macos`; it is not part of the default root build because the Linux development workflow uses an OSXCross toolchain for that target.
+
+After building, run the CLI with either an explicit asset directory or the default repository-root layout:
+
+```sh
+./src/cli/build/openho_cli --assets /path/to/TextAssets
+# or, when launched from the repository root:
+./src/cli/build/openho_cli
+```
+
+The `OPENHO_ASSETS_DIR` environment variable is also supported. The initial CLI uses a deterministic 10-planet game. Player 1 is the local player, the other player is automatically readied, and commands are entered one per line. Type `help` to see the available commands.
 
 On a macOS development machine, the current native smoke target can be configured and built with:
 
@@ -57,7 +67,7 @@ cmake --build build/macos-native --target OpenHoMinimalApp
 
 The reproducible Linux cross-build uses an architecture-specific OSXCross CMake launcher, a macOS 10.14 SDK, and portable Boost headers staged outside the repository. It produces an x86_64 `OpenHo.app` and verifies Objective-C++, AppKit/Foundation linkage, Mach-O output, and linkage to `OpenHoCore`. The current application is intentionally non-interactive; the real windowed UI remains future work.
 
-The smoke test must currently be run from the repository root because the core loads text assets through the relative `TextAssets/` path. A successful run reports that a minimal RANDOM-galaxy game advanced through three turns.
+The core receives its text-asset directory through `GameSetup`; the CLI defaults to `TextAssets` for compatibility but can be launched from any working directory with `--assets PATH` or `OPENHO_ASSETS_DIR`. A successful smoke test reports that a minimal RANDOM-galaxy game advanced through three turns.
 
 The Python wrapper has additional Python, pybind11, Boost, and Python-development-header requirements. Its usage and build instructions are in [`Python Galaxy Tests/Usage_Guide.md`](Python%20Galaxy%20Tests/Usage_Guide.md).
 

@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="${OPENHO_CORE_BUILD_DIR:-${ROOT_DIR}/src/core/build}"
+CLI_BUILD_DIR="${OPENHO_CLI_BUILD_DIR:-${ROOT_DIR}/src/cli/build}"
 BUILD_TYPE="${CMAKE_BUILD_TYPE:-Release}"
 
 if command -v getconf >/dev/null 2>&1; then
@@ -22,3 +23,14 @@ cmake -S "${ROOT_DIR}/src/core" \
 cmake --build "${BUILD_DIR}" --parallel "${JOBS}"
 
 printf 'OpenHo core build complete.\n'
+
+printf 'OpenHo CLI build\n'
+printf '  Source: %s\n' "${ROOT_DIR}/src/cli"
+printf '  Build:  %s\n' "${CLI_BUILD_DIR}"
+
+cmake -S "${ROOT_DIR}/src/cli" \
+      -B "${CLI_BUILD_DIR}" \
+      -DCMAKE_BUILD_TYPE="${BUILD_TYPE}"
+cmake --build "${CLI_BUILD_DIR}" --target openho_cli --parallel "${JOBS}"
+
+printf 'OpenHo CLI build complete.\n'

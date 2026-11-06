@@ -2,6 +2,7 @@
 #define OPENHO_GAME_SETUP_H
 
 #include "openho_core.h"
+#include <string>
 #include <vector>
 #include <memory>
 
@@ -34,7 +35,8 @@ class GameSetup
 	public:
 		GameSetup();
 		GameSetup(GalaxyGenerationParams galaxy_params,
-		          std::vector<PlayerSetup> player_setups);
+		          std::vector<PlayerSetup> player_setups,
+		          std::string assets_directory = "TextAssets");
 		~GameSetup();
 	
 	/// Start a new game setup flow
@@ -45,13 +47,20 @@ class GameSetup
 	/// Get the galaxy parameters collected during setup
 	const GalaxyGenerationParams& get_galaxy_params() const { return galaxy_params; }
 	
-	/// Get the player configurations collected during setup
-	const std::vector<PlayerSetup>& get_player_setups() const { return player_setups; }
+		/// Get the player configurations collected during setup
+		const std::vector<PlayerSetup>& get_player_setups() const { return player_setups; }
+
+		/// Get the runtime directory containing the JSON text assets.
+		const std::string& get_assets_directory() const { return assets_directory; }
+
+		/// Set the runtime directory containing the JSON text assets.
+		void set_assets_directory(std::string directory);
 	
 private:
 	// Collected setup data
-	GalaxyGenerationParams galaxy_params;
-	std::vector<PlayerSetup> player_setups;
+		GalaxyGenerationParams galaxy_params;
+		std::vector<PlayerSetup> player_setups;
+		std::string assets_directory = "TextAssets";
 	
 	/// Query user for galaxy generation parameters
 	[[nodiscard]] GalaxyGenerationParams query_galaxy_parameters();

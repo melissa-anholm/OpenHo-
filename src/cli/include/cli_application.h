@@ -1,0 +1,41 @@
+#ifndef OPENHO_CLI_APPLICATION_H
+#define OPENHO_CLI_APPLICATION_H
+
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <vector>
+
+class GameSession;
+
+/// Line-oriented, platform-neutral command-line frontend for OpenHo.
+class CliApplication
+{
+public:
+    explicit CliApplication(std::string assets_directory = "TextAssets");
+    ~CliApplication();
+
+    CliApplication(const CliApplication&) = delete;
+    CliApplication& operator=(const CliApplication&) = delete;
+
+    /// Run the command loop until quit or end-of-input.
+    int run();
+
+private:
+    bool handle_command(const std::string& line);
+    bool initialize_new_session();
+    bool mark_non_local_players_ready();
+
+    void print_help() const;
+    void print_status() const;
+    void print_players() const;
+    void print_planets() const;
+    void print_error(const std::string& operation, const std::string& detail) const;
+
+    std::unique_ptr<GameSession> session_;
+    uint32_t local_player_id_ = 1;
+    std::string default_save_path_ = "openho-cli.save";
+    std::string assets_directory_;
+};
+
+#endif // OPENHO_CLI_APPLICATION_H

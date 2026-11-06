@@ -13,15 +13,24 @@ GameSetup::GameSetup()
 { }
 
 GameSetup::GameSetup(GalaxyGenerationParams params,
-                     std::vector<PlayerSetup> setups)
+                     std::vector<PlayerSetup> setups,
+                     std::string assets_directory_value)
 		: galaxy_params(std::move(params)),
-		  player_setups(std::move(setups))
+			  player_setups(std::move(setups)),
+			  assets_directory(std::move(assets_directory_value))
 {
-		galaxy_params.n_players = static_cast<uint32_t>(player_setups.size());
+			galaxy_params.n_players = static_cast<uint32_t>(player_setups.size());
+		if (assets_directory.empty())
+			assets_directory = "TextAssets";
 }
 
 GameSetup::~GameSetup()
 { }
+
+void GameSetup::set_assets_directory(std::string directory)
+{
+	assets_directory = directory.empty() ? "TextAssets" : std::move(directory);
+}
 
 // ============================================================================
 // Game Creation

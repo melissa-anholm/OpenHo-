@@ -96,7 +96,8 @@ std::unique_ptr<GameSession> GameSession::create_new(
 
 std::unique_ptr<GameSession> GameSession::load(
     const std::string& path,
-    GameSessionError* error)
+    GameSessionError* error,
+    const std::string& assets_directory)
 {
     set_error(error, GameSessionError::SUCCESS);
     if (path.empty())
@@ -118,7 +119,10 @@ std::unique_ptr<GameSession> GameSession::load(
 
     try
     {
-        GameSetup setup(definition.galaxy_params, definition.player_setups);
+        GameSetup setup(
+            definition.galaxy_params,
+            definition.player_setups,
+            assets_directory);
         auto state = std::make_unique<GameState>(setup);
         if (!state->deserialize_state(checkpoint.payload))
         {

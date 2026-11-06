@@ -31,9 +31,9 @@ GameState::GameState(const class GameSetup& setup)
 		uint64_t ai_seed = det_seed + 1;  // Use seed + 1 for AI RNG
 	rng = std::make_unique<DeterministicRNG>(det_seed, ai_seed);
 	
-	// Load text assets
-	text_assets = std::make_unique<TextAssets>();
-	text_assets->load_assets("TextAssets");
+		// Load text assets
+		text_assets = std::make_unique<TextAssets>();
+		text_assets->load_assets(setup.get_assets_directory());
 	
 		// Initialize players with setup configuration
 		players = initialize_players(player_setups);

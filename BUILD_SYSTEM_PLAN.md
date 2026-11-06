@@ -102,13 +102,25 @@ cmake --build build/macos-native --target OpenHoMinimalApp
 
 ## Master Build Script
 
-The checked-in `build.sh` currently orchestrates the portable C++ core only. It configures `src/core` and builds the core library plus its regression executables; it does not silently select an Apple SDK or attempt the macOS application build.
+The checked-in `build.sh` configures the portable C++ core and the line-oriented CLI. It builds the core library, regression executables, and `openho_cli`; it does not silently select an Apple SDK or attempt the macOS application build.
 
 ```bash
 ./build.sh
 ```
 
-The macOS target is intentionally a separate invocation because it requires either a native Apple toolchain or the externally installed OSXCross toolchain and SDK. This separation keeps ordinary Linux core builds reproducible and prevents accidental use of host libraries in a Darwin link.
+The macOS target is intentionally a separate invocation because it requires either a native Apple toolchain or the externally installed OSXCross toolchain and SDK. This separation keeps ordinary Linux core and CLI builds reproducible and prevents accidental use of host libraries in a Darwin link.
+
+### Portable CLI frontend
+
+The current CLI target lives under `src/cli` and links only against `OpenHoCore` and the C++ standard library:
+
+```bash
+cmake -S src/cli -B build/cli -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/cli --target openho_cli
+./build/cli/openho_cli
+```
+
+The initial CLI is deliberately line-oriented and scriptable. It supports `help`, `status`, `players`, `planets`, `ready`, `unready`, `process`, `save`, `load`, and `quit`. It uses a compact deterministic 10-planet game, with player 1 as the local player and non-local players automatically marked ready. The asset directory can be supplied with `--assets PATH` or `OPENHO_ASSETS_DIR`; the default remains `TextAssets` for repository-root compatibility.
 
 ## Dependency Management
 

@@ -44,7 +44,8 @@ public:
     /// Load the immutable definition and newest checkpoint from a save file.
     [[nodiscard]] static std::unique_ptr<GameSession> load(
         const std::string& path,
-        GameSessionError* error = nullptr);
+        GameSessionError* error = nullptr,
+        const std::string& assets_directory = "TextAssets");
 
     ~GameSession();
 
