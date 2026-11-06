@@ -26,12 +26,15 @@ struct ImmutablePlanetDefinition
 /// C++ object memory or pointers.
 struct GameDefinition
 {
-    static constexpr uint32_t CURRENT_SCHEMA_VERSION = 1;
+    static constexpr uint32_t CURRENT_SCHEMA_VERSION = 2;
 
     uint32_t schema_version = CURRENT_SCHEMA_VERSION;
     GalaxyGenerationParams galaxy_params;
     double galaxy_size = 0.0;
     std::vector<ImmutablePlanetDefinition> planets;
+    // Both structures are indexed by one-based planet ID; row zero is unused.
+    std::vector<std::vector<double>> distance_matrix;
+    std::vector<std::vector<PlanetDistance>> destinations_by_distance;
     std::vector<uint32_t> home_planet_ids;
     std::vector<PlayerSetup> player_setups;
     // Indexed in the same order as player_setups. These are finalized during

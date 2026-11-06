@@ -634,9 +634,11 @@ std::vector<uint8_t> GameState::serialize_immutable_definition() const
 			planet.x,
 			planet.y,
 			planet.true_gravity
-		});
-	}
-	definition.home_planet_ids.reserve(galaxy->home_planet_indices.size());
+			});
+		}
+		definition.distance_matrix = galaxy->distance_matrix;
+		definition.destinations_by_distance = galaxy->destinations_by_distance;
+		definition.home_planet_ids.reserve(galaxy->home_planet_indices.size());
 	for (size_t index : galaxy->home_planet_indices)
 	{
 		if (index >= galaxy->planets.size())
@@ -1337,9 +1339,9 @@ void GameState::process_ships()
 				Planet* destination = nullptr;
 				
 				// Find the destination planet
-				if (dest_id < galaxy->planets.size())
-				{
-					destination = &galaxy->planets[dest_id];
+					if (dest_id > 0 && dest_id <= galaxy->planets.size())
+					{
+						destination = &galaxy->planets[dest_id - 1];
 				}
 				
 				if (destination)

@@ -225,6 +225,8 @@ std::vector<uint8_t> encode_definition_payload(const GameDefinition& definition)
         definition.home_planet_ids.size() > definition.planets.size() ||
         definition.player_ideal_temperatures.size() != definition.player_setups.size() ||
         definition.player_ideal_gravities.size() != definition.player_setups.size() ||
+        definition.distance_matrix.size() != definition.planets.size() + 1 ||
+        definition.destinations_by_distance.size() != definition.planets.size() + 1 ||
         !std::isfinite(definition.galaxy_size) || !std::isfinite(definition.galaxy_params.density) ||
         !std::isfinite(definition.galaxy_params.cluster_angular_offset) ||
         !valid_enum_values(definition))
@@ -256,6 +258,37 @@ std::vector<uint8_t> encode_definition_payload(const GameDefinition& definition)
         append_double(output, planet.x);
         append_double(output, planet.y);
         append_double(output, planet.true_gravity);
+    }
+
+    append_integer<uint32_t>(output, static_cast<uint32_t>(definition.planets.size()));
+    for (size_t from_id = 0; from_id <= definition.planets.size(); ++from_id)
+    {
+        if (definition.distance_matrix[from_id].size() != definition.planets.size() + 1)
+            return {};
+        for (double distance : definition.distance_matrix[from_id])
+        {
+            if (!std::isfinite(distance) || distance < 0.0)
+                return {};
+            append_double(output, distance);
+        }
+    }
+
+    append_integer<uint32_t>(output, static_cast<uint32_t>(definition.planets.size()));
+    for (size_t from_id = 0; from_id <= definition.planets.size(); ++from_id)
+    {
+        const auto& destinations = definition.destinations_by_distance[from_id];
+        if (destinations.size() != (from_id == 0 ? 0 : definition.planets.size()))
+            return {};
+        append_integer<uint32_t>(output, static_cast<uint32_t>(destinations.size()));
+        for (const PlanetDistance& destination : destinations)
+        {
+            if (destination.destination_planet_id == 0 ||
+                destination.destination_planet_id > definition.planets.size() ||
+                !std::isfinite(destination.distance) || destination.distance < 0.0)
+                return {};
+            append_integer<uint32_t>(output, destination.destination_planet_id);
+            append_double(output, destination.distance);
+        }
     }
 
     append_integer<uint32_t>(output, static_cast<uint32_t>(definition.home_planet_ids.size()));
@@ -324,6 +357,42 @@ bool decode_definition_payload(const std::vector<uint8_t>& payload,
             !read_double(payload, offset, planet.true_gravity))
             return false;
         parsed.planets.push_back(std::move(planet));
+    }
+
+    uint32_t matrix_count = 0;
+    if (!read_integer(payload, offset, matrix_count) || matrix_count != planet_count)
+        return false;
+    parsed.distance_matrix.assign(planet_count + 1,
+                                  std::vector<double>(planet_count + 1));
+    for (auto& row : parsed.distance_matrix)
+        for (double& distance : row)
+            if (!read_double(payload, offset, distance) || distance < 0.0)
+                return false;
+
+    uint32_t destination_row_count = 0;
+    if (!read_integer(payload, offset, destination_row_count) ||
+        destination_row_count != planet_count)
+        return false;
+    parsed.destinations_by_distance.assign(planet_count + 1, {});
+    for (size_t row_id = 0; row_id < parsed.destinations_by_distance.size(); ++row_id)
+    {
+        auto& row = parsed.destinations_by_distance[row_id];
+        uint32_t destination_count = 0;
+        if (!read_integer(payload, offset, destination_count) ||
+            destination_count != (row_id == 0 ? 0 : planet_count))
+            return false;
+        row.reserve(destination_count);
+        for (uint32_t i = 0; i < destination_count; ++i)
+        {
+            PlanetDistance destination;
+            if (!read_integer(payload, offset, destination.destination_planet_id) ||
+                !read_double(payload, offset, destination.distance) ||
+                destination.destination_planet_id == 0 ||
+                destination.destination_planet_id > planet_count ||
+                destination.distance < 0.0)
+                return false;
+            row.push_back(destination);
+        }
     }
 
     uint32_t home_count = 0;

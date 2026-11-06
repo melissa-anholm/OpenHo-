@@ -6,6 +6,7 @@
 KnowledgeGalaxy::KnowledgeGalaxy(Galaxy& galaxy, PlayerID observer_id)
     : real_galaxy(&galaxy),
       distance_matrix(galaxy.distance_matrix),
+      destinations_by_distance(galaxy.destinations_by_distance),
       player_id(observer_id),
       space_real_planet(nullptr),
       space_planet_view(nullptr)
@@ -38,16 +39,16 @@ KnowledgeGalaxy::~KnowledgeGalaxy()
 
 PlanetView* KnowledgeGalaxy::get_planet(uint32_t planet_id)
 {
-    if (!real_galaxy || planet_id >= real_galaxy->planets.size())
+    if (!real_galaxy || planet_id == 0 || planet_id > real_galaxy->planets.size())
         return nullptr;
-    return real_galaxy->planets[planet_id].get_view(player_id);
+    return real_galaxy->planets[planet_id - 1].get_view(player_id);
 }
 
 const PlanetView* KnowledgeGalaxy::get_planet(uint32_t planet_id) const
 {
-    if (!real_galaxy || planet_id >= real_galaxy->planets.size())
+    if (!real_galaxy || planet_id == 0 || planet_id > real_galaxy->planets.size())
         return nullptr;
-    return real_galaxy->planets[planet_id].get_view(player_id);
+    return real_galaxy->planets[planet_id - 1].get_view(player_id);
 }
 
 size_t KnowledgeGalaxy::get_planet_count() const
@@ -57,12 +58,17 @@ size_t KnowledgeGalaxy::get_planet_count() const
 
 const Planet* KnowledgeGalaxy::get_real_planet(uint32_t planet_id) const
 {
-    if (!real_galaxy || planet_id >= real_galaxy->planets.size())
+    if (!real_galaxy || planet_id == 0 || planet_id > real_galaxy->planets.size())
         return nullptr;
-    return &real_galaxy->planets[planet_id];
+    return &real_galaxy->planets[planet_id - 1];
 }
 
 double KnowledgeGalaxy::get_distance(uint32_t from_id, uint32_t to_id) const
 {
     return distance_matrix.at(from_id).at(to_id);
+}
+
+const std::vector<PlanetDistance>& KnowledgeGalaxy::get_destinations_by_distance(uint32_t from_id) const
+{
+    return destinations_by_distance.at(from_id);
 }

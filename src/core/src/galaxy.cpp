@@ -5,6 +5,7 @@
 #include "game_constants.h"
 #include <cmath>
 #include <set>
+#include <algorithm>
 
 Galaxy::Galaxy(const GalaxyGenerationParams& params, GameState* game_state)
 {
@@ -119,11 +120,11 @@ void Galaxy::generate_planet_parameters(
 void Galaxy::compute_distance_matrix()
 {
 	size_t n = planets.size();
-	distance_matrix.resize(n);
+	distance_matrix.assign(n + 1, std::vector<double>(n + 1, 0.0));
+	destinations_by_distance.assign(n + 1, {});
 
 	for (size_t i = 0; i < n; ++i)
 	{
-		distance_matrix[i].resize(n);
 		for (size_t j = 0; j < n; ++j)
 		{
 			const Planet& from = planets[i];
@@ -135,12 +136,30 @@ void Galaxy::compute_distance_matrix()
 			double euclidean_dist = std::sqrt(dx * dx + dy * dy);
 
 			// Round to nearest integer, store as double
-			distance_matrix[i][j] = std::round(euclidean_dist);
+			const double distance = std::round(euclidean_dist);
+			const uint32_t from_id = from.id;
+			const uint32_t to_id = to.id;
+			distance_matrix[from_id][to_id] = distance;
+			destinations_by_distance[from_id].push_back({to_id, distance});
 		}
+		std::sort(
+			destinations_by_distance[planets[i].id].begin(),
+			destinations_by_distance[planets[i].id].end(),
+			[](const PlanetDistance& left, const PlanetDistance& right)
+			{
+				if (left.distance != right.distance)
+					return left.distance < right.distance;
+				return left.destination_planet_id < right.destination_planet_id;
+			});
 	}
 }
 
 double Galaxy::get_distance(uint32_t from_id, uint32_t to_id) const
 {
 	return distance_matrix.at(from_id).at(to_id);
+}
+
+const std::vector<PlanetDistance>& Galaxy::get_destinations_by_distance(uint32_t from_id) const
+{
+	return destinations_by_distance.at(from_id);
 }

@@ -432,6 +432,24 @@ void test_append_only_save_file()
     assert(decoded_definition.planets.front().name == game->get_galaxy().planets.front().name);
     assert(decoded_definition.planets.front().true_gravity ==
            game->get_galaxy().planets.front().true_gravity);
+    const uint32_t first_planet_id = game->get_galaxy().planets.front().id;
+    const uint32_t last_planet_id = game->get_galaxy().planets.back().id;
+    assert(first_planet_id == 1);
+    assert(last_planet_id == game->get_galaxy().planets.size());
+    assert(game->get_galaxy().get_distance(first_planet_id, first_planet_id) == 0.0);
+    assert(game->get_galaxy().get_distance(last_planet_id, last_planet_id) == 0.0);
+    const auto& nearest = game->get_galaxy().get_destinations_by_distance(first_planet_id);
+    assert(nearest.size() == game->get_galaxy().planets.size());
+    assert(nearest.front().destination_planet_id == first_planet_id);
+    for (size_t index = 1; index < nearest.size(); ++index)
+        assert(nearest[index - 1].distance <= nearest[index].distance);
+    assert(decoded_definition.distance_matrix == game->get_galaxy().distance_matrix);
+    assert(decoded_definition.destinations_by_distance.size() ==
+           game->get_galaxy().destinations_by_distance.size());
+    assert(decoded_definition.destinations_by_distance[first_planet_id].size() ==
+           nearest.size());
+    assert(decoded_definition.destinations_by_distance[first_planet_id].front().destination_planet_id ==
+           nearest.front().destination_planet_id);
 
     game->get_players().front().set_savings_rate_modifier(2.0);
     game->get_players().back().set_eliminated(true);

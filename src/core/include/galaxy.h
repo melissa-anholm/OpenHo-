@@ -4,6 +4,7 @@
 #include "planet.h"
 #include "player.h"
 #include "enums.h"
+#include "planet_distance.h"
 #include <cstdint>
 #include <cmath>
 #include <vector>
@@ -63,10 +64,12 @@ struct Galaxy
 	// Home planet indices (indices into planets vector)
 	std::vector<size_t> home_planet_indices;
 	
-	// Distance matrix: [from_planet_id][to_planet_id] = distance
-	// Computed once at initialization, never updated
-	// Stores Euclidean distance rounded to nearest integer as double
+	// Distance matrix: [planet_id][planet_id] = distance. Row and column zero
+	// are unused so public planet IDs can be used directly without translation.
 	std::vector<std::vector<double>> distance_matrix;
+	// Immutable destinations for each origin, sorted nearest-first. The outer
+	// vector is also indexed directly by the one-based origin planet ID.
+	std::vector<std::vector<PlanetDistance>> destinations_by_distance;
 	
 	// Constructor to initialize galaxy boundaries and planets
 	// Takes GameState reference for access to RNG and TextAssets
@@ -81,6 +84,7 @@ struct Galaxy
 	// Returns Euclidean distance rounded to nearest integer
 	// Throws std::out_of_range if planet IDs are invalid
 	double get_distance(uint32_t from_id, uint32_t to_id) const;
+	const std::vector<PlanetDistance>& get_destinations_by_distance(uint32_t from_id) const;
 	
 	// // Generate randomized planet names (helper method)
 	// // Generates n_planets unique names in random order from available_names

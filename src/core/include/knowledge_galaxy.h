@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <vector>
 #include "planet_view.h"
+#include "planet_distance.h"
 
 // ============================================================================
 // Forward Declarations
@@ -27,6 +28,7 @@ class KnowledgeGalaxy
 private:
 	Galaxy* real_galaxy;  // Reference to the real galaxy (for compatibility queries)
 	std::vector<std::vector<double>> distance_matrix;  // Local copy of distance matrix for O(1) access
+	std::vector<std::vector<PlanetDistance>> destinations_by_distance;
 	PlayerID player_id;
 	
 	// Space planets for holding in-transit fleets
@@ -53,6 +55,7 @@ public:
 	// Returns Euclidean distance rounded to nearest integer
 	// Throws std::out_of_range if planet IDs are invalid
 	double get_distance(uint32_t from_id, uint32_t to_id) const;
+	const std::vector<PlanetDistance>& get_destinations_by_distance(uint32_t from_id) const;
 	
 	// Access to space planet (for in-transit fleets)
 	Planet* get_space_real_planet() { return space_real_planet; }
