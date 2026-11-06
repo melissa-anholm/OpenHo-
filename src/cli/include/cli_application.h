@@ -28,6 +28,9 @@ private:
     bool mark_non_local_players_ready();
     bool synchronize_pending_submission();
     bool submit_pending_submission();
+    bool resolve_planet_name(const std::string& name,
+                             uint32_t& planet_id,
+                             std::string& error) const;
 
     void print_help() const;
     void print_status() const;

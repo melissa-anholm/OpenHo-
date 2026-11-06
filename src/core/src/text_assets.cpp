@@ -53,38 +53,41 @@ bool TextAssets::load_planet_names(const std::string& assets_dir)
 		return false;
 	}
 
-	std::string line;
-	bool in_array = false;
+		std::string line;
+		bool in_array = false;
 
-	while (std::getline(file, line))
-	{
-		// Look for array start
-		if (line.find("\"planet_names\"") != std::string::npos)
+		while (std::getline(file, line))
 		{
-			in_array = true;
-			continue;
-		}
-
-		if (in_array && line.find("]") != std::string::npos)
-		{
-			break;
-		}
-
-		if (in_array && line.find("\"") != std::string::npos)
-		{
-			// Extract string between quotes
-			size_t first = line.find("\"");
-			size_t last = line.rfind("\"");
-			if (first != std::string::npos && last != std::string::npos && first != last)
+			size_t cursor = 0;
+			if (!in_array)
 			{
-				std::string name = line.substr(first + 1, last - first - 1);
-				if (!name.empty())
-				{
-					planet_names.push_back(name);
-				}
+				const size_t key = line.find("\"planet_names\"");
+				if (key == std::string::npos)
+					continue;
+				in_array = true;
+				cursor = line.find('[', key);
+				if (cursor == std::string::npos)
+					continue;
+				++cursor;
 			}
+
+			while (true)
+			{
+				const size_t first = line.find('"', cursor);
+				if (first == std::string::npos)
+					break;
+				const size_t last = line.find('"', first + 1);
+				if (last == std::string::npos)
+					break;
+				const std::string name = line.substr(first + 1, last - first - 1);
+				if (!name.empty())
+					planet_names.push_back(name);
+				cursor = last + 1;
+			}
+
+			if (line.find(']', cursor) != std::string::npos)
+				break;
 		}
-	}
 
 	file.close();
 	return !planet_names.empty();
@@ -124,50 +127,61 @@ bool TextAssets::load_player_names(const std::string& assets_dir)
 		return false;
 	}
 
-	std::string line;
-	bool in_male_array = false;
-	bool in_female_array = false;
+		std::string line;
+		bool in_male_array = false;
+		bool in_female_array = false;
 
-	while (std::getline(file, line))
-	{
-		if (line.find("\"male_names\"") != std::string::npos)
+		while (std::getline(file, line))
 		{
-			in_male_array = true;
-			in_female_array = false;
-			continue;
-		}
-
-		if (line.find("\"female_names\"") != std::string::npos)
-		{
-			in_male_array = false;
-			in_female_array = true;
-			continue;
-		}
-
-		if ((in_male_array || in_female_array) && line.find("]") != std::string::npos)
-		{
-			in_male_array = false;
-			in_female_array = false;
-			continue;
-		}
-
-		if ((in_male_array || in_female_array) && line.find("\"") != std::string::npos)
-		{
-			size_t first = line.find("\"");
-			size_t last = line.rfind("\"");
-			if (first != std::string::npos && last != std::string::npos && first != last)
+			size_t cursor = 0;
+			if (!in_male_array && !in_female_array)
 			{
-				std::string name = line.substr(first + 1, last - first - 1);
+				const size_t male_key = line.find("\"male_names\"");
+				const size_t female_key = line.find("\"female_names\"");
+				if (male_key != std::string::npos)
+				{
+					in_male_array = true;
+					cursor = line.find('[', male_key);
+				}
+				else if (female_key != std::string::npos)
+				{
+					in_female_array = true;
+					cursor = line.find('[', female_key);
+				}
+				else
+				{
+					continue;
+				}
+				if (cursor == std::string::npos)
+					continue;
+				++cursor;
+			}
+
+			while (true)
+			{
+				const size_t first = line.find('"', cursor);
+				if (first == std::string::npos)
+					break;
+				const size_t last = line.find('"', first + 1);
+				if (last == std::string::npos)
+					break;
+				const std::string name = line.substr(first + 1, last - first - 1);
 				if (!name.empty())
 				{
 					if (in_male_array)
 						male_player_names.push_back(name);
-					else if (in_female_array)
+					else
 						female_player_names.push_back(name);
 				}
+				cursor = last + 1;
+			}
+
+			if (line.find(']', cursor) != std::string::npos)
+			{
+				in_male_array = false;
+				in_female_array = false;
 			}
 		}
-	}
 	file.close();
 	return !male_player_names.empty() && !female_player_names.empty();
 }

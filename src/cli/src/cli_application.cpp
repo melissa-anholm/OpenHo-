@@ -3,6 +3,7 @@
 #include "game.h"
 #include "game_session.h"
 #include "game_setup.h"
+#include "text_assets.h"
 #include "ui_adapter.h"
 
 #include <array>
@@ -29,11 +30,26 @@ std::string trim(const std::string& value)
     return value.substr(first, last - first + 1);
 }
 
-std::string owner_text(int32_t owner)
+std::string owner_text(int32_t owner, const std::vector<UiPlayerSnapshot>& players)
 {
     if (owner == NOT_OWNED)
         return "unowned";
-    return std::to_string(owner);
+    const auto player = std::find_if(
+        players.begin(), players.end(),
+        [owner](const UiPlayerSnapshot& value) {
+            return value.id == static_cast<uint32_t>(owner);
+        });
+    return player == players.end() ? "unknown" : player->name;
+}
+
+std::vector<std::string> split_tokens(const std::string& value)
+{
+    std::istringstream input(value);
+    std::vector<std::string> tokens;
+    std::string token;
+    while (input >> token)
+        tokens.push_back(token);
+    return tokens;
 }
 }
 
@@ -49,9 +65,20 @@ CliApplication::~CliApplication() = default;
 
 bool CliApplication::initialize_new_session()
 {
+    TextAssets text_assets;
+    if (!text_assets.load_assets(assets_directory_))
+    {
+        print_error("load player names", "unable to load text assets");
+        return false;
+    }
+
+    const std::string female_name = text_assets.get_random_female_player_name(0);
+    const std::string male_name = text_assets.get_random_male_player_name(0);
     std::vector<PlayerSetup> player_setups = {
-        {"Player One", GENDER_F, PLAYER_HUMAN, 100, START_NORMAL},
-        {"Player Two", GENDER_M, PLAYER_HUMAN, 100, START_NORMAL}
+        {female_name.empty() ? "Player One" : female_name,
+         GENDER_F, PLAYER_HUMAN, 100, START_NORMAL},
+        {male_name.empty() ? "Player Two" : male_name,
+         GENDER_M, PLAYER_HUMAN, 100, START_NORMAL}
     };
     GameSetup setup(
         GalaxyGenerationParams(
@@ -153,6 +180,40 @@ bool CliApplication::submit_pending_submission()
     return true;
 }
 
+bool CliApplication::resolve_planet_name(const std::string& name,
+                                         uint32_t& planet_id,
+                                         std::string& error) const
+{
+    if (!session_ || !session_->ui())
+    {
+        error = "no active game session";
+        return false;
+    }
+
+    const std::string requested_name = trim(name);
+    const UiGameSnapshot snapshot = session_->ui()->snapshot(local_player_id_);
+    const UiPlanetSnapshot* match = nullptr;
+    for (const UiPlanetSnapshot& planet : snapshot.planets)
+    {
+        if (planet.name != requested_name)
+            continue;
+        if (match != nullptr)
+        {
+            error = "planet name is ambiguous: " + requested_name;
+            return false;
+        }
+        match = &planet;
+    }
+
+    if (match == nullptr)
+    {
+        error = "unknown planet name: " + requested_name;
+        return false;
+    }
+    planet_id = match->id;
+    return true;
+}
+
 void CliApplication::print_help() const
 {
     std::cout << "Commands:\n"
@@ -161,14 +222,13 @@ void CliApplication::print_help() const
               << "  players                      Show players and readiness.\n"
               << "  planets                      Show the local player's planet views.\n"
               << "  economy                      Show local economic state and pending choices.\n"
-              << "  set spending S R P           Set savings/research/planets fractions.\n"
-              << "  set research A B C D E F     Set six research-stream fractions.\n"
-              << "  set planet ID F M T          Set funding/mining/terraforming fractions.\n"
+              << "  set_spending S R P           Set savings/research/planets fractions.\n"
+              << "  set_research A B C D E F     Set six research-stream fractions.\n"
+              << "  set_planet NAME F M T        Set funding/mining/terraforming fractions.\n"
               << "  dip AMOUNT [once|persistent] Set pending Dip Into Savings.\n"
-              << "  abandon ID                   Queue a colony abandonment.\n"
-              << "  cancel-abandon ID            Cancel a queued abandonment.\n"
-              << "  submit                       Submit pending economic choices.\n"
-              << "  ready                        Mark player 1 ready.\n"
+              << "  abandon NAME                 Queue a colony abandonment.\n"
+              << "  cancel_abandon NAME          Cancel a queued abandonment.\n"
+              << "  ready                        Submit choices and mark player 1 ready.\n"
               << "  unready                      Mark player 1 unready.\n"
               << "  process                      Process the turn and autosave.\n"
               << "  save <path>                  Save a manual checkpoint.\n"
@@ -231,7 +291,7 @@ void CliApplication::print_planets() const
             std::cout << " [unobserved]\n";
             continue;
         }
-        std::cout << " owner=" << owner_text(planet.apparent_owner)
+        std::cout << " owner=" << owner_text(planet.apparent_owner, snapshot.players)
                   << " population=" << planet.apparent_population
                   << " observed=" << planet.observation_year << "\n";
     }
@@ -314,61 +374,77 @@ bool CliApplication::handle_command(const std::string& raw_line)
     {
         print_economy();
     }
-    else if (command == "set")
+    else if (command == "set_spending")
     {
-        std::string category;
-        input >> category;
         try
         {
-            if (category == "spending")
-            {
-                input >> pending_submission_.savings_fraction
-                      >> pending_submission_.research_fraction
-                      >> pending_submission_.planets_fraction;
-                if (!input)
-                    throw std::invalid_argument("expected three spending fractions");
-                submission_dirty_ = true;
-                std::cout << "Pending spending allocation updated.\n";
-            }
-            else if (category == "research")
-            {
-                for (double& fraction : pending_submission_.research_fractions)
-                    input >> fraction;
-                if (!input)
-                    throw std::invalid_argument("expected six research fractions");
-                submission_dirty_ = true;
-                std::cout << "Pending research allocation updated.\n";
-            }
-            else if (category == "planet")
-            {
-                uint32_t planet_id = 0;
-                EconomicColonyAllocation allocation;
-                input >> planet_id >> allocation.funding_fraction
-                      >> allocation.mining_fraction
-                      >> allocation.terraforming_fraction;
-                if (!input)
-                    throw std::invalid_argument("expected planet ID and three fractions");
-                allocation.planet_id = planet_id;
-                const auto existing = std::find_if(
-                    pending_submission_.colony_allocations.begin(),
-                    pending_submission_.colony_allocations.end(),
-                    [planet_id](const EconomicColonyAllocation& value) {
-                        return value.planet_id == planet_id;
-                    });
-                if (existing == pending_submission_.colony_allocations.end())
-                    throw std::invalid_argument("planet is not one of the local colonies");
-                *existing = allocation;
-                submission_dirty_ = true;
-                std::cout << "Pending allocation for planet " << planet_id << " updated.\n";
-            }
-            else
-            {
-                throw std::invalid_argument("unknown set category");
-            }
+            input >> pending_submission_.savings_fraction
+                  >> pending_submission_.research_fraction
+                  >> pending_submission_.planets_fraction;
+            if (!input)
+                throw std::invalid_argument("expected three spending fractions");
+            submission_dirty_ = true;
+            std::cout << "Pending spending allocation updated.\n";
         }
         catch (const std::exception& error)
         {
-            print_error("set", error.what());
+            print_error(command, error.what());
+        }
+    }
+    else if (command == "set_research")
+    {
+        try
+        {
+            for (double& fraction : pending_submission_.research_fractions)
+                input >> fraction;
+            if (!input)
+                throw std::invalid_argument("expected six research fractions");
+            submission_dirty_ = true;
+            std::cout << "Pending research allocation updated.\n";
+        }
+        catch (const std::exception& error)
+        {
+            print_error(command, error.what());
+        }
+    }
+    else if (command == "set_planet")
+    {
+        try
+        {
+            const std::vector<std::string> tokens = split_tokens(trim(line.substr(command.size())));
+            if (tokens.size() < 4)
+                throw std::invalid_argument("expected planet name and three fractions");
+
+            const size_t fraction_start = tokens.size() - 3;
+            std::string planet_name = tokens.front();
+            for (size_t index = 1; index < fraction_start; ++index)
+                planet_name += " " + tokens[index];
+
+            uint32_t planet_id = 0;
+            std::string resolution_error;
+            if (!resolve_planet_name(planet_name, planet_id, resolution_error))
+                throw std::invalid_argument(resolution_error);
+
+            EconomicColonyAllocation allocation;
+            allocation.planet_id = planet_id;
+            allocation.funding_fraction = std::stod(tokens[fraction_start]);
+            allocation.mining_fraction = std::stod(tokens[fraction_start + 1]);
+            allocation.terraforming_fraction = std::stod(tokens[fraction_start + 2]);
+            const auto existing = std::find_if(
+                pending_submission_.colony_allocations.begin(),
+                pending_submission_.colony_allocations.end(),
+                [planet_id](const EconomicColonyAllocation& value) {
+                    return value.planet_id == planet_id;
+                });
+            if (existing == pending_submission_.colony_allocations.end())
+                throw std::invalid_argument("planet is not one of the local colonies");
+            *existing = allocation;
+            submission_dirty_ = true;
+            std::cout << "Pending allocation for planet " << planet_name << " updated.\n";
+        }
+        catch (const std::exception& error)
+        {
+            print_error(command, error.what());
         }
     }
     else if (command == "dip")
@@ -391,13 +467,13 @@ bool CliApplication::handle_command(const std::string& raw_line)
             print_error("dip", error.what());
         }
     }
-    else if (command == "abandon" || command == "cancel-abandon")
+    else if (command == "abandon" || command == "cancel_abandon")
     {
         uint32_t planet_id = 0;
-        input >> planet_id;
-        if (!input)
+        std::string resolution_error;
+        if (!resolve_planet_name(trim(line.substr(command.size())), planet_id, resolution_error))
         {
-            print_error(command, "a planet ID is required");
+            print_error(command, resolution_error);
         }
         else if (command == "abandon")
         {
@@ -421,17 +497,10 @@ bool CliApplication::handle_command(const std::string& raw_line)
             std::cout << "Pending abandonment for planet " << planet_id << " cancelled.\n";
         }
     }
-    else if (command == "submit")
-    {
-        submit_pending_submission();
-    }
     else if (command == "ready")
     {
-        if (submission_dirty_)
-        {
-            print_error("ready", "submit pending economic choices first");
+        if (!submit_pending_submission())
             return true;
-        }
         const ErrorCode result = session_ && session_->ui()
             ? session_->ui()->mark_ready(local_player_id_)
             : ErrorCode::INVALID_TURN_STATE;
@@ -462,7 +531,7 @@ bool CliApplication::handle_command(const std::string& raw_line)
                 return false;
             if (submission_dirty_)
             {
-                print_error("process", "submit pending economic choices first");
+                print_error("process", "call ready to submit pending economic choices first");
                 return true;
             }
             const GameSessionError result = session_->process_turn_and_autosave();
