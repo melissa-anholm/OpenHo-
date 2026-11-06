@@ -417,6 +417,7 @@ void CliApplication::print_help() const
               << "  players                      Show players and readiness.\n"
               << "  planets                      Show the local player's planet views.\n"
               << "  economy                      Show local economic state and pending choices.\n"
+              << "  research                     Show pending research-stream allocations.\n"
               << "  set_spending S R P           Set savings/research/planets fractions.\n"
               << "  set_savings VALUE            Adjust savings and proportionally rebalance the rest.\n"
               << "  set_research_budget VALUE    Adjust research and proportionally rebalance the rest.\n"
@@ -545,6 +546,17 @@ void CliApplication::print_economy() const
     }
 }
 
+void CliApplication::print_research_allocations() const
+{
+    static const std::array<const char*, 6> names = {
+        "range", "speed", "weapons", "shields", "mini", "radical"};
+
+    std::cout << "Pending research-stream allocations:\n";
+    for (size_t index = 0; index < pending_submission_.research_fractions.size(); ++index)
+        std::cout << "  " << names[index] << "="
+                  << pending_submission_.research_fractions[index] << "\n";
+}
+
 void CliApplication::print_error(const std::string& operation,
                                   const std::string& detail) const
 {
@@ -588,6 +600,10 @@ bool CliApplication::handle_command(const std::string& raw_line)
     else if (command == "economy")
     {
         print_economy();
+    }
+    else if (command == "research")
+    {
+        print_research_allocations();
     }
     else if (command == "set_spending")
     {

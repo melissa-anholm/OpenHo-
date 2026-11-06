@@ -12,6 +12,7 @@ output="$({
         'set_planet_budget Colma 0.20' \
         'set_research 1 0 0 0 0 0' \
         'set_research_stream weapons 0.50' \
+        'research' \
         'set_mining Colma 0.80' \
         'set_terraforming Colma 0.25' \
         'set_planet Colma 1.0 0.60 0.40' \
@@ -32,6 +33,8 @@ printf '%s\n' "$output" | grep -F "Economic submission accepted for the current 
 printf '%s\n' "$output" | grep -F "Pending spending allocation updated and normalized." >/dev/null
 printf '%s\n' "$output" | grep -F "Pending planetary allocation updated and normalized." >/dev/null
 printf '%s\n' "$output" | grep -F "Pending research-stream allocation updated and normalized." >/dev/null
+printf '%s\n' "$output" | grep -F "Pending research-stream allocations:" >/dev/null
+printf '%s\n' "$output" | grep -F "  weapons=0.5" >/dev/null
 printf '%s\n' "$output" | grep -F "Pending planet development allocation updated and normalized." >/dev/null
 test "$(printf '%s\n' "$output" | grep -c "Economic submission accepted for the current turn.")" -ge 2
 printf '%s\n' "$output" | grep -F "Player 1 is unready." >/dev/null
