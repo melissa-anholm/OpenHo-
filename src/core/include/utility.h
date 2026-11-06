@@ -8,6 +8,10 @@
 #include <map>
 #include <cmath>
 #include <utility>
+#include <cctype>
+#include <stdexcept>
+#include <unordered_set>
+#include <type_traits>
 #include "rng.h"
 
 // Forward declarations
@@ -125,10 +129,9 @@ namespace TemperatureUtils
  *   Returns n_items unique items in random order (no repeats)
  * 
  * If n_items > source_list.size():
- *   Cycles through the list multiple times with new random order each cycle.
- *   Appends a suffix to items in subsequent cycles: " 2", " 3", etc.
- *   Example: If source has ["Alpha", "Beta"] and n_items=5:
- *     Result: ["Beta", "Alpha 2", "Beta 2", "Alpha 3", "Beta 3"]
+ *   Selects additional names randomly from the source list. Repeated names
+ *   receive the smallest available numeric suffix (" 2", " 3", etc.). A
+ *   source name ending in a numeral is never selected for suffixing.
  * 
  * @tparam T Type of items in the list (typically std::string)
  * @param source_list The list to select from
@@ -156,52 +159,70 @@ std::vector<T> generate_randomized_subset(
 	
 	if (source_list.empty() || n_items == 0)
 		{ return result; }
-	
-	uint32_t source_size = static_cast<uint32_t>(source_list.size());
-	uint32_t cycle = 1;  // Current cycle (1 for first pass, 2 for second, etc.)
-	uint32_t items_added = 0;
-	
-	while (items_added < n_items)
+
+	if constexpr (std::is_same_v<T, std::string>)
 	{
-		// Create a shuffled copy of indices for this cycle
-		std::vector<uint32_t> indices;
-		for (uint32_t i = 0; i < source_size; ++i)
-			{ indices.push_back(i); }
-		
-		// Fisher-Yates shuffle using deterministic RNG
-		for (uint32_t i = source_size - 1; i > 0; --i)
+		std::vector<std::string> unique_source;
+		std::unordered_set<std::string> seen_source;
+		for (const auto& item : source_list)
 		{
-			uint32_t j = rng.nextUInt32Range(0, i);
-			std::swap(indices[i], indices[j]);
+			if (seen_source.insert(item).second)
+				unique_source.push_back(item);
 		}
-		
-		// Add items from this cycle
-		for (uint32_t idx : indices)
+
+		std::vector<uint32_t> indices(unique_source.size());
+		for (uint32_t i = 0; i < indices.size(); ++i)
+			indices[i] = i;
+		for (uint32_t i = static_cast<uint32_t>(indices.size()); i > 1; --i)
 		{
-			if (items_added >= n_items)
-				{ break; }
-			
-			T item = source_list[idx];
-			
-			// Append cycle suffix if not the first cycle
-			if (cycle > 1)
+			const uint32_t j = rng.nextUInt32Range(0, i - 1);
+			std::swap(indices[i - 1], indices[j]);
+		}
+
+		const uint32_t initial_count = std::min<uint32_t>(n_items, unique_source.size());
+		std::unordered_set<std::string> used_names;
+		for (uint32_t i = 0; i < initial_count; ++i)
+		{
+			result.push_back(unique_source[indices[i]]);
+			used_names.insert(result.back());
+		}
+
+		std::vector<std::string> repeatable_names;
+		for (const auto& name : unique_source)
+		{
+			if (!name.empty() && std::isdigit(static_cast<unsigned char>(name.back())) == 0)
+				repeatable_names.push_back(name);
+		}
+		if (result.size() < n_items && repeatable_names.empty())
+			throw std::runtime_error("not enough suffixable planet names");
+
+		while (result.size() < n_items)
+		{
+			const auto& base = repeatable_names[rng.nextUInt32Range(
+				0, static_cast<uint32_t>(repeatable_names.size() - 1))];
+			uint32_t suffix = 2;
+			std::string candidate;
+			do
 			{
-				// For std::string, append the suffix
-				if constexpr (std::is_same_v<T, std::string>)
-				{
-					item += " " + std::to_string(cycle);
-				}
-				// For other types, this template specialization would need custom handling
-				// For now, we primarily support std::string
-			}
-			
-			result.push_back(item);
-			items_added++;
+				candidate = base + " " + std::to_string(suffix++);
+			} while (used_names.find(candidate) != used_names.end());
+			result.push_back(candidate);
+			used_names.insert(candidate);
 		}
-		
-		cycle++;
+		return result;
 	}
-	
+
+	// Non-string callers retain the original unique shuffled-subset semantics.
+	std::vector<uint32_t> indices(source_list.size());
+	for (uint32_t i = 0; i < indices.size(); ++i)
+		indices[i] = i;
+	for (uint32_t i = static_cast<uint32_t>(indices.size()); i > 1; --i)
+	{
+		const uint32_t j = rng.nextUInt32Range(0, i - 1);
+		std::swap(indices[i - 1], indices[j]);
+	}
+	for (uint32_t i = 0; i < std::min<uint32_t>(n_items, indices.size()); ++i)
+		result.push_back(source_list[indices[i]]);
 	return result;
 }
 

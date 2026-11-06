@@ -68,6 +68,12 @@ double KnowledgeGalaxy::get_distance(uint32_t from_id, uint32_t to_id) const
     return distance_matrix.at(from_id).at(to_id);
 }
 
+double KnowledgeGalaxy::get_distance(const std::string& from_name,
+                                     const std::string& to_name) const
+{
+    return real_galaxy->get_distance(from_name, to_name);
+}
+
 const std::vector<PlanetDistance>& KnowledgeGalaxy::get_destinations_by_distance(uint32_t from_id) const
 {
     return destinations_by_distance.at(from_id);

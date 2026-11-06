@@ -6,6 +6,7 @@
 #include <cmath>
 #include <set>
 #include <algorithm>
+#include <stdexcept>
 
 Galaxy::Galaxy(const GalaxyGenerationParams& params, GameState* game_state)
 {
@@ -37,6 +38,12 @@ Galaxy::Galaxy(const GalaxyGenerationParams& params, GameState* game_state)
 
 	// Phase 4: Generate planet parameters
 	generate_planet_parameters(all_coords, home_coords, planet_names, game_state);
+	planet_name_to_index.clear();
+	for (size_t i = 0; i < planets.size(); ++i)
+	{
+		if (!planet_name_to_index.emplace(planets[i].name, i).second)
+			throw std::runtime_error("duplicate planet name: " + planets[i].name);
+	}
 
 	// Phase 5: Compute distance matrix
 	compute_distance_matrix();
@@ -106,8 +113,9 @@ void Galaxy::generate_planet_parameters(
 		int32_t metal = rng.nextInt32Range(GameConstants::min_metal, GameConstants::max_metal);
 
 		// Create planet
-		Planet planet(planet_id++, planet_names[i], coord.first, coord.second, true_gravity, true_temperature, metal);
-		planets.push_back(planet);
+			Planet planet(planet_id++, planet_names[i], coord.first, coord.second, true_gravity, true_temperature, metal);
+			planets.push_back(planet);
+			planet_name_to_index.emplace(planets.back().name, planets.size() - 1);
 
 		// Track home planet indices
 		if (is_home_planet)
@@ -157,6 +165,13 @@ void Galaxy::compute_distance_matrix()
 double Galaxy::get_distance(uint32_t from_id, uint32_t to_id) const
 {
 	return distance_matrix.at(from_id).at(to_id);
+}
+
+double Galaxy::get_distance(const std::string& from_name, const std::string& to_name) const
+{
+	const auto from = planet_name_to_index.at(from_name);
+	const auto to = planet_name_to_index.at(to_name);
+	return distance_matrix.at(planets.at(from).id).at(planets.at(to).id);
 }
 
 const std::vector<PlanetDistance>& Galaxy::get_destinations_by_distance(uint32_t from_id) const

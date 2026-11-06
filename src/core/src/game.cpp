@@ -1335,27 +1335,21 @@ void GameState::process_ships()
 			if (fleet.transit && fleet.transit->arrival_turn <= current_turn)
 			{
 				// Fleet has arrived at destination
-				uint32_t dest_id = fleet.transit->destination_planet_id;
-				Planet* destination = nullptr;
-				
-				// Find the destination planet
-					if (dest_id > 0 && dest_id <= galaxy->planets.size())
-					{
-						destination = &galaxy->planets[dest_id - 1];
-				}
+					const std::string destination_name = fleet.transit->destination_planet_name;
+					Planet* destination = get_planet(destination_name);
 				
 				if (destination)
 				{
 					// Move fleet from space to destination
-					fleet.current_planet = destination;
+						fleet.current_planet_name = destination->name;
 					
 					// Clear transit info
 					fleet.transit.reset();
 					
 					// Update old transit fields for compatibility
 					fleet.in_transit = false;
-					fleet.origin_planet = destination;
-					fleet.destination_planet = nullptr;
+						fleet.origin_planet_name = destination->name;
+						fleet.destination_planet_name.clear();
 					fleet.distance_to_destination = 0;
 					fleet.turns_to_destination = 0;
 				}
@@ -1759,13 +1753,18 @@ bool GameState::delete_fleet(uint32_t player_id, uint32_t fleet_id)
 
 void GameState::move_fleet(uint32_t player_id, uint32_t fleet_id, uint32_t destination_planet_id)
 {
-	// Delegate to Player to handle validation and initiate movement
+	const Planet* destination = get_planet(destination_planet_id);
+	if (destination)
+		move_fleet(player_id, fleet_id, destination->name);
+}
+
+void GameState::move_fleet(uint32_t player_id,
+                           uint32_t fleet_id,
+                           const std::string& destination_planet_name)
+{
 	Player* player = get_player(player_id);
-	if (!player)
-		return;  // Player not found
-	
-	// Player::move_fleet handles all validation and calls Fleet::move_to()
-	player->move_fleet(fleet_id, destination_planet_id);
+	if (player)
+		player->move_fleet(fleet_id, destination_planet_name);
 }
 
 void GameState::refuel_fleet(uint32_t player_id, uint32_t fleet_id)
@@ -2010,7 +2009,7 @@ ErrorCode GameState::build_ships_from_design(uint32_t player_id, uint32_t design
 		return ErrorCode::INSUFFICIENT_METAL;
 
 	const uint32_t fleet_id = player->build_fleet(
-		allocate_fleet_id(), design_id, ship_count, planet_id);
+		allocate_fleet_id(), design_id, ship_count, planet->name);
 	if (fleet_id == 0)
 		return ErrorCode::UNKNOWN_ERROR;
 
@@ -2042,6 +2041,16 @@ ErrorCode GameState::check_player_set_spending_allocation(uint32_t player_id, do
 
 ErrorCode GameState::check_player_move_fleet(uint32_t player_id, uint32_t fleet_id, uint32_t destination_planet_id) const
 {
+	const Planet* destination = get_planet(destination_planet_id);
+	return destination
+		? check_player_move_fleet(player_id, fleet_id, destination->name)
+		: ErrorCode::INVALID_PLANET_ID;
+}
+
+ErrorCode GameState::check_player_move_fleet(uint32_t player_id,
+		uint32_t fleet_id,
+		const std::string& destination_planet_name) const
+{
 	// Check player exists
 	const Player* player = get_player(player_id);
 	if (!player)
@@ -2053,7 +2062,7 @@ ErrorCode GameState::check_player_move_fleet(uint32_t player_id, uint32_t fleet_
 		return ErrorCode::FLEET_NOT_FOUND;
 	
 	// Check destination planet exists
-	const Planet* dest_planet = get_planet(destination_planet_id);
+	const Planet* dest_planet = get_planet(destination_planet_name);
 	if (!dest_planet)
 		return ErrorCode::INVALID_PLANET_ID;
 	
@@ -2190,7 +2199,7 @@ void GameState::refresh_player_planet_views()
 			for (const Fleet& fleet : player.fleets)
 			{
 				if (!fleet.in_transit && fleet.ship_count > 0 &&
-					fleet.current_planet == &planet)
+						fleet.current_planet_name == planet.name)
 				{
 					stationed_fleet = true;
 					break;

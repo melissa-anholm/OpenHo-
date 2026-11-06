@@ -9,6 +9,7 @@
 #include <cmath>
 #include <vector>
 #include <string>
+#include <unordered_map>
 
 // ============================================================================
 // Data Structures
@@ -59,7 +60,8 @@ struct Galaxy
 	
 		// Planet records: identity and geometry are stable, while environmental
 		// and ownership-related fields are mutable during play.
-		std::vector<Planet> planets;
+	std::vector<Planet> planets;
+	std::unordered_map<std::string, size_t> planet_name_to_index;
 	
 	// Home planet indices (indices into planets vector)
 	std::vector<size_t> home_planet_indices;
@@ -84,6 +86,7 @@ struct Galaxy
 	// Returns Euclidean distance rounded to nearest integer
 	// Throws std::out_of_range if planet IDs are invalid
 	double get_distance(uint32_t from_id, uint32_t to_id) const;
+	double get_distance(const std::string& from_name, const std::string& to_name) const;
 	const std::vector<PlanetDistance>& get_destinations_by_distance(uint32_t from_id) const;
 	
 	// // Generate randomized planet names (helper method)

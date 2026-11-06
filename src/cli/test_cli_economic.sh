@@ -9,15 +9,15 @@ output="$({
         'set_spending 0.30 0.20 0.50' \
         'set_savings 0.40' \
         'set_research_budget 0.30' \
-        'set_planet_budget Petro 0.20' \
+        'set_planet_budget Colma 0.20' \
         'set_research 1 0 0 0 0 0' \
         'set_research_stream weapons 0.50' \
-        'set_mining Petro 0.80' \
-        'set_terraforming Petro 0.25' \
-        'set_planet Petro 1.0 0.60 0.40' \
+        'set_mining Colma 0.80' \
+        'set_terraforming Colma 0.25' \
+        'set_planet Colma 1.0 0.60 0.40' \
         'dip 500 persistent' \
-        'abandon Petro' \
-        'cancel_abandon Petro' \
+        'abandon Colma' \
+        'cancel_abandon Colma' \
         'ready' \
         'unready' \
         'dip 600 persistent' \

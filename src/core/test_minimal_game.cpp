@@ -5,6 +5,7 @@
 #include "save_file.h"
 #include "rng.h"
 #include "ui_adapter.h"
+#include "utility.h"
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
@@ -13,6 +14,7 @@
 #include <cstdio>
 #include <fstream>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 namespace
@@ -43,6 +45,30 @@ void process_ready_turn(GameState& game)
     for (const Player& player : game.get_players())
         assert(game.mark_player_turn_ready(player.id) == ErrorCode::SUCCESS);
     game.process_turn();
+}
+
+void test_planet_name_reuse_rules()
+{
+    DeterministicRNG rng(1234, 5678);
+    const std::vector<std::string> source = {
+        "Spica", "Pollux", "Omicron Persei 8"
+    };
+    const std::vector<std::string> names =
+        generate_randomized_subset(source, 8, rng);
+
+    std::unordered_set<std::string> unique_names(names.begin(), names.end());
+    assert(names.size() == 8);
+    assert(unique_names.size() == names.size());
+    for (const std::string& name : names)
+        assert(name.rfind("Omicron Persei 8 ", 0) != 0);
+
+    bool has_suffix = false;
+    for (const std::string& name : names)
+    {
+        if (name.rfind("Spica ", 0) == 0 || name.rfind("Pollux ", 0) == 0)
+            has_suffix = true;
+    }
+    assert(has_suffix);
 }
 
 void test_game_initialization_and_readiness()
@@ -658,6 +684,7 @@ void test_game_session_lifecycle()
 
 int main()
 {
+    test_planet_name_reuse_rules();
     test_game_initialization_and_readiness();
 	 test_dip_and_turn_processing();
 	 test_ship_construction();

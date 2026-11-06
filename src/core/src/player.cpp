@@ -74,7 +74,7 @@ int64_t Player::calculate_research_stream_amount( const ResearchAllocation& play
 // Fleet Management
 // ============================================================================
 
-bool Player::validate_fleet(uint32_t design_id, uint32_t ship_count, uint32_t planet_id) const
+bool Player::validate_fleet(uint32_t design_id, uint32_t ship_count, const std::string& planet_name) const
 {
 	// Validate ship_count is positive
 	if (ship_count == 0)
@@ -86,43 +86,49 @@ bool Player::validate_fleet(uint32_t design_id, uint32_t ship_count, uint32_t pl
 		{ return false; }
 	
 	// Validate planet exists through GameState
-	const Planet* planet = game_state->get_planet(planet_id);
+	const Planet* planet = game_state->get_planet(planet_name);
 	if (!planet)
 		{ return false; }
 	
 	return true;
 }
 
-uint32_t Player::build_fleet(uint32_t fleet_id, uint32_t design_id, uint32_t ship_count, uint32_t planet_id)
+uint32_t Player::build_fleet(uint32_t fleet_id, uint32_t design_id, uint32_t ship_count, const std::string& planet_name)
 {
 	// Get the design and planet pointers
 	const ShipDesign* design = get_ship_design(design_id);
 	if (!design) 
 		{ return 0; }
 	
-	Planet* planet = game_state->get_planet(planet_id);
+	Planet* planet = game_state->get_planet(planet_name);
 	if (!planet)
 		{ return 0; }
 	
 	// Create fleet using private constructor (Player is a friend of Fleet)
-	Fleet new_fleet(fleet_id, id, design, ship_count, planet);
+	Fleet new_fleet(fleet_id, id, design, ship_count, planet->name);
 	
 	fleets.push_back(std::move(new_fleet));
 	//
 	return fleet_id;
 }
 
-uint32_t Player::create_fleet(uint32_t design_id, uint32_t ship_count, uint32_t planet_id)
+uint32_t Player::create_fleet(uint32_t design_id, uint32_t ship_count, const std::string& planet_name)
 {
 	// Validate parameters
-	if (!validate_fleet(design_id, ship_count, planet_id) )
+	if (!validate_fleet(design_id, ship_count, planet_name) )
 		{ return 0; }
 	
 	// Allocate a globally unique fleet ID from GameState
 	uint32_t fleet_id = game_state->allocate_fleet_id();
 	
 	// Build and add the fleet
-	return build_fleet(fleet_id, design_id, ship_count, planet_id);
+	return build_fleet(fleet_id, design_id, ship_count, planet_name);
+}
+
+uint32_t Player::create_fleet(uint32_t design_id, uint32_t ship_count, uint32_t planet_id)
+{
+	const Planet* planet = game_state ? game_state->get_planet(planet_id) : nullptr;
+	return planet ? create_fleet(design_id, ship_count, planet->name) : 0;
 }
 
 Fleet* Player::get_fleet(uint32_t fleet_id)
@@ -157,7 +163,7 @@ bool Player::delete_fleet(uint32_t fleet_id)
 	return false;
 }
 
-void Player::move_fleet(uint32_t fleet_id, uint32_t destination_planet_id)
+void Player::move_fleet(uint32_t fleet_id, const std::string& destination_planet_name)
 {
 	// Validate fleet exists
 	Fleet* fleet = get_fleet(fleet_id);
@@ -168,7 +174,7 @@ void Player::move_fleet(uint32_t fleet_id, uint32_t destination_planet_id)
 	if (!game_state)
 		{ return; }  // No game state reference
 	
-	Planet* destination = game_state->get_planet(destination_planet_id);
+	Planet* destination = game_state->get_planet(destination_planet_name);
 	if (!destination)
 		{ return; }  // Destination planet not found
 	
@@ -181,7 +187,14 @@ void Player::move_fleet(uint32_t fleet_id, uint32_t destination_planet_id)
 	
 	// Delegate to Fleet::move_to() to initiate movement
 	// This creates FleetTransit and moves fleet to space planet
-	fleet->move_to(destination, knowledge_galaxy, current_turn);
+	fleet->move_to(destination->name, knowledge_galaxy, current_turn);
+}
+
+void Player::move_fleet(uint32_t fleet_id, uint32_t destination_planet_id)
+{
+	const Planet* destination = game_state ? game_state->get_planet(destination_planet_id) : nullptr;
+	if (destination)
+		move_fleet(fleet_id, destination->name);
 }
 
 std::vector<Fleet*> Player::get_fleets_in_transit()

@@ -9,17 +9,17 @@
 // Fleet Constructor
 // ============================================================================
 
-Fleet::Fleet(uint32_t fleet_id, PlayerID player_id, const ShipDesign* design, 
-             uint32_t ship_count, Planet* planet)
-	: id(fleet_id),
+Fleet::Fleet(uint32_t fleet_id, PlayerID player_id, const ShipDesign* design,
+             uint32_t ship_count, const std::string& planet_name)
+		: id(fleet_id),
 	  owner(player_id),
 	  ship_design(design),
 	  ship_count(ship_count),
 	  fuel(design ? design->get_range() : 0),
 	  in_transit(false),
-	  current_planet(planet),
-	  origin_planet(planet),
-	  destination_planet(nullptr),
+		  current_planet_name(planet_name),
+		  origin_planet_name(planet_name),
+		  destination_planet_name(),
 	  distance_to_destination(0),
 	  turns_to_destination(0),
 	  transit(nullptr)
@@ -51,22 +51,20 @@ void Fleet::partial_refuel(int32_t amount)
 	}
 }
 
-void Fleet::move_to(Planet* destination, KnowledgeGalaxy* knowledge_galaxy, uint32_t current_turn)
+void Fleet::move_to(const std::string& destination_name,
+                    KnowledgeGalaxy* knowledge_galaxy,
+                    uint32_t current_turn)
 {
 	// Validate inputs
-	if (!destination || !knowledge_galaxy || !current_planet)
+	if (destination_name.empty() || !knowledge_galaxy || current_planet_name.empty())
 		{ return; }
 	
 	// If fleet is already at destination, do nothing
-	if (current_planet->id == destination->id)
+	if (current_planet_name == destination_name)
 		{ return; }
 	
-	// Get origin planet ID
-	uint32_t origin_id = current_planet->id;
-	uint32_t dest_id = destination->id;
-	
 	// Get distance from knowledge galaxy's distance matrix
-	double distance = knowledge_galaxy->get_distance(origin_id, dest_id);
+	double distance = knowledge_galaxy->get_distance(current_planet_name, destination_name);
 	
 	// Calculate turns to destination based on fleet's range (speed)
 	uint32_t turns = 0;
@@ -81,8 +79,8 @@ void Fleet::move_to(Planet* destination, KnowledgeGalaxy* knowledge_galaxy, uint
 	
 	// Create FleetTransit to hold transit state
 	transit = std::make_unique<FleetTransit>(
-		origin_id,
-		dest_id,
+			current_planet_name,
+			destination_name,
 		current_turn,
 		arrival_turn,
 		distance,
@@ -90,16 +88,12 @@ void Fleet::move_to(Planet* destination, KnowledgeGalaxy* knowledge_galaxy, uint
 	
 	// Update fleet state
 	in_transit = true;
-	origin_planet = current_planet;
-	destination_planet = destination;
+	origin_planet_name = current_planet_name;
+	destination_planet_name = destination_name;
 	distance_to_destination = distance;
 	turns_to_destination = turns;
 	
-	// Move fleet to space planet (both real and knowledge)
-	Planet* space_planet = knowledge_galaxy->get_space_real_planet();
-	if (space_planet)
-	{
-		current_planet = space_planet;
-		
-		}
+	// An in-transit fleet has no stationed planet. Its origin and destination
+	// names remain in the transit record until arrival.
+	current_planet_name.clear();
 }

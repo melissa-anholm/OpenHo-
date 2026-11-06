@@ -55,6 +55,7 @@ public:
 	// Returns Euclidean distance rounded to nearest integer
 	// Throws std::out_of_range if planet IDs are invalid
 	double get_distance(uint32_t from_id, uint32_t to_id) const;
+	double get_distance(const std::string& from_name, const std::string& to_name) const;
 	const std::vector<PlanetDistance>& get_destinations_by_distance(uint32_t from_id) const;
 	
 	// Access to space planet (for in-transit fleets)

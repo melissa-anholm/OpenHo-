@@ -217,15 +217,16 @@ public:
 	
 	/// Create a new fleet for this player
 	/// Validates parameters, allocates fleet_id from GameState, and builds the fleet
-	[[nodiscard]] uint32_t create_fleet(uint32_t design_id, uint32_t ship_count, uint32_t planet_id);
+		[[nodiscard]] uint32_t create_fleet(uint32_t design_id, uint32_t ship_count, const std::string& planet_name);
+		[[nodiscard]] uint32_t create_fleet(uint32_t design_id, uint32_t ship_count, uint32_t planet_id);
 	
 	/// Validate fleet creation parameters
 	/// Returns true if all parameters are valid
-	[[nodiscard]] bool validate_fleet(uint32_t design_id, uint32_t ship_count, uint32_t planet_id) const;
+		[[nodiscard]] bool validate_fleet(uint32_t design_id, uint32_t ship_count, const std::string& planet_name) const;
 	
 	/// Build and add a fleet after validation
 	/// Called internally by create_fleet() after validation and fleet_id allocation
-	[[nodiscard]] uint32_t build_fleet(uint32_t fleet_id, uint32_t design_id, uint32_t ship_count, uint32_t planet_id);
+		[[nodiscard]] uint32_t build_fleet(uint32_t fleet_id, uint32_t design_id, uint32_t ship_count, const std::string& planet_name);
 	
 	/// Get a fleet by ID (mutable)
 	[[nodiscard]] Fleet* get_fleet(uint32_t fleet_id);
@@ -237,7 +238,8 @@ public:
 	[[nodiscard]] bool delete_fleet(uint32_t fleet_id);
 	
 	/// Move a fleet to a destination planet
-	void move_fleet(uint32_t fleet_id, uint32_t destination_planet_id);
+		void move_fleet(uint32_t fleet_id, const std::string& destination_planet_name);
+		void move_fleet(uint32_t fleet_id, uint32_t destination_planet_id);
 	
 	/// Get all fleets currently in transit
 	[[nodiscard]] std::vector<Fleet*> get_fleets_in_transit();

@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <string>
 #include <memory>
+#include <utility>
 
 // Forward declarations
 struct Planet;
@@ -21,16 +22,16 @@ class Player;
 // Encapsulates all transit state for a fleet in motion
 struct FleetTransit
 {
-	uint32_t origin_planet_id;          // ID of origin planet
-	uint32_t destination_planet_id;     // ID of destination planet
+	std::string origin_planet_name;
+	std::string destination_planet_name;
 	uint32_t departure_turn;            // Turn when fleet departed
 	uint32_t arrival_turn;              // Turn when fleet arrives
 	double distance;                    // Distance traveled (from matrix)
 	uint32_t turns_to_travel;           // Turns needed to reach destination
 	
-	FleetTransit(uint32_t origin, uint32_t dest, uint32_t dep, uint32_t arr, double dist, uint32_t turns)
-		: origin_planet_id(origin),
-		  destination_planet_id(dest),
+	FleetTransit(std::string origin, std::string dest, uint32_t dep, uint32_t arr, double dist, uint32_t turns)
+		: origin_planet_name(std::move(origin)),
+		  destination_planet_name(std::move(dest)),
 		  departure_turn(dep),
 		  arrival_turn(arr),
 		  distance(dist),
@@ -46,8 +47,8 @@ struct Fleet
 	
 private:
 	/// Private constructor - only Player can create Fleet instances
-	Fleet(uint32_t fleet_id, PlayerID player_id, const ShipDesign* design, 
-	      uint32_t ship_count, Planet* planet);
+	Fleet(uint32_t fleet_id, PlayerID player_id, const ShipDesign* design,
+	      uint32_t ship_count, const std::string& planet_name);
 
 public:
 	uint32_t id;                    // Unique fleet identifier
@@ -62,9 +63,9 @@ public:
 	std::string descriptor;
 	
 	// Position tracking
-	Planet* current_planet;         // Planet fleet is currently at (nullptr if in transit)
-	Planet* origin_planet;          // Planet fleet departed from
-	Planet* destination_planet;     // Planet fleet is heading to
+	std::string current_planet_name;      // Empty while in transit
+	std::string origin_planet_name;       // Planet fleet departed from
+	std::string destination_planet_name;  // Empty while stationed
 	
 	// Movement tracking
 	double distance_to_destination; // Remaining distance in light-years
@@ -91,7 +92,9 @@ public:
 	
 	/// Move fleet to destination planet
 	/// Sets up fleet movement with distance and turns calculated from distance matrix
-	void move_to(Planet* destination, KnowledgeGalaxy* knowledge_galaxy, uint32_t current_turn);
+	void move_to(const std::string& destination_planet_name,
+	             KnowledgeGalaxy* knowledge_galaxy,
+	             uint32_t current_turn);
 };
 
 #endif // FLEET_H

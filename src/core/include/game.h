@@ -119,6 +119,7 @@ public:
 	[[nodiscard]] const std::vector<Fleet>& get_player_fleets(uint32_t player_id) const;
 	[[nodiscard]] bool delete_fleet(uint32_t player_id, uint32_t fleet_id);
 	void move_fleet(uint32_t player_id, uint32_t fleet_id, uint32_t destination_planet_id);
+	void move_fleet(uint32_t player_id, uint32_t fleet_id, const std::string& destination_planet_name);
 	void refuel_fleet(uint32_t player_id, uint32_t fleet_id);
 	
 		// Turn processing
@@ -164,6 +165,7 @@ public:
 	
 	/// Check if a player can move a fleet
 	[[nodiscard]] ErrorCode check_player_move_fleet(uint32_t player_id, uint32_t fleet_id, uint32_t destination_planet_id) const;
+	[[nodiscard]] ErrorCode check_player_move_fleet(uint32_t player_id, uint32_t fleet_id, const std::string& destination_planet_name) const;
 	
 	/// Check if a player can set planet allocation
 	[[nodiscard]] ErrorCode check_player_set_planet_allocation(uint32_t player_id, uint32_t planet_id, double mining_frac, double terraforming_frac) const;

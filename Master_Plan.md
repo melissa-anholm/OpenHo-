@@ -1,6 +1,6 @@
 # OpenHo Master Plan
 
-**Last Updated:** November 6, 2026 (immutable planet-distance index)
+**Last Updated:** November 6, 2026 (name-primary fleet planet identity)
 **Project Status:** Phase 2 - Minimal playable game first; feature completeness follows incrementally
 
 ---
@@ -157,6 +157,11 @@ GitHub-hosted macOS runners may later provide an additional modern-macOS compile
 - Public planet IDs are one-based and are used directly at all distance-index boundaries; zero is reserved as the unused sentinel row. Internal `Planet` vectors remain zero-based and translate IDs only at that boundary.
 - The immutable galaxy definition stores both an ID-indexed dense distance matrix for constant-time exact lookups and a nearest-first destination vector for each origin planet. The latter supports future mouse-hover and destination-selection UI without sorting or calculating distances during interaction.
 - These structures are physical galaxy data, not `PlanetView` data. They are generated once, copied into the temporary `KnowledgeGalaxy` compatibility facade for current fleet code, persisted in the immutable save-definition payload, and reconstructible from immutable planet coordinates if necessary.
+
+**Name-Primary Planet Identity (Approved November 6, 2026):**
+- Planet names are immutable, unique within a galaxy, and are the canonical identity for fleet location, transit origin, transit destination, and movement validation. `Fleet` and `FleetTransit` no longer store `Planet*` location pointers or planet-ID location fields.
+- `Galaxy` maintains a name-to-private-storage-index map, while `GameState` exposes name lookup. Numeric vector positions and legacy numeric compatibility overloads may remain temporarily inside migration boundaries, but new gameplay code must use names.
+- An in-transit fleet has an empty `current_planet_name` and retains its origin and destination names in `FleetTransit`; a stationed fleet has a non-empty current name and an empty destination name. The temporary synthetic transit `Planet` is no longer used to represent fleet location.
 
 **Economic Submission and After-State Records (Implemented November 5, 2026):**
 - `EconomicActionSubmission` represents the complete final, non-ordered economic choices for the next turn: player-wide allocations, research-stream allocations, per-colony allocations, and the Dip Into Savings selection.
