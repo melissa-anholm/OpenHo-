@@ -25,8 +25,9 @@ set(CORE_SOURCES
 	src/galaxygen_grid.cpp
 	src/galaxy_home_selection.cpp
 	src/galaxy_diagnostics.cpp
-	src/game.cpp
-	src/game_formulas.cpp
+	 src/game.cpp
+	 src/game_session.cpp
+	 src/game_formulas.cpp
 	src/game_setup.cpp
 	src/player.cpp
 	src/planet.cpp

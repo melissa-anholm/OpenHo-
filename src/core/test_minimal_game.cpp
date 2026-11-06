@@ -1,4 +1,5 @@
 #include "game.h"
+#include "game_session.h"
 #include "game_setup.h"
 #include "game_formulas.h"
 #include "save_file.h"
@@ -580,6 +581,49 @@ void test_ui_adapter_boundary()
     assert(adapter.mark_ready(1) == ErrorCode::SUCCESS);
     assert(adapter.process_turn() == ErrorCode::GAME_NOT_READY);
 }
+
+void test_game_session_lifecycle()
+{
+    const std::string path = "/tmp/openho-game-session-test.save";
+    std::remove(path.c_str());
+
+    std::vector<PlayerSetup> player_setups = {
+        {"Session One", GENDER_F, PLAYER_HUMAN, 100, START_NORMAL},
+        {"Session Two", GENDER_M, PLAYER_HUMAN, 100, START_NORMAL}
+    };
+    GameSetup setup(
+        GalaxyGenerationParams(40, 2, 0.5, GALAXY_RANDOM, 31415),
+        player_setups);
+
+    GameSessionError session_error = GameSessionError::INVALID_ARGUMENT;
+    auto session = GameSession::create_new(setup, &session_error);
+    assert(session);
+    assert(session_error == GameSessionError::SUCCESS);
+    assert(session->is_open());
+    assert(session->state() != nullptr);
+    assert(session->ui() != nullptr);
+    assert(session->save_as(path) == GameSessionError::SUCCESS);
+
+    for (const Player& player : session->state()->get_players())
+        assert(session->ui()->mark_ready(player.id) == ErrorCode::SUCCESS);
+    assert(session->process_turn_and_autosave() == GameSessionError::SUCCESS);
+    assert(session->state()->get_current_turn() == 1);
+
+    auto loaded = GameSession::load(path, &session_error);
+    assert(loaded);
+    assert(session_error == GameSessionError::SUCCESS);
+    assert(loaded->is_open());
+    assert(loaded->state()->get_current_turn() == 1);
+    assert(loaded->ui()->snapshot(1).current_turn == 1);
+
+    loaded->close();
+    assert(!loaded->is_open());
+    assert(loaded->state() == nullptr);
+    assert(loaded->ui() == nullptr);
+    assert(loaded->save() == GameSessionError::SESSION_CLOSED);
+
+    std::remove(path.c_str());
+}
 }
 
 int main()
@@ -592,8 +636,9 @@ int main()
     test_colonization_and_abandonment_transitions();
 	 test_planet_view_observation_precedence();
 	 test_append_only_save_file();
-	 test_rng_state_continuation();
-	 test_ui_adapter_boundary();
+		 test_rng_state_continuation();
+		 test_ui_adapter_boundary();
+	 test_game_session_lifecycle();
     std::cout << "Gameplay regression scenarios passed.\n";
     return 0;
 }
