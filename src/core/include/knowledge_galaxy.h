@@ -22,7 +22,7 @@ class Player;
 
 // Temporary player-view compatibility facade.
 // Planet owns the PlanetView records; this class delegates lookups and keeps
-// the current fleet-transit compatibility behavior until query APIs exist.
+// the distance-query compatibility behavior until direct query APIs exist.
 class KnowledgeGalaxy
 {
 private:
@@ -30,16 +30,12 @@ private:
 	std::vector<std::vector<double>> distance_matrix;  // Local copy of distance matrix for O(1) access
 	std::vector<std::vector<PlanetDistance>> destinations_by_distance;
 	PlayerID player_id;
-	
-	// Space planets for holding in-transit fleets
-	Planet* space_real_planet;  // Virtual planet owned by this KnowledgeGalaxy
-	PlanetView* space_planet_view;  // Player's view of the virtual transit planet
 
 public:
 	// Constructor - ensures this player's PlanetView exists for every planet
 	KnowledgeGalaxy(Galaxy& galaxy, PlayerID player_id);
 	
-	// Destructor - cleans up space_real_planet
+	// Destructor
 	~KnowledgeGalaxy();
 	
 	// Accessors
@@ -57,13 +53,6 @@ public:
 	double get_distance(uint32_t from_id, uint32_t to_id) const;
 	double get_distance(const std::string& from_name, const std::string& to_name) const;
 	const std::vector<PlanetDistance>& get_destinations_by_distance(uint32_t from_id) const;
-	
-	// Access to space planet (for in-transit fleets)
-	Planet* get_space_real_planet() { return space_real_planet; }
-	const Planet* get_space_real_planet() const { return space_real_planet; }
-	
-	PlanetView* get_space_knowledge_planet() { return space_planet_view; }
-	const PlanetView* get_space_knowledge_planet() const { return space_planet_view; }
 };
 
 #endif // OPENHO_KNOWLEDGE_GALAXY_H

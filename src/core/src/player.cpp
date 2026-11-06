@@ -185,8 +185,7 @@ void Player::move_fleet(uint32_t fleet_id, const std::string& destination_planet
 	// Get current turn from game state
 	uint32_t current_turn = game_state->get_current_turn();
 	
-	// Delegate to Fleet::move_to() to initiate movement
-	// This creates FleetTransit and moves fleet to space planet
+	// Delegate to Fleet::move_to() to initiate movement and create FleetTransit.
 	fleet->move_to(destination->name, knowledge_galaxy, current_turn);
 }
 
