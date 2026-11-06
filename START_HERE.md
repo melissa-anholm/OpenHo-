@@ -40,18 +40,19 @@ From the repository root:
 
 ```sh
 ./build.sh
-./src/core/build/openho_minimal_game_test
+./build.sh --tests
+./build/openho_minimal_game_test
 ./clean.sh
 ```
 
-`build.sh` builds the ordinary C++ core, its regression executables, and the portable `openho_cli` frontend. The repository also contains a separate minimal Objective-C++/AppKit target under `src/macos`; it is not part of the default root build because the Linux development workflow uses an OSXCross toolchain for that target.
+`build.sh` uses one shared top-level CMake graph. The default build produces the portable `openho_cli` and compiles `OpenHoCore` once; `./build.sh --tests` also produces the core regression executables. The repository also contains a separate minimal Objective-C++/AppKit target under `src/macos`; it is not part of the default root build because the Linux development workflow uses an OSXCross toolchain for that target.
 
 After building, run the CLI with either an explicit asset directory or the default repository-root layout:
 
 ```sh
-./src/cli/build/openho_cli --assets /path/to/TextAssets
+./build/openho_cli --assets /path/to/TextAssets
 # or, when launched from the repository root:
-./src/cli/build/openho_cli
+./build/openho_cli
 ```
 
 The `OPENHO_ASSETS_DIR` environment variable is also supported. The initial CLI uses a deterministic 10-planet game. Player 1 is the local player, the other player is automatically readied, and commands are entered one per line. Type `help` to see the available commands.

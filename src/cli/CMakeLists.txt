@@ -5,11 +5,13 @@ project(OpenHoCli LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_subdirectory(
-    "${CMAKE_CURRENT_SOURCE_DIR}/../core"
-    "${CMAKE_CURRENT_BINARY_DIR}/OpenHoCore-build"
-    EXCLUDE_FROM_ALL
-)
+if(NOT TARGET OpenHoCore)
+    add_subdirectory(
+        "${CMAKE_CURRENT_SOURCE_DIR}/../core"
+        "${CMAKE_CURRENT_BINARY_DIR}/OpenHoCore-build"
+        EXCLUDE_FROM_ALL
+    )
+endif()
 
 add_executable(openho_cli
     src/main.cpp

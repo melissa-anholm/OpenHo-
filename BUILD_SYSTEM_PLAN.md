@@ -27,9 +27,8 @@ src/core/
 
 **Build process:**
 ```bash
-cd src/core/build
-cmake ..
-make -j$(sysctl -n hw.ncpu)
+./build.sh                 # Builds openho_cli and OpenHoCore once
+./build.sh --tests         # Also builds the core regression executables
 ```
 
 ### Phase 3a: Objective-C++ Bridge
@@ -102,23 +101,26 @@ cmake --build build/macos-native --target OpenHoMinimalApp
 
 ## Master Build Script
 
-The checked-in `build.sh` configures the portable C++ core and the line-oriented CLI. It builds the core library, regression executables, and `openho_cli`; it does not silently select an Apple SDK or attempt the macOS application build.
+The checked-in `build.sh` configures one shared portable CMake graph at the repository root. `OpenHoCore` is defined once and shared by `openho_cli`, `openho_minimal_game_test`, and `openho_ship_cost_test`; the default build only builds `openho_cli`, while `--tests` also builds the regression executables. It does not silently select an Apple SDK or attempt the macOS application build.
 
 ```bash
 ./build.sh
+./build.sh --tests
 ```
 
 The macOS target is intentionally a separate invocation because it requires either a native Apple toolchain or the externally installed OSXCross toolchain and SDK. This separation keeps ordinary Linux core and CLI builds reproducible and prevents accidental use of host libraries in a Darwin link.
 
 ### Portable CLI frontend
 
-The current CLI target lives under `src/cli` and links only against `OpenHoCore` and the C++ standard library:
+The current CLI target lives under `src/cli` and links only against the single `OpenHoCore` target in the shared root graph:
 
 ```bash
-cmake -S src/cli -B build/cli -DCMAKE_BUILD_TYPE=Debug
-cmake --build build/cli --target openho_cli
-./build/cli/openho_cli
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+cmake --build build --target openho_cli
+./build/openho_cli
 ```
+
+Configuring `src/cli` directly remains supported for frontend-focused work, but the canonical development path is the root graph. This prevents the core from being compiled once as a standalone project and again as a nested CLI dependency.
 
 The initial CLI is deliberately line-oriented and scriptable. It supports `help`, `status`, `players`, `planets`, `economy`, `set_spending`, `set_research`, `set_planet`, `dip`, `abandon`, `cancel_abandon`, `ready`, `unready`, `process`, `save`, `load`, and `quit`. Planet-targeting commands use exact planet names, including names containing spaces, rather than internal IDs. Economic edits remain pending until `ready`, which automatically submits the complete pending snapshot before marking the local player ready. `unready` leaves the pending snapshot intact; the next `ready` resubmits it. It uses a compact deterministic 10-planet game, with player 1 as the local player and non-local players automatically marked ready. The asset directory can be supplied with `--assets PATH` or `OPENHO_ASSETS_DIR`; the default remains `TextAssets` for repository-root compatibility.
 
