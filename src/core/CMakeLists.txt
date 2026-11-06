@@ -29,6 +29,7 @@ set(CORE_SOURCES
 	 src/game_session.cpp
 	 src/game_formulas.cpp
 	src/game_setup.cpp
+	src/economic_state.cpp
 	src/player.cpp
 	src/planet.cpp
 	src/planet_view.cpp

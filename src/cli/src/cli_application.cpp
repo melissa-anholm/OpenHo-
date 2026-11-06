@@ -8,8 +8,10 @@
 
 #include <array>
 #include <algorithm>
+#include <cmath>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <sstream>
 #include <stdexcept>
 #include <utility>
@@ -50,6 +52,16 @@ std::vector<std::string> split_tokens(const std::string& value)
     while (input >> token)
         tokens.push_back(token);
     return tokens;
+}
+
+size_t research_stream_index(const std::string& name)
+{
+    static const std::array<std::string, 6> names = {
+        "range", "speed", "weapons", "shields", "mini", "radical"};
+    const auto match = std::find(names.begin(), names.end(), name);
+    return match == names.end()
+        ? names.size()
+        : static_cast<size_t>(std::distance(names.begin(), match));
 }
 }
 
@@ -158,6 +170,14 @@ bool CliApplication::synchronize_pending_submission()
             colony.mining_fraction,
             colony.terraforming_fraction});
     }
+    double funding_total = 0.0;
+    for (const EconomicColonyAllocation& colony : pending_submission_.colony_allocations)
+        funding_total += colony.funding_fraction;
+    if (funding_total > std::numeric_limits<double>::epsilon())
+    {
+        for (EconomicColonyAllocation& colony : pending_submission_.colony_allocations)
+            colony.funding_fraction /= funding_total;
+    }
     pending_submission_.planets_to_abandon.clear();
     submission_dirty_ = false;
     return true;
@@ -178,6 +198,105 @@ bool CliApplication::submit_pending_submission()
     submission_dirty_ = false;
     std::cout << "Economic submission accepted for the current turn.\n";
     return true;
+}
+
+bool CliApplication::adjust_savings_fraction(double value, std::string& error)
+{
+    return EconomicAllocation::adjust_fraction_proportionally(
+        value, pending_submission_.savings_fraction,
+        {&pending_submission_.research_fraction, &pending_submission_.planets_fraction},
+        error);
+}
+
+bool CliApplication::adjust_research_budget_fraction(double value, std::string& error)
+{
+    return EconomicAllocation::adjust_fraction_proportionally(
+        value, pending_submission_.research_fraction,
+        {&pending_submission_.savings_fraction, &pending_submission_.planets_fraction},
+        error);
+}
+
+bool CliApplication::set_planets_fraction(double value, std::string& error)
+{
+    return EconomicAllocation::adjust_fraction_proportionally(
+        value, pending_submission_.planets_fraction,
+        {&pending_submission_.savings_fraction, &pending_submission_.research_fraction},
+        error);
+}
+
+bool CliApplication::adjust_planet_funding_fraction(uint32_t planet_id,
+                                                    double value,
+                                                    std::string& error)
+{
+    if (!std::isfinite(value) || value < 0.0 || value > 1.0)
+    {
+        error = "fraction must be finite and between 0 and 1";
+        return false;
+    }
+
+    auto selected = std::find_if(
+        pending_submission_.colony_allocations.begin(),
+        pending_submission_.colony_allocations.end(),
+        [planet_id](const EconomicColonyAllocation& allocation) {
+            return allocation.planet_id == planet_id;
+        });
+    if (selected == pending_submission_.colony_allocations.end())
+    {
+        error = "planet is not one of the local colonies";
+        return false;
+    }
+
+    std::vector<double> overall_planet_shares;
+    overall_planet_shares.reserve(pending_submission_.colony_allocations.size());
+    for (const EconomicColonyAllocation& allocation : pending_submission_.colony_allocations)
+        overall_planet_shares.push_back(
+            pending_submission_.planets_fraction * allocation.funding_fraction);
+
+    const size_t selected_index = static_cast<size_t>(
+        std::distance(pending_submission_.colony_allocations.begin(), selected));
+    std::vector<double*> other_shares;
+    other_shares.reserve(overall_planet_shares.size() + 2);
+    other_shares.push_back(&pending_submission_.savings_fraction);
+    other_shares.push_back(&pending_submission_.research_fraction);
+    for (size_t index = 0; index < overall_planet_shares.size(); ++index)
+        if (index != selected_index)
+            other_shares.push_back(&overall_planet_shares[index]);
+
+    if (!EconomicAllocation::adjust_fraction_proportionally(
+            value, overall_planet_shares[selected_index], other_shares, error))
+        return false;
+
+    double new_planets_fraction = 0.0;
+    for (double share : overall_planet_shares)
+        new_planets_fraction += share;
+    pending_submission_.planets_fraction = new_planets_fraction;
+
+    if (new_planets_fraction > std::numeric_limits<double>::epsilon())
+    {
+        for (size_t index = 0; index < overall_planet_shares.size(); ++index)
+            pending_submission_.colony_allocations[index].funding_fraction =
+                overall_planet_shares[index] / new_planets_fraction;
+    }
+    return true;
+}
+
+bool CliApplication::adjust_research_stream_fraction(size_t stream_index,
+                                                     double value,
+                                                     std::string& error)
+{
+    if (stream_index >= pending_submission_.research_fractions.size())
+    {
+        error = "research stream index must be between 0 and 5";
+        return false;
+    }
+
+    std::vector<double*> other_fractions;
+    other_fractions.reserve(pending_submission_.research_fractions.size() - 1);
+    for (size_t index = 0; index < pending_submission_.research_fractions.size(); ++index)
+        if (index != stream_index)
+            other_fractions.push_back(&pending_submission_.research_fractions[index]);
+    return EconomicAllocation::adjust_fraction_proportionally(
+        value, pending_submission_.research_fractions[stream_index], other_fractions, error);
 }
 
 bool CliApplication::resolve_planet_name(const std::string& name,
@@ -223,7 +342,12 @@ void CliApplication::print_help() const
               << "  planets                      Show the local player's planet views.\n"
               << "  economy                      Show local economic state and pending choices.\n"
               << "  set_spending S R P           Set savings/research/planets fractions.\n"
+              << "  set_savings VALUE            Adjust savings and proportionally rebalance the rest.\n"
+              << "  set_research_budget VALUE    Adjust research and proportionally rebalance the rest.\n"
+              << "  set_planets VALUE            Adjust planetary development and rebalance the rest.\n"
+              << "  set_planet_budget NAME VALUE Set one planet's total-budget share.\n"
               << "  set_research A B C D E F     Set six research-stream fractions.\n"
+              << "  set_research_stream NAME VALUE Adjust one research stream only.\n"
               << "  set_planet NAME F M T        Set funding/mining/terraforming fractions.\n"
               << "  dip AMOUNT [once|persistent] Set pending Dip Into Savings.\n"
               << "  abandon NAME                 Queue a colony abandonment.\n"
@@ -391,6 +515,66 @@ bool CliApplication::handle_command(const std::string& raw_line)
             print_error(command, error.what());
         }
     }
+    else if (command == "set_savings" || command == "set_research_budget" ||
+             command == "set_planets")
+    {
+        try
+        {
+            double value = 0.0;
+            input >> value;
+            if (!input)
+                throw std::invalid_argument("expected one fraction");
+
+            std::string adjustment_error;
+            bool adjusted = false;
+            if (command == "set_savings")
+                adjusted = adjust_savings_fraction(value, adjustment_error);
+            else if (command == "set_research_budget")
+                adjusted = adjust_research_budget_fraction(value, adjustment_error);
+            else
+                adjusted = set_planets_fraction(value, adjustment_error);
+            if (!adjusted)
+                throw std::invalid_argument(adjustment_error);
+
+            submission_dirty_ = true;
+            std::cout << "Pending spending allocation updated and normalized.\n";
+        }
+        catch (const std::exception& error)
+        {
+            print_error(command, error.what());
+        }
+    }
+    else if (command == "set_planet_budget")
+    {
+        try
+        {
+            const std::vector<std::string> tokens =
+                split_tokens(trim(line.substr(command.size())));
+            if (tokens.size() < 2)
+                throw std::invalid_argument("expected planet name and one fraction");
+
+            std::string planet_name = tokens.front();
+            for (size_t index = 1; index + 1 < tokens.size(); ++index)
+                planet_name += " " + tokens[index];
+
+            uint32_t planet_id = 0;
+            std::string resolution_error;
+            if (!resolve_planet_name(planet_name, planet_id, resolution_error))
+                throw std::invalid_argument(resolution_error);
+
+            const double value = std::stod(tokens.back());
+            std::string adjustment_error;
+            if (!adjust_planet_funding_fraction(planet_id, value, adjustment_error))
+                throw std::invalid_argument(adjustment_error);
+
+            submission_dirty_ = true;
+            std::cout << "Pending planetary allocation updated and normalized.\n";
+        }
+        catch (const std::exception& error)
+        {
+            print_error(command, error.what());
+        }
+    }
     else if (command == "set_research")
     {
         try
@@ -401,6 +585,29 @@ bool CliApplication::handle_command(const std::string& raw_line)
                 throw std::invalid_argument("expected six research fractions");
             submission_dirty_ = true;
             std::cout << "Pending research allocation updated.\n";
+        }
+        catch (const std::exception& error)
+        {
+            print_error(command, error.what());
+        }
+    }
+    else if (command == "set_research_stream")
+    {
+        try
+        {
+            std::string stream_name;
+            double value = 0.0;
+            input >> stream_name >> value;
+            if (!input)
+                throw std::invalid_argument("expected stream name and one fraction");
+
+            const size_t stream_index = research_stream_index(stream_name);
+            std::string adjustment_error;
+            if (!adjust_research_stream_fraction(stream_index, value, adjustment_error))
+                throw std::invalid_argument(adjustment_error);
+
+            submission_dirty_ = true;
+            std::cout << "Pending research-stream allocation updated and normalized.\n";
         }
         catch (const std::exception& error)
         {

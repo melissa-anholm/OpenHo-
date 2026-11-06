@@ -3,7 +3,19 @@
 
 #include <array>
 #include <cstdint>
+#include <string>
 #include <vector>
+
+namespace EconomicAllocation
+{
+/// Set one normalized fraction and proportionally rebalance the supplied peers.
+/// The selected fraction and all peer fractions must initially sum to 1.0.
+bool adjust_fraction_proportionally(
+    double value,
+    double& selected,
+    const std::vector<double*>& peer_fractions,
+    std::string& error);
+}
 
 struct EconomicColonyAllocation
 {

@@ -28,6 +28,15 @@ private:
     bool mark_non_local_players_ready();
     bool synchronize_pending_submission();
     bool submit_pending_submission();
+    bool adjust_savings_fraction(double value, std::string& error);
+    bool adjust_research_budget_fraction(double value, std::string& error);
+    bool adjust_planet_funding_fraction(uint32_t planet_id,
+                                        double value,
+                                        std::string& error);
+    bool set_planets_fraction(double value, std::string& error);
+    bool adjust_research_stream_fraction(size_t stream_index,
+                                         double value,
+                                         std::string& error);
     bool resolve_planet_name(const std::string& name,
                              uint32_t& planet_id,
                              std::string& error) const;
