@@ -280,6 +280,33 @@ bool CliApplication::adjust_planet_funding_fraction(uint32_t planet_id,
     return true;
 }
 
+bool CliApplication::adjust_planet_development_fraction(uint32_t planet_id,
+                                                        bool mining,
+                                                        double value,
+                                                        std::string& error)
+{
+    auto selected = std::find_if(
+        pending_submission_.colony_allocations.begin(),
+        pending_submission_.colony_allocations.end(),
+        [planet_id](const EconomicColonyAllocation& allocation) {
+            return allocation.planet_id == planet_id;
+        });
+    if (selected == pending_submission_.colony_allocations.end())
+    {
+        error = "planet is not one of the local colonies";
+        return false;
+    }
+
+    double& selected_fraction = mining
+        ? selected->mining_fraction
+        : selected->terraforming_fraction;
+    double& peer_fraction = mining
+        ? selected->terraforming_fraction
+        : selected->mining_fraction;
+    return EconomicAllocation::adjust_fraction_proportionally(
+        value, selected_fraction, {&peer_fraction}, error);
+}
+
 bool CliApplication::adjust_research_stream_fraction(size_t stream_index,
                                                      double value,
                                                      std::string& error)
@@ -349,6 +376,8 @@ void CliApplication::print_help() const
               << "  set_research A B C D E F     Set six research-stream fractions.\n"
               << "  set_research_stream NAME VALUE Adjust one research stream only.\n"
               << "  set_planet NAME F M T        Set funding/mining/terraforming fractions.\n"
+              << "  set_mining NAME VALUE        Adjust mining and rebalance terraforming.\n"
+              << "  set_terraforming NAME VALUE Adjust terraforming and rebalance mining.\n"
               << "  dip AMOUNT [once|persistent] Set pending Dip Into Savings.\n"
               << "  abandon NAME                 Queue a colony abandonment.\n"
               << "  cancel_abandon NAME          Cancel a queued abandonment.\n"
@@ -608,6 +637,39 @@ bool CliApplication::handle_command(const std::string& raw_line)
 
             submission_dirty_ = true;
             std::cout << "Pending research-stream allocation updated and normalized.\n";
+        }
+        catch (const std::exception& error)
+        {
+            print_error(command, error.what());
+        }
+    }
+    else if (command == "set_mining" || command == "set_terraforming")
+    {
+        try
+        {
+            const std::vector<std::string> tokens =
+                split_tokens(trim(line.substr(command.size())));
+            if (tokens.size() < 2)
+                throw std::invalid_argument("expected planet name and one fraction");
+
+            std::string planet_name = tokens.front();
+            for (size_t index = 1; index + 1 < tokens.size(); ++index)
+                planet_name += " " + tokens[index];
+
+            uint32_t planet_id = 0;
+            std::string resolution_error;
+            if (!resolve_planet_name(planet_name, planet_id, resolution_error))
+                throw std::invalid_argument(resolution_error);
+
+            const double value = std::stod(tokens.back());
+            std::string adjustment_error;
+            const bool mining = command == "set_mining";
+            if (!adjust_planet_development_fraction(
+                    planet_id, mining, value, adjustment_error))
+                throw std::invalid_argument(adjustment_error);
+
+            submission_dirty_ = true;
+            std::cout << "Pending planet development allocation updated and normalized.\n";
         }
         catch (const std::exception& error)
         {

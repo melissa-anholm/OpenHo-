@@ -33,6 +33,10 @@ private:
     bool adjust_planet_funding_fraction(uint32_t planet_id,
                                         double value,
                                         std::string& error);
+    bool adjust_planet_development_fraction(uint32_t planet_id,
+                                            bool mining,
+                                            double value,
+                                            std::string& error);
     bool set_planets_fraction(double value, std::string& error);
     bool adjust_research_stream_fraction(size_t stream_index,
                                          double value,
