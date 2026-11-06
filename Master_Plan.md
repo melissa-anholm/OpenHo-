@@ -1,6 +1,6 @@
 # OpenHo Master Plan
 
-**Last Updated:** November 5, 2026 (native UI readiness assessment)
+**Last Updated:** November 5, 2026 (Linux-to-macOS UI build strategy)
 **Project Status:** Phase 2 - Minimal playable game first; feature completeness follows incrementally
 
 ---
@@ -97,6 +97,14 @@ The C++ game core and its versioned save format must remain platform-neutral so 
 RNG engine checkpoints now use a project-owned versioned little-endian binary state record rather than Boost's textual stream representation. Continuation tests verify that both the deterministic and AI engines produce identical subsequent values after restoration.
 
 The first portable adapter-facing API is implemented in `src/core/include/ui_adapter.h` and `src/core/src/ui_adapter.cpp`. It produces retained-safe value snapshots and accepts validated economic, abandonment, readiness, and turn-processing commands. Private economic and colony data is included only for the observing player; no AppKit or other platform framework is involved.
+
+#### macOS UI Build and Runtime Verification Strategy
+
+The native macOS UI will be compiled primarily in the Linux development sandbox rather than relying on the user's personal computer for primary compilation. Linux-to-macOS cross-compilation is technically feasible with OSXCross: it combines Clang, Darwin-compatible linker tools, a packaged Apple macOS SDK, and CMake toolchain support. The UI build must use Objective-C++, the x86_64 target architecture, a macOS 10.14 SDK where available, and a deployment target of macOS 10.14.3. The SDK must be obtained from an Apple-licensed Xcode installation and kept outside the repository.
+
+The Linux cross-build will verify Objective-C++ syntax, AppKit/Foundation headers, CMake configuration, Darwin linking, Mach-O output, deployment-target metadata, and linkage to the portable core and `GameUiAdapter`. A modern macOS or Linux host cannot prove Mojave runtime behavior, so the user's computer will be used for occasional launch and UI smoke testing on the required runtime. The responsibilities are therefore deliberately split: Linux is the primary reproducible compilation and automated-test environment; a real macOS 10.14.3-capable machine is the runtime compatibility environment.
+
+GitHub-hosted macOS runners may later provide an additional modern-macOS compile gate, but they are not a substitute for the Linux OSXCross build or Mojave runtime testing. Current hosted and self-hosted GitHub runner environments do not provide macOS 10.14.3 execution.
 
 ### Key Design Decisions
 
