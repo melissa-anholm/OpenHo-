@@ -81,10 +81,10 @@ private:
 public:
 	// Constructor: Creates a player-specific view of a planet
 	ColonizedPlanet(
-		Planet* p_base,
-		Player* p_owner,
-		int32_t p_income = -7501,
-		double p_funding = 0.2,
+			Planet* p_base,
+			Player* p_owner,
+			int32_t p_income = -7501,
+			double p_funding = 1.0,
 		PlanetaryBudgetSplit p_budget = PlanetaryBudgetSplit(),
 		int32_t p_desirability = 2);
 	

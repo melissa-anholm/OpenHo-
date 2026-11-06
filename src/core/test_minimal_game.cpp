@@ -286,6 +286,12 @@ void test_economic_submission_round_trip()
             colony.get_id(), colony.get_funding_fraction(),
             colony.get_mining_fraction(), colony.get_terraforming_fraction()});
 
+    assert(submission.colony_allocations.size() == 1);
+    assert(submission.colony_allocations.front().funding_fraction == 1.0);
+    EconomicActionSubmission invalid_funding = submission;
+    invalid_funding.colony_allocations.front().funding_fraction = 0.5;
+    assert(game->submit_economic_action(1, invalid_funding) ==
+           ErrorCode::INVALID_ALLOCATION);
     assert(game->submit_economic_action(1, submission) == ErrorCode::SUCCESS);
     assert(game->get_economic_action_submission(1).target_turn == 0);
     assert(game->get_economic_action_submission(1).colony_allocations.size() ==

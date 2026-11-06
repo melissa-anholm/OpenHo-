@@ -347,6 +347,7 @@ ErrorCode GameState::submit_economic_action(
 	}
 
 	std::unordered_map<uint32_t, const EconomicColonyAllocation*> allocations;
+	double funding_total = 0.0;
 	for (const auto& allocation : submission.colony_allocations)
 	{
 		if (!allocations.emplace(allocation.planet_id, &allocation).second ||
@@ -355,8 +356,11 @@ ErrorCode GameState::submit_economic_action(
 				player_id, allocation.planet_id, allocation.mining_fraction,
 				allocation.terraforming_fraction) != ErrorCode::SUCCESS)
 			return ErrorCode::INVALID_ALLOCATION;
+			funding_total += allocation.funding_fraction;
 	}
 	if (allocations.size() != player->colonized_planets.size())
+		return ErrorCode::INVALID_ALLOCATION;
+	if (std::abs(funding_total - 1.0) > GameConstants::Allocation_Sum_Tolerance)
 		return ErrorCode::INVALID_ALLOCATION;
 	for (const auto& colony : player->colonized_planets)
 		if (allocations.find(colony.get_id()) == allocations.end())
@@ -461,6 +465,10 @@ ErrorCode GameState::colonize_planet(uint32_t player_id, uint32_t planet_id)
 	planet->population = GameConstants::Colonization_Initial_Population;
 	player->colonized_planets.emplace_back(planet, player);
 	player->colonized_planets.back().update_desirability();
+	const double funding_share =
+		1.0 / static_cast<double>(player->colonized_planets.size());
+	for (auto& colony : player->colonized_planets)
+		colony.set_funding_fraction(funding_share);
 	capture_economic_action_submissions();
 	return ErrorCode::SUCCESS;
 }

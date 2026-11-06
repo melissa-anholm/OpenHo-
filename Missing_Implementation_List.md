@@ -290,7 +290,9 @@ This testing should be performed before galaxy generation is considered producti
   - [x] `savings = income × savings_fraction`
   - [x] `research = income × research_fraction`
   - [x] `planets = income × planets_fraction`
-  - [x] Allocation fractions must sum to approximately `1.0`
+  - [x] Player-level allocation fractions must sum to approximately `1.0`
+  - [x] Accepted submissions require all per-planet funding fractions to sum to approximately `1.0`
+  - [x] Each planet's mining and terraforming fractions must sum to approximately `1.0`
   - [x] Allocation funds come from current income only
   - [ ] Current application/order may require correction; see the turn-processing note above.
 - **Allocation hierarchy reference:** The player-level planetary-development fraction is applied first, and each owned colony then receives a fraction of that planetary-development budget:
@@ -311,6 +313,7 @@ This testing should be performed before galaxy generation is considered producti
   mining budget = per-planet budget × mining_fraction
   terraforming budget = per-planet budget × terraforming_fraction
   ```
+  `GameState::submit_economic_action()` rejects incomplete, duplicate, or non-normalized per-planet funding records using the shared machine-epsilon tolerance.
   This is a design reference, not a separate missing feature. Exact current-turn spending and refunds are not presently retained as fields.
 - **Priority:** High
 
