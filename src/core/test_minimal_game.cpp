@@ -3,6 +3,7 @@
 #include "game_formulas.h"
 #include "save_file.h"
 #include "rng.h"
+#include "ui_adapter.h"
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
@@ -552,6 +553,33 @@ void test_rng_state_continuation()
         assert(original.nextAIUInt64() == restored.nextAIUInt64());
     }
 }
+
+void test_ui_adapter_boundary()
+{
+    auto game = create_two_player_game();
+    GameUiAdapter adapter(*game);
+    const UiGameSnapshot initial = adapter.snapshot(1);
+
+    assert(initial.observing_player_id == 1);
+    assert(initial.current_turn == 0);
+    assert(initial.current_year == 2000);
+    assert(initial.planets.size() == 40);
+    assert(initial.players.size() == 2);
+    assert(initial.players.front().id == 1);
+    assert(initial.players.front().colonies.size() == 1);
+
+    const std::array<double, 6> research_fractions = {
+        1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0,
+        1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0};
+    assert(adapter.set_spending_allocation(
+               1, 0.5, 0.25, 0.25, research_fractions) == ErrorCode::SUCCESS);
+    assert(adapter.set_spending_allocation(
+               1, 0.5, 0.25, 0.25,
+               std::array<double, 6>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}) ==
+           ErrorCode::INVALID_ALLOCATION);
+    assert(adapter.mark_ready(1) == ErrorCode::SUCCESS);
+    assert(adapter.process_turn() == ErrorCode::GAME_NOT_READY);
+}
 }
 
 int main()
@@ -565,6 +593,7 @@ int main()
 	 test_planet_view_observation_precedence();
 	 test_append_only_save_file();
 	 test_rng_state_continuation();
+	 test_ui_adapter_boundary();
     std::cout << "Gameplay regression scenarios passed.\n";
     return 0;
 }

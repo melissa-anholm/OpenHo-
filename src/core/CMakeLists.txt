@@ -36,6 +36,7 @@ set(CORE_SOURCES
 	src/fleet.cpp
 	src/text_assets.cpp
 	src/save_file.cpp
+	src/ui_adapter.cpp
 	src/c_api.cpp
 	src/player_c_api.cpp
 	src/gamestate_c_api_extensions.cpp

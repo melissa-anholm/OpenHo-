@@ -96,6 +96,8 @@ The C++ game core and its versioned save format must remain platform-neutral so 
 
 RNG engine checkpoints now use a project-owned versioned little-endian binary state record rather than Boost's textual stream representation. Continuation tests verify that both the deterministic and AI engines produce identical subsequent values after restoration.
 
+The first portable adapter-facing API is implemented in `src/core/include/ui_adapter.h` and `src/core/src/ui_adapter.cpp`. It produces retained-safe value snapshots and accepts validated economic, abandonment, readiness, and turn-processing commands. Private economic and colony data is included only for the observing player; no AppKit or other platform framework is involved.
+
 ### Key Design Decisions
 
 **Galaxy Generation Source Organization (Approved October 27, 2026):**
