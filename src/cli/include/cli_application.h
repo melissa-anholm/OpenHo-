@@ -36,10 +36,10 @@ private:
     bool submit_pending_submission();
     bool adjust_savings_fraction(double value, std::string& error);
     bool adjust_research_budget_fraction(double value, std::string& error);
-    bool adjust_planet_funding_fraction(uint32_t planet_id,
+    bool adjust_planet_funding_fraction(const std::string& planet_name,
                                         double value,
                                         std::string& error);
-    bool adjust_planet_development_fraction(uint32_t planet_id,
+    bool adjust_planet_development_fraction(const std::string& planet_name,
                                             bool mining,
                                             double value,
                                             std::string& error);
@@ -47,10 +47,6 @@ private:
     bool adjust_research_stream_fraction(size_t stream_index,
                                          double value,
                                          std::string& error);
-    bool resolve_planet_name(const std::string& name,
-                             uint32_t& planet_id,
-                             std::string& error) const;
-
     void print_help() const;
     void print_status() const;
     void print_players() const;

@@ -309,7 +309,7 @@ void test_economic_submission_round_trip()
         allocation.research.research_radical_fraction};
     for (const auto& colony : player.get_colonized_planets())
         submission.colony_allocations.push_back({
-            colony.get_id(), colony.get_funding_fraction(),
+            colony.get_name(), colony.get_funding_fraction(),
             colony.get_mining_fraction(), colony.get_terraforming_fraction()});
 
     assert(submission.colony_allocations.size() == 1);
@@ -372,7 +372,7 @@ void test_colonization_and_abandonment_transitions()
     assert(restored_game->deserialize_state(payload));
     assert(restored_game->get_economic_action_submission(2).planets_to_abandon.size() == 1);
     assert(restored_game->get_economic_action_submission(2).planets_to_abandon.front() ==
-           unowned_planet_id);
+           game->get_planet(unowned_planet_id)->name);
 
     process_ready_turn(*restored_game);
     Planet* restored_planet = restored_game->get_planet(unowned_planet_id);

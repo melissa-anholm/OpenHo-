@@ -247,7 +247,7 @@ bool CliApplication::synchronize_pending_submission()
     for (const UiColonySnapshot& colony : player->colonies)
     {
         pending_submission_.colony_allocations.push_back({
-            colony.planet_id,
+            colony.planet_name,
             colony.funding_fraction,
             colony.mining_fraction,
             colony.terraforming_fraction});
@@ -307,7 +307,7 @@ bool CliApplication::set_planets_fraction(double value, std::string& error)
         error);
 }
 
-bool CliApplication::adjust_planet_funding_fraction(uint32_t planet_id,
+bool CliApplication::adjust_planet_funding_fraction(const std::string& planet_name,
                                                     double value,
                                                     std::string& error)
 {
@@ -320,8 +320,8 @@ bool CliApplication::adjust_planet_funding_fraction(uint32_t planet_id,
     auto selected = std::find_if(
         pending_submission_.colony_allocations.begin(),
         pending_submission_.colony_allocations.end(),
-        [planet_id](const EconomicColonyAllocation& allocation) {
-            return allocation.planet_id == planet_id;
+        [&planet_name](const EconomicColonyAllocation& allocation) {
+            return allocation.planet_name == planet_name;
         });
     if (selected == pending_submission_.colony_allocations.end())
     {
@@ -363,7 +363,7 @@ bool CliApplication::adjust_planet_funding_fraction(uint32_t planet_id,
     return true;
 }
 
-bool CliApplication::adjust_planet_development_fraction(uint32_t planet_id,
+bool CliApplication::adjust_planet_development_fraction(const std::string& planet_name,
                                                         bool mining,
                                                         double value,
                                                         std::string& error)
@@ -371,8 +371,8 @@ bool CliApplication::adjust_planet_development_fraction(uint32_t planet_id,
     auto selected = std::find_if(
         pending_submission_.colony_allocations.begin(),
         pending_submission_.colony_allocations.end(),
-        [planet_id](const EconomicColonyAllocation& allocation) {
-            return allocation.planet_id == planet_id;
+        [&planet_name](const EconomicColonyAllocation& allocation) {
+            return allocation.planet_name == planet_name;
         });
     if (selected == pending_submission_.colony_allocations.end())
     {
@@ -407,40 +407,6 @@ bool CliApplication::adjust_research_stream_fraction(size_t stream_index,
             other_fractions.push_back(&pending_submission_.research_fractions[index]);
     return EconomicAllocation::adjust_fraction_proportionally(
         value, pending_submission_.research_fractions[stream_index], other_fractions, error);
-}
-
-bool CliApplication::resolve_planet_name(const std::string& name,
-                                         uint32_t& planet_id,
-                                         std::string& error) const
-{
-    if (!session_ || !session_->ui())
-    {
-        error = "no active game session";
-        return false;
-    }
-
-    const std::string requested_name = trim(name);
-    const UiGameSnapshot snapshot = session_->ui()->snapshot(local_player_id_);
-    const UiPlanetSnapshot* match = nullptr;
-    for (const UiPlanetSnapshot& planet : snapshot.planets)
-    {
-        if (planet.name != requested_name)
-            continue;
-        if (match != nullptr)
-        {
-            error = "planet name is ambiguous: " + requested_name;
-            return false;
-        }
-        match = &planet;
-    }
-
-    if (match == nullptr)
-    {
-        error = "unknown planet name: " + requested_name;
-        return false;
-    }
-    planet_id = match->id;
-    return true;
 }
 
 void CliApplication::print_help() const
@@ -524,7 +490,7 @@ void CliApplication::print_planets() const
     std::cout << "Planets visible to player " << local_player_id_ << ":\n";
     for (const UiPlanetSnapshot& planet : snapshot.planets)
     {
-        std::cout << "  " << planet.id << ": " << planet.name
+        std::cout << "  " << planet.name
                   << " (" << std::fixed << std::setprecision(1)
                   << planet.x << ", " << planet.y << ")";
         if (!planet.has_observation)
@@ -565,7 +531,7 @@ void CliApplication::print_economy() const
               << "\n";
     for (const EconomicColonyAllocation& colony : pending_submission_.colony_allocations)
     {
-        std::cout << "  Planet " << colony.planet_id
+        std::cout << "  Planet " << colony.planet_name
                   << ": funding=" << colony.funding_fraction
                   << ", mining=" << colony.mining_fraction
                   << ", terraforming=" << colony.terraforming_fraction << "\n";
@@ -573,8 +539,8 @@ void CliApplication::print_economy() const
     if (!pending_submission_.planets_to_abandon.empty())
     {
         std::cout << "  Abandon queued:";
-        for (uint32_t planet_id : pending_submission_.planets_to_abandon)
-            std::cout << " " << planet_id;
+        for (const std::string& planet_name : pending_submission_.planets_to_abandon)
+            std::cout << " " << planet_name;
         std::cout << "\n";
     }
 }
@@ -682,14 +648,9 @@ bool CliApplication::handle_command(const std::string& raw_line)
             for (size_t index = 1; index + 1 < tokens.size(); ++index)
                 planet_name += " " + tokens[index];
 
-            uint32_t planet_id = 0;
-            std::string resolution_error;
-            if (!resolve_planet_name(planet_name, planet_id, resolution_error))
-                throw std::invalid_argument(resolution_error);
-
             const double value = std::stod(tokens.back());
             std::string adjustment_error;
-            if (!adjust_planet_funding_fraction(planet_id, value, adjustment_error))
+            if (!adjust_planet_funding_fraction(planet_name, value, adjustment_error))
                 throw std::invalid_argument(adjustment_error);
 
             submission_dirty_ = true;
@@ -752,16 +713,11 @@ bool CliApplication::handle_command(const std::string& raw_line)
             for (size_t index = 1; index + 1 < tokens.size(); ++index)
                 planet_name += " " + tokens[index];
 
-            uint32_t planet_id = 0;
-            std::string resolution_error;
-            if (!resolve_planet_name(planet_name, planet_id, resolution_error))
-                throw std::invalid_argument(resolution_error);
-
             const double value = std::stod(tokens.back());
             std::string adjustment_error;
             const bool mining = command == "set_mining";
             if (!adjust_planet_development_fraction(
-                    planet_id, mining, value, adjustment_error))
+                    planet_name, mining, value, adjustment_error))
                 throw std::invalid_argument(adjustment_error);
 
             submission_dirty_ = true;
@@ -785,21 +741,16 @@ bool CliApplication::handle_command(const std::string& raw_line)
             for (size_t index = 1; index < fraction_start; ++index)
                 planet_name += " " + tokens[index];
 
-            uint32_t planet_id = 0;
-            std::string resolution_error;
-            if (!resolve_planet_name(planet_name, planet_id, resolution_error))
-                throw std::invalid_argument(resolution_error);
-
             EconomicColonyAllocation allocation;
-            allocation.planet_id = planet_id;
+            allocation.planet_name = planet_name;
             allocation.funding_fraction = std::stod(tokens[fraction_start]);
             allocation.mining_fraction = std::stod(tokens[fraction_start + 1]);
             allocation.terraforming_fraction = std::stod(tokens[fraction_start + 2]);
             const auto existing = std::find_if(
                 pending_submission_.colony_allocations.begin(),
                 pending_submission_.colony_allocations.end(),
-                [planet_id](const EconomicColonyAllocation& value) {
-                    return value.planet_id == planet_id;
+                [&planet_name](const EconomicColonyAllocation& value) {
+                    return value.planet_name == planet_name;
                 });
             if (existing == pending_submission_.colony_allocations.end())
                 throw std::invalid_argument("planet is not one of the local colonies");
@@ -834,32 +785,31 @@ bool CliApplication::handle_command(const std::string& raw_line)
     }
     else if (command == "abandon" || command == "cancel_abandon")
     {
-        uint32_t planet_id = 0;
-        std::string resolution_error;
-        if (!resolve_planet_name(trim(line.substr(command.size())), planet_id, resolution_error))
+        const std::string planet_name = trim(line.substr(command.size()));
+        if (planet_name.empty())
         {
-            print_error(command, resolution_error);
+            print_error(command, "expected planet name");
         }
         else if (command == "abandon")
         {
             if (std::find(pending_submission_.planets_to_abandon.begin(),
                           pending_submission_.planets_to_abandon.end(),
-                          planet_id) == pending_submission_.planets_to_abandon.end())
+                          planet_name) == pending_submission_.planets_to_abandon.end())
             {
-                pending_submission_.planets_to_abandon.push_back(planet_id);
+                pending_submission_.planets_to_abandon.push_back(planet_name);
             }
             submission_dirty_ = true;
-            std::cout << "Pending abandonment for planet " << planet_id << " queued.\n";
+            std::cout << "Pending abandonment for planet " << planet_name << " queued.\n";
         }
         else
         {
             const auto existing = std::remove(
                 pending_submission_.planets_to_abandon.begin(),
-                pending_submission_.planets_to_abandon.end(), planet_id);
+                pending_submission_.planets_to_abandon.end(), planet_name);
             pending_submission_.planets_to_abandon.erase(
                 existing, pending_submission_.planets_to_abandon.end());
             submission_dirty_ = true;
-            std::cout << "Pending abandonment for planet " << planet_id << " cancelled.\n";
+            std::cout << "Pending abandonment for planet " << planet_name << " cancelled.\n";
         }
     }
     else if (command == "ready")

@@ -156,17 +156,11 @@ const Planet* GameState::get_planet(uint32_t planetID) const
 
 Planet* GameState::get_planet(const std::string& planet_name)
 {
-	auto it = planet_name_to_index.find(planet_name);
-	if (it == planet_name_to_index.end())
-		{ return nullptr; }
-	return &galaxy->planets[it->second];
+	return galaxy ? galaxy->get_planet(planet_name) : nullptr;
 }
 const Planet* GameState::get_planet(const std::string& planet_name) const
 {
-	auto it = planet_name_to_index.find(planet_name);
-	if (it == planet_name_to_index.end())
-		{ return nullptr; }
-	return &galaxy->planets[it->second];
+	return galaxy ? galaxy->get_planet(planet_name) : nullptr;
 }
 
 
@@ -333,38 +327,39 @@ ErrorCode GameState::submit_economic_action(
 	}
 	if (std::abs(research_total - 1.0) > GameConstants::Allocation_Sum_Tolerance)
 		return ErrorCode::INVALID_ALLOCATION;
-	if (submission.dip_amount < 0)
-		return ErrorCode::INVALID_PARAMETER;
-	std::unordered_set<uint32_t> abandonment_ids;
-	for (uint32_t planet_id : submission.planets_to_abandon)
-	{
-		if (!abandonment_ids.insert(planet_id).second ||
-			std::none_of(player->colonized_planets.begin(), player->colonized_planets.end(),
-				[planet_id](const ColonizedPlanet& colony) {
-					return colony.get_id() == planet_id;
-				}))
-			return ErrorCode::PLANET_NOT_OWNED;
-	}
+		if (submission.dip_amount < 0)
+			return ErrorCode::INVALID_PARAMETER;
+		std::unordered_set<std::string> abandonment_names;
+		for (const std::string& planet_name : submission.planets_to_abandon)
+		{
+			if (!abandonment_names.insert(planet_name).second ||
+				std::none_of(player->colonized_planets.begin(), player->colonized_planets.end(),
+					[&planet_name](const ColonizedPlanet& colony) {
+						return colony.get_name() == planet_name;
+					}))
+				return ErrorCode::PLANET_NOT_OWNED;
+		}
 
-	std::unordered_map<uint32_t, const EconomicColonyAllocation*> allocations;
-	double funding_total = 0.0;
-	for (const auto& allocation : submission.colony_allocations)
-	{
-		if (!allocations.emplace(allocation.planet_id, &allocation).second ||
-			!std::isfinite(allocation.funding_fraction) || allocation.funding_fraction < 0.0 ||
-			check_player_set_planet_allocation(
-				player_id, allocation.planet_id, allocation.mining_fraction,
-				allocation.terraforming_fraction) != ErrorCode::SUCCESS)
-			return ErrorCode::INVALID_ALLOCATION;
+		std::unordered_map<std::string, const EconomicColonyAllocation*> allocations;
+		double funding_total = 0.0;
+		for (const auto& allocation : submission.colony_allocations)
+		{
+			const Planet* allocation_planet = get_planet(allocation.planet_name);
+			if (!allocation_planet || !allocations.emplace(allocation.planet_name, &allocation).second ||
+				!std::isfinite(allocation.funding_fraction) || allocation.funding_fraction < 0.0 ||
+				check_player_set_planet_allocation(
+					player_id, allocation_planet->id, allocation.mining_fraction,
+					allocation.terraforming_fraction) != ErrorCode::SUCCESS)
+				return ErrorCode::INVALID_ALLOCATION;
 			funding_total += allocation.funding_fraction;
-	}
+		}
 	if (allocations.size() != player->colonized_planets.size())
 		return ErrorCode::INVALID_ALLOCATION;
 	if (std::abs(funding_total - 1.0) > GameConstants::Allocation_Sum_Tolerance)
 		return ErrorCode::INVALID_ALLOCATION;
-	for (const auto& colony : player->colonized_planets)
-		if (allocations.find(colony.get_id()) == allocations.end())
-			return ErrorCode::INVALID_ALLOCATION;
+		for (const auto& colony : player->colonized_planets)
+			if (allocations.find(colony.get_name()) == allocations.end())
+				return ErrorCode::INVALID_ALLOCATION;
 
 	Player::MoneyAllocation money_allocation{
 		submission.savings_fraction, submission.research_fraction,
@@ -373,10 +368,10 @@ ErrorCode GameState::submit_economic_action(
 		 submission.research_fractions[2], submission.research_fractions[3],
 		 submission.research_fractions[4], submission.research_fractions[5]}};
 	player->allocation = money_allocation;
-	player->economic_submission.planets_to_abandon = submission.planets_to_abandon;
-	for (auto& colony : player->colonized_planets)
-	{
-		const auto& allocation = *allocations.at(colony.get_id());
+		player->economic_submission.planets_to_abandon = submission.planets_to_abandon;
+		for (auto& colony : player->colonized_planets)
+		{
+			const auto& allocation = *allocations.at(colony.get_name());
 		colony.set_funding_fraction(allocation.funding_fraction);
 		colony.set_budget_split(allocation.mining_fraction, allocation.terraforming_fraction);
 	}
@@ -483,12 +478,15 @@ ErrorCode GameState::queue_planet_abandonment(uint32_t player_id, uint32_t plane
 	if (std::none_of(player->colonized_planets.begin(), player->colonized_planets.end(),
 		[planet_id](const ColonizedPlanet& colony) { return colony.get_id() == planet_id; }))
 		return ErrorCode::PLANET_NOT_OWNED;
+	const Planet* planet = get_planet(planet_id);
+	if (!planet)
+		return ErrorCode::INVALID_PLANET_ID;
 	if (std::find(player->economic_submission.planets_to_abandon.begin(),
-		player->economic_submission.planets_to_abandon.end(), planet_id) !=
+		player->economic_submission.planets_to_abandon.end(), planet->name) !=
 		player->economic_submission.planets_to_abandon.end())
 		return ErrorCode::INVALID_TURN_STATE;
 
-	player->economic_submission.planets_to_abandon.push_back(planet_id);
+	player->economic_submission.planets_to_abandon.push_back(planet->name);
 	turn_ready[player_id] = false;
 	capture_economic_action_submissions();
 	return ErrorCode::SUCCESS;
@@ -500,7 +498,10 @@ ErrorCode GameState::cancel_planet_abandonment(uint32_t player_id, uint32_t plan
 	if (!player)
 		return ErrorCode::INVALID_PLAYER_ID;
 	auto& abandonments = player->economic_submission.planets_to_abandon;
-	auto it = std::find(abandonments.begin(), abandonments.end(), planet_id);
+	const Planet* planet = get_planet(planet_id);
+	if (!planet)
+		return ErrorCode::INVALID_PLANET_ID;
+	auto it = std::find(abandonments.begin(), abandonments.end(), planet->name);
 	if (it == abandonments.end())
 		return ErrorCode::INVALID_TURN_STATE;
 	abandonments.erase(it);
@@ -579,11 +580,11 @@ void GameState::capture_economic_action_submissions()
 			player.allocation.research.research_radical_fraction};
 		submission.dip_amount = player.pending_dip_amount;
 		submission.dip_persistent = player.pending_dip_persistent;
-		submission.colony_allocations.clear();
-		for (const auto& colony : player.colonized_planets)
-			submission.colony_allocations.push_back({
-				colony.get_id(), colony.get_funding_fraction(),
-				colony.get_mining_fraction(), colony.get_terraforming_fraction()});
+			submission.colony_allocations.clear();
+			for (const auto& colony : player.colonized_planets)
+				submission.colony_allocations.push_back({
+					colony.get_name(), colony.get_funding_fraction(),
+					colony.get_mining_fraction(), colony.get_terraforming_fraction()});
 	}
 }
 
@@ -602,9 +603,9 @@ void GameState::capture_economic_afterstates()
 		after.colonies.clear();
 		for (const auto& colony : player.colonized_planets)
 		{
-			const Planet* planet = get_planet(colony.get_id());
-			if (planet)
-				after.colonies.push_back({planet->id, planet->population, colony.get_income()});
+				const Planet* planet = get_planet(colony.get_name());
+				if (planet)
+					after.colonies.push_back({planet->name, planet->population, colony.get_income()});
 		}
 	}
 }
@@ -729,7 +730,13 @@ std::vector<uint8_t> GameState::serialize_state() const
 			colony_state.terraforming_fraction = colony.get_terraforming_fraction();
 				state.colonies.push_back(colony_state);
 			}
-			state.planets_to_abandon = player.economic_submission.planets_to_abandon;
+			state.planets_to_abandon.clear();
+			for (const std::string& planet_name : player.economic_submission.planets_to_abandon)
+			{
+				const Planet* planet = get_planet(planet_name);
+				if (planet)
+					state.planets_to_abandon.push_back(planet->id);
+			}
 			state.economic_afterstate = player.economic_afterstate;
 		checkpoint.players.push_back(state);
 	}
@@ -869,10 +876,16 @@ bool GameState::deserialize_state(const std::vector<uint8_t>& data)
 			}
 			player.economic_submission.colony_allocations.clear();
 			for (const auto& colony : player.colonized_planets)
-				player.economic_submission.colony_allocations.push_back({
-						colony.get_id(), colony.get_funding_fraction(),
-						colony.get_mining_fraction(), colony.get_terraforming_fraction()});
-				player.economic_submission.planets_to_abandon = state.planets_to_abandon;
+					player.economic_submission.colony_allocations.push_back({
+							colony.get_name(), colony.get_funding_fraction(),
+							colony.get_mining_fraction(), colony.get_terraforming_fraction()});
+				player.economic_submission.planets_to_abandon.clear();
+				for (uint32_t planet_id : state.planets_to_abandon)
+				{
+					const Planet* planet = get_planet(planet_id);
+					if (planet)
+						player.economic_submission.planets_to_abandon.push_back(planet->name);
+				}
 			player.economic_submission.savings_fraction = player.allocation.savings_fraction;
 			player.economic_submission.research_fraction = player.allocation.research_fraction;
 			player.economic_submission.planets_fraction = player.allocation.planets_fraction;
@@ -1116,7 +1129,6 @@ void GameState::build_entity_maps(const Galaxy& galaxy_ref)
 	for (size_t i = 0; i < galaxy_ref.planets.size(); ++i)
 	{
 		planet_id_to_index[galaxy_ref.planets[i].id] = i;
-		planet_name_to_index[galaxy_ref.planets[i].name] = i;
 	}
 	
 	// Build player ID to index map and player name to index map
@@ -1373,17 +1385,17 @@ void GameState::process_queued_abandonments()
 {
 	for (auto& player : players)
 	{
-		for (uint32_t planet_id : player.economic_submission.planets_to_abandon)
+		for (const std::string& planet_name : player.economic_submission.planets_to_abandon)
 		{
 			auto colony_it = std::find_if(
 				player.colonized_planets.begin(), player.colonized_planets.end(),
-				[planet_id](const ColonizedPlanet& colony) {
-					return colony.get_id() == planet_id;
+				[&planet_name](const ColonizedPlanet& colony) {
+					return colony.get_name() == planet_name;
 				});
 			if (colony_it == player.colonized_planets.end())
 				continue;
 
-			Planet* planet = get_planet(planet_id);
+			Planet* planet = get_planet(planet_name);
 			if (planet && planet->owner == static_cast<PlayerID>(player.id))
 			{
 				planet->owner = NOT_OWNED;

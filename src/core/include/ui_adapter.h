@@ -14,7 +14,6 @@ class GameState;
 /// It contains no pointers into the game engine and may be retained by a UI.
 struct UiPlanetSnapshot
 {
-    uint32_t id = 0;
     std::string name;
     double x = 0.0;
     double y = 0.0;
@@ -33,7 +32,6 @@ struct UiPlanetSnapshot
 /// UI-safe copy of one colony's currently authoritative economic information.
 struct UiColonySnapshot
 {
-    uint32_t planet_id = 0;
     std::string planet_name;
     int32_t population = 0;
     int32_t income = 0;
@@ -82,7 +80,7 @@ struct UiEconomicSubmission
     double planets_fraction = 0.0;
     std::array<double, 6> research_fractions{};
     std::vector<EconomicColonyAllocation> colony_allocations;
-    std::vector<uint32_t> planets_to_abandon;
+    std::vector<std::string> planets_to_abandon;
     int64_t dip_amount = 0;
     bool dip_persistent = false;
 };

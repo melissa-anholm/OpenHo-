@@ -12,7 +12,6 @@ namespace
 UiPlanetSnapshot make_planet_snapshot(const Planet& planet, uint32_t observing_player_id)
 {
     UiPlanetSnapshot snapshot;
-    snapshot.id = planet.id;
     snapshot.name = planet.name;
     snapshot.x = planet.x;
     snapshot.y = planet.y;
@@ -38,16 +37,13 @@ UiColonySnapshot make_colony_snapshot(const GameState& game_state,
                                       const ColonizedPlanet& colony)
 {
     UiColonySnapshot snapshot;
-    snapshot.planet_id = colony.get_id();
+    snapshot.planet_name = colony.get_name();
     snapshot.population = colony.get_population();
     snapshot.income = colony.get_income();
     snapshot.funding_fraction = colony.get_funding_fraction();
     snapshot.mining_fraction = colony.get_mining_fraction();
     snapshot.terraforming_fraction = colony.get_terraforming_fraction();
 
-    const Planet* planet = game_state.get_planet(snapshot.planet_id);
-    if (planet)
-        snapshot.planet_name = planet->name;
     return snapshot;
 }
 

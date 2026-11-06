@@ -19,7 +19,7 @@ bool adjust_fraction_proportionally(
 
 struct EconomicColonyAllocation
 {
-    uint32_t planet_id = 0;
+    std::string planet_name;
     double funding_fraction = 0.0;
     double mining_fraction = 0.0;
     double terraforming_fraction = 0.0;
@@ -35,14 +35,14 @@ struct EconomicActionSubmission
     double planets_fraction = 0.0;
     std::array<double, 6> research_fractions{};
     std::vector<EconomicColonyAllocation> colony_allocations;
-    std::vector<uint32_t> planets_to_abandon;
+    std::vector<std::string> planets_to_abandon;
     int64_t dip_amount = 0;
     bool dip_persistent = false;
 };
 
 struct EconomicColonyAfterState
 {
-    uint32_t planet_id = 0;
+    std::string planet_name;
     int32_t population = 0;
     int32_t income = 0;
 };

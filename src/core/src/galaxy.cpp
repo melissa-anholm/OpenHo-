@@ -174,6 +174,18 @@ double Galaxy::get_distance(const std::string& from_name, const std::string& to_
 	return distance_matrix.at(planets.at(from).id).at(planets.at(to).id);
 }
 
+Planet* Galaxy::get_planet(const std::string& planet_name)
+{
+	const auto it = planet_name_to_index.find(planet_name);
+	return it == planet_name_to_index.end() ? nullptr : &planets[it->second];
+}
+
+const Planet* Galaxy::get_planet(const std::string& planet_name) const
+{
+	const auto it = planet_name_to_index.find(planet_name);
+	return it == planet_name_to_index.end() ? nullptr : &planets[it->second];
+}
+
 const std::vector<PlanetDistance>& Galaxy::get_destinations_by_distance(uint32_t from_id) const
 {
 	return destinations_by_distance.at(from_id);

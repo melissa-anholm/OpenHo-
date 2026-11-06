@@ -568,7 +568,7 @@ std::vector<uint8_t> encode_runtime_payload(const RuntimeCheckpointPayload& chec
         append_integer<uint32_t>(output, static_cast<uint32_t>(after.colonies.size()));
         for (const auto& colony : after.colonies)
         {
-            append_integer<uint32_t>(output, colony.planet_id);
+            append_string(output, colony.planet_name);
             append_signed<int32_t>(output, colony.population);
             append_signed<int32_t>(output, colony.income);
         }
@@ -697,7 +697,7 @@ bool decode_runtime_payload(const std::vector<uint8_t>& payload,
         after.colonies.resize(after_colony_count);
         for (auto& colony : after.colonies)
         {
-            if (!read_integer(payload, offset, colony.planet_id) ||
+            if (!read_string(payload, offset, colony.planet_name) ||
                 !read_signed<int32_t>(payload, offset, colony.population) ||
                 !read_signed<int32_t>(payload, offset, colony.income))
                 return false;

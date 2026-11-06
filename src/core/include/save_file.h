@@ -110,7 +110,7 @@ struct RuntimePlayerState
 
 struct RuntimeCheckpointPayload
 {
-    static constexpr uint32_t CURRENT_SCHEMA_VERSION = 8;
+    static constexpr uint32_t CURRENT_SCHEMA_VERSION = 9;
 
     uint32_t schema_version = CURRENT_SCHEMA_VERSION;
     uint32_t turn = 0;

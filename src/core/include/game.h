@@ -211,7 +211,6 @@ private:
 	// ========== IMMUTABLE MAPPINGS (built once, never change) ==========
 	// Entity ID to index mappings - fixed after initialization
 	std::unordered_map<uint32_t, size_t> planet_id_to_index;      // planet ID -> index in galaxy.planets
-	std::unordered_map<std::string, size_t> planet_name_to_index;  // planet name -> index in galaxy.planets
 	std::unordered_map<uint32_t, size_t> player_id_to_index;       // player ID -> index in players
 	std::unordered_map<std::string, size_t> player_name_to_index;  // player name -> index in players
 	
