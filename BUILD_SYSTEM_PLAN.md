@@ -120,7 +120,9 @@ cmake --build build/cli --target openho_cli
 ./build/cli/openho_cli
 ```
 
-The initial CLI is deliberately line-oriented and scriptable. It supports `help`, `status`, `players`, `planets`, `ready`, `unready`, `process`, `save`, `load`, and `quit`. It uses a compact deterministic 10-planet game, with player 1 as the local player and non-local players automatically marked ready. The asset directory can be supplied with `--assets PATH` or `OPENHO_ASSETS_DIR`; the default remains `TextAssets` for repository-root compatibility.
+The initial CLI is deliberately line-oriented and scriptable. It supports `help`, `status`, `players`, `planets`, `economy`, global spending/research allocation commands, per-planet allocation commands, Dip Into Savings, abandonment queue/cancel, `submit`, `ready`, `unready`, `process`, `save`, `load`, and `quit`. Economic edits remain pending until `submit`, and readiness/process reject unsent edits. It uses a compact deterministic 10-planet game, with player 1 as the local player and non-local players automatically marked ready. The asset directory can be supplied with `--assets PATH` or `OPENHO_ASSETS_DIR`; the default remains `TextAssets` for repository-root compatibility.
+
+The `openho_cli_economic_smoke` CTest target runs a scripted economic scenario covering pending edits, submission, readiness gating, turn processing, Dip Into Savings, and abandonment queue/cancel. The current command names and argument structures are provisional and are expected to be refined before the CLI becomes a stable user-facing interface.
 
 ## Dependency Management
 

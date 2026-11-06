@@ -102,7 +102,7 @@ The portable session lifecycle is implemented in `src/core/include/game_session.
 
 The first functional frontend is now a portable line-oriented CLI in `src/cli`. The `openho_cli` executable uses a deterministic 10-planet setup, treats player 1 as the local player, automatically readies the other player slot, and exercises status/player/planet display, readiness, turn processing, save, load, and quit through `GameSession` and `GameUiAdapter`. The CLI is the primary runnable frontend for development; AppKit work remains deferred until this path is expanded.
 
-**Next frontend milestone:** expand the CLI into the first playable economic vertical slice. Add explicit commands for viewing and submitting spending allocations, per-colony mining/terraforming allocations, Dip Into Savings, and queued abandonment; retain a scriptable line protocol; and add a dedicated CLI integration test executable or scripted test target. Fleet movement and the required ship/fleet battle mechanics remain later gameplay milestones rather than CLI prerequisites.
+The first playable economic CLI vertical slice is now implemented. It supports pending global spending and research allocations, per-colony funding/mining/terraforming allocations, Dip Into Savings, queued abandonment, explicit economic submission, readiness gating, turn processing, save/load, and a repeatable CTest-backed scripted scenario. The current command vocabulary and argument structures are intentionally provisional and should be refined for usability next. Fleet movement and the required ship/fleet battle mechanics remain later gameplay milestones rather than CLI prerequisites.
 
 #### macOS UI Build and Runtime Verification Strategy
 

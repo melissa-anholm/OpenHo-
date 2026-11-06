@@ -1,6 +1,7 @@
 #ifndef OPENHO_CLI_APPLICATION_H
 #define OPENHO_CLI_APPLICATION_H
 
+#include "ui_adapter.h"
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -25,17 +26,22 @@ private:
     bool handle_command(const std::string& line);
     bool initialize_new_session();
     bool mark_non_local_players_ready();
+    bool synchronize_pending_submission();
+    bool submit_pending_submission();
 
     void print_help() const;
     void print_status() const;
     void print_players() const;
     void print_planets() const;
+    void print_economy() const;
     void print_error(const std::string& operation, const std::string& detail) const;
 
     std::unique_ptr<GameSession> session_;
     uint32_t local_player_id_ = 1;
     std::string default_save_path_ = "openho-cli.save";
     std::string assets_directory_;
+    UiEconomicSubmission pending_submission_;
+    bool submission_dirty_ = false;
 };
 
 #endif // OPENHO_CLI_APPLICATION_H

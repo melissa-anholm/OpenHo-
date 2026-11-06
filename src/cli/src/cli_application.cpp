@@ -6,9 +6,11 @@
 #include "ui_adapter.h"
 
 #include <array>
+#include <algorithm>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 #include <utility>
 
 namespace
@@ -79,7 +81,7 @@ bool CliApplication::initialize_new_session()
 
     if (!mark_non_local_players_ready())
         return false;
-    return true;
+    return synchronize_pending_submission();
 }
 
 bool CliApplication::mark_non_local_players_ready()
@@ -102,6 +104,55 @@ bool CliApplication::mark_non_local_players_ready()
     return true;
 }
 
+bool CliApplication::synchronize_pending_submission()
+{
+    if (!session_ || !session_->state() || !session_->ui())
+        return false;
+
+    const UiGameSnapshot snapshot = session_->ui()->snapshot(local_player_id_);
+    const auto player = std::find_if(
+        snapshot.players.begin(), snapshot.players.end(),
+        [this](const UiPlayerSnapshot& value) { return value.id == local_player_id_; });
+    if (player == snapshot.players.end())
+        return false;
+
+    pending_submission_.savings_fraction = player->savings_fraction;
+    pending_submission_.research_fraction = player->research_fraction;
+    pending_submission_.planets_fraction = player->planets_fraction;
+    pending_submission_.research_fractions = player->research_fractions;
+    pending_submission_.dip_amount = player->dip_amount;
+    pending_submission_.dip_persistent = player->dip_persistent;
+    pending_submission_.colony_allocations.clear();
+    for (const UiColonySnapshot& colony : player->colonies)
+    {
+        pending_submission_.colony_allocations.push_back({
+            colony.planet_id,
+            colony.funding_fraction,
+            colony.mining_fraction,
+            colony.terraforming_fraction});
+    }
+    pending_submission_.planets_to_abandon.clear();
+    submission_dirty_ = false;
+    return true;
+}
+
+bool CliApplication::submit_pending_submission()
+{
+    if (!session_ || !session_->ui())
+        return false;
+
+    const ErrorCode result = session_->ui()->submit_economic_actions(
+        local_player_id_, pending_submission_);
+    if (result != ErrorCode::SUCCESS)
+    {
+        print_error("submit", error_code_to_string(result));
+        return false;
+    }
+    submission_dirty_ = false;
+    std::cout << "Economic submission accepted for the current turn.\n";
+    return true;
+}
+
 void CliApplication::print_help() const
 {
     std::cout << "Commands:\n"
@@ -109,6 +160,14 @@ void CliApplication::print_help() const
               << "  status                       Show turn, year, and save state.\n"
               << "  players                      Show players and readiness.\n"
               << "  planets                      Show the local player's planet views.\n"
+              << "  economy                      Show local economic state and pending choices.\n"
+              << "  set spending S R P           Set savings/research/planets fractions.\n"
+              << "  set research A B C D E F     Set six research-stream fractions.\n"
+              << "  set planet ID F M T          Set funding/mining/terraforming fractions.\n"
+              << "  dip AMOUNT [once|persistent] Set pending Dip Into Savings.\n"
+              << "  abandon ID                   Queue a colony abandonment.\n"
+              << "  cancel-abandon ID            Cancel a queued abandonment.\n"
+              << "  submit                       Submit pending economic choices.\n"
               << "  ready                        Mark player 1 ready.\n"
               << "  unready                      Mark player 1 unready.\n"
               << "  process                      Process the turn and autosave.\n"
@@ -178,6 +237,47 @@ void CliApplication::print_planets() const
     }
 }
 
+void CliApplication::print_economy() const
+{
+    if (!session_ || !session_->ui())
+        return;
+
+    const UiGameSnapshot snapshot = session_->ui()->snapshot(local_player_id_);
+    const auto player = std::find_if(
+        snapshot.players.begin(), snapshot.players.end(),
+        [this](const UiPlayerSnapshot& value) { return value.id == local_player_id_; });
+    if (player == snapshot.players.end())
+        return;
+
+    std::cout << "Player " << local_player_id_
+              << ": money=" << player->money
+              << ", money income=" << player->money_income
+              << ", effective income=" << player->effective_income
+              << ", metal=" << player->metal_reserve
+              << ", metal income=" << player->metal_income << "\n";
+    std::cout << "  Pending spending: savings=" << pending_submission_.savings_fraction
+              << ", research=" << pending_submission_.research_fraction
+              << ", planets=" << pending_submission_.planets_fraction
+              << ", submitted=" << (submission_dirty_ ? "no" : "yes") << "\n";
+    std::cout << "  Pending dip: amount=" << pending_submission_.dip_amount
+              << ", mode=" << (pending_submission_.dip_persistent ? "persistent" : "once")
+              << "\n";
+    for (const EconomicColonyAllocation& colony : pending_submission_.colony_allocations)
+    {
+        std::cout << "  Planet " << colony.planet_id
+                  << ": funding=" << colony.funding_fraction
+                  << ", mining=" << colony.mining_fraction
+                  << ", terraforming=" << colony.terraforming_fraction << "\n";
+    }
+    if (!pending_submission_.planets_to_abandon.empty())
+    {
+        std::cout << "  Abandon queued:";
+        for (uint32_t planet_id : pending_submission_.planets_to_abandon)
+            std::cout << " " << planet_id;
+        std::cout << "\n";
+    }
+}
+
 void CliApplication::print_error(const std::string& operation,
                                   const std::string& detail) const
 {
@@ -210,8 +310,128 @@ bool CliApplication::handle_command(const std::string& raw_line)
     {
         print_planets();
     }
+    else if (command == "economy")
+    {
+        print_economy();
+    }
+    else if (command == "set")
+    {
+        std::string category;
+        input >> category;
+        try
+        {
+            if (category == "spending")
+            {
+                input >> pending_submission_.savings_fraction
+                      >> pending_submission_.research_fraction
+                      >> pending_submission_.planets_fraction;
+                if (!input)
+                    throw std::invalid_argument("expected three spending fractions");
+                submission_dirty_ = true;
+                std::cout << "Pending spending allocation updated.\n";
+            }
+            else if (category == "research")
+            {
+                for (double& fraction : pending_submission_.research_fractions)
+                    input >> fraction;
+                if (!input)
+                    throw std::invalid_argument("expected six research fractions");
+                submission_dirty_ = true;
+                std::cout << "Pending research allocation updated.\n";
+            }
+            else if (category == "planet")
+            {
+                uint32_t planet_id = 0;
+                EconomicColonyAllocation allocation;
+                input >> planet_id >> allocation.funding_fraction
+                      >> allocation.mining_fraction
+                      >> allocation.terraforming_fraction;
+                if (!input)
+                    throw std::invalid_argument("expected planet ID and three fractions");
+                allocation.planet_id = planet_id;
+                const auto existing = std::find_if(
+                    pending_submission_.colony_allocations.begin(),
+                    pending_submission_.colony_allocations.end(),
+                    [planet_id](const EconomicColonyAllocation& value) {
+                        return value.planet_id == planet_id;
+                    });
+                if (existing == pending_submission_.colony_allocations.end())
+                    throw std::invalid_argument("planet is not one of the local colonies");
+                *existing = allocation;
+                submission_dirty_ = true;
+                std::cout << "Pending allocation for planet " << planet_id << " updated.\n";
+            }
+            else
+            {
+                throw std::invalid_argument("unknown set category");
+            }
+        }
+        catch (const std::exception& error)
+        {
+            print_error("set", error.what());
+        }
+    }
+    else if (command == "dip")
+    {
+        try
+        {
+            input >> pending_submission_.dip_amount;
+            if (!input || pending_submission_.dip_amount < 0)
+                throw std::invalid_argument("expected a non-negative dip amount");
+            std::string mode;
+            input >> mode;
+            if (!mode.empty() && mode != "once" && mode != "persistent")
+                throw std::invalid_argument("mode must be once or persistent");
+            pending_submission_.dip_persistent = mode == "persistent";
+            submission_dirty_ = true;
+            std::cout << "Pending Dip Into Savings updated.\n";
+        }
+        catch (const std::exception& error)
+        {
+            print_error("dip", error.what());
+        }
+    }
+    else if (command == "abandon" || command == "cancel-abandon")
+    {
+        uint32_t planet_id = 0;
+        input >> planet_id;
+        if (!input)
+        {
+            print_error(command, "a planet ID is required");
+        }
+        else if (command == "abandon")
+        {
+            if (std::find(pending_submission_.planets_to_abandon.begin(),
+                          pending_submission_.planets_to_abandon.end(),
+                          planet_id) == pending_submission_.planets_to_abandon.end())
+            {
+                pending_submission_.planets_to_abandon.push_back(planet_id);
+            }
+            submission_dirty_ = true;
+            std::cout << "Pending abandonment for planet " << planet_id << " queued.\n";
+        }
+        else
+        {
+            const auto existing = std::remove(
+                pending_submission_.planets_to_abandon.begin(),
+                pending_submission_.planets_to_abandon.end(), planet_id);
+            pending_submission_.planets_to_abandon.erase(
+                existing, pending_submission_.planets_to_abandon.end());
+            submission_dirty_ = true;
+            std::cout << "Pending abandonment for planet " << planet_id << " cancelled.\n";
+        }
+    }
+    else if (command == "submit")
+    {
+        submit_pending_submission();
+    }
     else if (command == "ready")
     {
+        if (submission_dirty_)
+        {
+            print_error("ready", "submit pending economic choices first");
+            return true;
+        }
         const ErrorCode result = session_ && session_->ui()
             ? session_->ui()->mark_ready(local_player_id_)
             : ErrorCode::INVALID_TURN_STATE;
@@ -240,6 +460,11 @@ bool CliApplication::handle_command(const std::string& raw_line)
         {
             if (!mark_non_local_players_ready())
                 return false;
+            if (submission_dirty_)
+            {
+                print_error("process", "submit pending economic choices first");
+                return true;
+            }
             const GameSessionError result = session_->process_turn_and_autosave();
             if (result != GameSessionError::SUCCESS)
             {
@@ -250,6 +475,8 @@ bool CliApplication::handle_command(const std::string& raw_line)
             }
             else
             {
+                if (!synchronize_pending_submission())
+                    return false;
                 std::cout << "Turn processed and autosaved.\n";
             }
         }
@@ -285,6 +512,8 @@ bool CliApplication::handle_command(const std::string& raw_line)
         {
             session_ = std::move(loaded);
             if (!mark_non_local_players_ready())
+                return false;
+            if (!synchronize_pending_submission())
                 return false;
             std::cout << "Loaded " << path << ".\n";
         }

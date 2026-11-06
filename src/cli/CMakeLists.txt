@@ -23,6 +23,14 @@ target_include_directories(openho_cli PRIVATE
 
 target_link_libraries(openho_cli PRIVATE OpenHoCore)
 
+enable_testing()
+add_test(
+    NAME openho_cli_economic_smoke
+    COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/test_cli_economic.sh"
+            "$<TARGET_FILE:openho_cli>"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../../TextAssets"
+)
+
 if(MSVC)
     target_compile_options(openho_cli PRIVATE /W4)
 else()
