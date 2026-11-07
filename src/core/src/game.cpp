@@ -1388,7 +1388,7 @@ void GameState::process_queued_fleet_actions()
 		for (const FleetMoveAction& move : player.fleet_action_submission.moves)
 		{
 			Fleet* fleet = player.get_fleet(move.fleet_id);
-			if (!fleet || fleet->in_transit)
+			if (!fleet || fleet->is_in_transit())
 				continue;
 			fleet->move_to(move.destination_planet_name,
 				player.get_knowledge_galaxy(), current_turn);
@@ -1406,26 +1406,17 @@ void GameState::process_ships()
 		for (auto& fleet : player.fleets)
 		{
 			// Check if fleet is in transit and has arrived
-			if (fleet.transit && fleet.transit->arrival_turn <= current_turn)
+			const FleetInTransitLocation* transit = fleet.transit_location();
+			if (transit && transit->arrival_turn <= current_turn)
 			{
 				// Fleet has arrived at destination
-					const std::string destination_name = fleet.transit->destination_planet_name;
+					const std::string destination_name = transit->destination_planet_name;
 					Planet* destination = get_planet(destination_name);
 				
 				if (destination)
 				{
 					// Move fleet from space to destination
-						fleet.current_planet_name = destination->name;
-					
-					// Clear transit info
-					fleet.transit.reset();
-					
-					// Update old transit fields for compatibility
-					fleet.in_transit = false;
-						fleet.origin_planet_name = destination->name;
-						fleet.destination_planet_name.clear();
-					fleet.distance_to_destination = 0;
-					fleet.turns_to_destination = 0;
+					fleet.location = FleetStationedLocation{destination->name};
 				}
 			}
 		}
@@ -2151,9 +2142,9 @@ ErrorCode GameState::check_player_move_fleet(uint32_t player_id,
 		return ErrorCode::INVALID_PLANET_ID;
 	
 	// Check fleet is not already in transit
-	if (fleet->in_transit)
+	if (fleet->is_in_transit())
 		return ErrorCode::FLEET_IN_TRANSIT;
-	if (fleet->current_planet_name == destination_planet_name)
+	if (fleet->stationed_planet_name() == destination_planet_name)
 		return ErrorCode::INVALID_TURN_STATE;
 	
 	return ErrorCode::SUCCESS;
@@ -2178,7 +2169,7 @@ ErrorCode GameState::check_fleet_action_submission(
 		if (result != ErrorCode::SUCCESS)
 			return result;
 		const Fleet* fleet = player->get_fleet(move.fleet_id);
-		if (!fleet || fleet->current_planet_name == move.destination_planet_name)
+		if (!fleet || fleet->stationed_planet_name() == move.destination_planet_name)
 			return ErrorCode::INVALID_TURN_STATE;
 	}
 	return ErrorCode::SUCCESS;
@@ -2309,8 +2300,8 @@ void GameState::refresh_player_planet_views()
 			bool stationed_fleet = false;
 			for (const Fleet& fleet : player.fleets)
 			{
-				if (!fleet.in_transit && fleet.ship_count > 0 &&
-						fleet.current_planet_name == planet.name)
+					if (!fleet.is_in_transit() && fleet.ship_count > 0 &&
+							fleet.stationed_planet_name() == planet.name)
 				{
 					stationed_fleet = true;
 					break;

@@ -16,13 +16,7 @@ Fleet::Fleet(uint32_t fleet_id, PlayerID player_id, const ShipDesign* design,
 	  ship_design(design),
 	  ship_count(ship_count),
 	  fuel(design ? design->get_range() : 0),
-	  in_transit(false),
-		  current_planet_name(planet_name),
-		  origin_planet_name(planet_name),
-		  destination_planet_name(),
-	  distance_to_destination(0),
-	  turns_to_destination(0),
-	  transit(nullptr)
+	  location(FleetStationedLocation{planet_name})
 {
 	if(ship_design && ship_design->type == SHIP_BIOLOGICAL)
 	{
@@ -56,8 +50,9 @@ void Fleet::move_to(const std::string& destination_name,
                     uint32_t current_turn)
 {
 	// Validate inputs
-	if (destination_name.empty() || !knowledge_galaxy || current_planet_name.empty())
+	if (destination_name.empty() || !knowledge_galaxy || is_in_transit())
 		{ return; }
+	const std::string& current_planet_name = stationed_planet_name();
 	
 	// If fleet is already at destination, do nothing
 	if (current_planet_name == destination_name)
@@ -77,23 +72,22 @@ void Fleet::move_to(const std::string& destination_name,
 	
 	uint32_t arrival_turn = current_turn + turns;
 	
-	// Create FleetTransit to hold transit state
-	transit = std::make_unique<FleetTransit>(
-			current_planet_name,
-			destination_name,
-		current_turn,
-		arrival_turn,
-		distance,
-		turns );
-	
-	// Update fleet state
-	in_transit = true;
-	origin_planet_name = current_planet_name;
-	destination_planet_name = destination_name;
-	distance_to_destination = distance;
-	turns_to_destination = turns;
-	
-	// An in-transit fleet has no stationed planet. Its origin and destination
-	// names remain in the transit record until arrival.
-	current_planet_name.clear();
+	location = FleetInTransitLocation{
+		current_planet_name, destination_name, current_turn, arrival_turn,
+		distance, turns};
+}
+
+bool Fleet::is_in_transit() const
+{
+	return std::holds_alternative<FleetInTransitLocation>(location);
+}
+
+const std::string& Fleet::stationed_planet_name() const
+{
+	return std::get<FleetStationedLocation>(location).planet_name;
+}
+
+const FleetInTransitLocation* Fleet::transit_location() const
+{
+	return std::get_if<FleetInTransitLocation>(&location);
 }

@@ -5,6 +5,7 @@
 #include <string>
 #include <memory>
 #include <utility>
+#include <variant>
 
 // Forward declarations
 struct Planet;
@@ -15,29 +16,22 @@ typedef int32_t PlayerID;
 // Forward declaration
 class Player;
 
-// ============================================================================
-// FleetTransit Struct
-// ============================================================================
+struct FleetStationedLocation
+{
+	std::string planet_name;
+};
 
-// Encapsulates all transit state for a fleet in motion
-struct FleetTransit
+struct FleetInTransitLocation
 {
 	std::string origin_planet_name;
 	std::string destination_planet_name;
-	uint32_t departure_turn;            // Turn when fleet departed
-	uint32_t arrival_turn;              // Turn when fleet arrives
-	double distance;                    // Distance traveled (from matrix)
-	uint32_t turns_to_travel;           // Turns needed to reach destination
-	
-	FleetTransit(std::string origin, std::string dest, uint32_t dep, uint32_t arr, double dist, uint32_t turns)
-		: origin_planet_name(std::move(origin)),
-		  destination_planet_name(std::move(dest)),
-		  departure_turn(dep),
-		  arrival_turn(arr),
-		  distance(dist),
-		  turns_to_travel(turns)
-	{ }
+	uint32_t departure_turn = 0;
+	uint32_t arrival_turn = 0;
+	double distance = 0.0;
+	uint32_t turns_to_travel = 0;
 };
+
+using FleetLocation = std::variant<FleetStationedLocation, FleetInTransitLocation>;
 
 /// Fleet represents a group of identical ships traveling together
 /// All ships in a fleet must have the same design and fuel level
@@ -58,21 +52,9 @@ public:
 	uint32_t ship_count;            // Number of identical ships in fleet (max 1000)
 	
 	int32_t fuel;                   // Current fuel level (all ships have same amount)
-	bool in_transit;                // Is fleet currently traveling?
 	
 	std::string descriptor;
-	
-	// Position tracking
-	std::string current_planet_name;      // Empty while in transit
-	std::string origin_planet_name;       // Planet fleet departed from
-	std::string destination_planet_name;  // Empty while stationed
-	
-	// Movement tracking
-	double distance_to_destination; // Remaining distance in light-years
-	uint32_t turns_to_destination;  // Estimated turns until arrival
-	
-	// Transit state (new architecture)
-	std::unique_ptr<FleetTransit> transit;  // nullptr if docked, not-null if in transit
+	FleetLocation location;
 	
 	// Move semantics (required by unique_ptr)
 	Fleet(Fleet&&) = default;
@@ -95,6 +77,10 @@ public:
 	void move_to(const std::string& destination_planet_name,
 	             KnowledgeGalaxy* knowledge_galaxy,
 	             uint32_t current_turn);
+
+	[[nodiscard]] bool is_in_transit() const;
+	[[nodiscard]] const std::string& stationed_planet_name() const;
+	[[nodiscard]] const FleetInTransitLocation* transit_location() const;
 };
 
 #endif // FLEET_H

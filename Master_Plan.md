@@ -1,6 +1,6 @@
 # OpenHo Master Plan
 
-**Last Updated:** November 6, 2026 (name-primary fleet planet identity)
+**Last Updated:** November 7, 2026 (queued fleet movement and explicit fleet location state)
 **Project Status:** Phase 2 - Minimal playable game first; feature completeness follows incrementally
 
 ---
@@ -32,7 +32,7 @@ The project uses a command-line build system (no Xcode dependency) with CMake fo
 
 ### Phase 2: C++ Core Implementation (Current)
 
-**Overall Status:** The minimal playable game is operational through a deterministic RANDOM-galaxy path and multiple turns. The core now has economic submissions/readiness gating, checkpoint persistence, PlanetView snapshots, explicit home-planet setup, gameplay colonization, and queued abandonment. The next architectural transition may be a native macOS UI, while fleet battles, complete action processing, and some formula/data validation remain future work.
+**Overall Status:** The minimal playable game is operational through a deterministic RANDOM-galaxy path and multiple turns. The core now has economic and fleet submissions/readiness gating, checkpoint persistence, PlanetView snapshots, explicit home-planet setup, gameplay colonization, and queued abandonment. The next architectural transition may be a native macOS UI, while fleet battles, complete action processing, fleet checkpoint coverage, and some formula/data validation remain future work.
 
 **Economic policy decision:** The provisional intentional-debt limit is calculated from summed planetary income over a ten-turn repayment horizon, with the current 15% per-turn debt-interest rate. The provisional bankruptcy limit is five times the debt at which interest equals `max(summed planetary income, 50,000)`. Debt-limit functions accept summed planetary income and planet count explicitly; planet count is reserved for a future data-driven refinement.
 
@@ -52,7 +52,7 @@ The core entity model, deterministic RNG, GameState structure, C API boundary, c
 
 **Status:** Foundational structures and provisional cost calculations are implemented; the complete player-facing build-selection process remains in progress.
 
-Players own fleet and ship-design collections, fleet movement state exists, and validation/delegation boundaries are established. Provisional ship costs, resource deduction, and immediate single-design fleet creation are implemented. The complete player-facing build-selection process, same-phase scrapping, combat, and some movement validation remain future work. See the [active implementation checklist](Missing_Implementation_List.md#ship-design-creation).
+Players own fleet and ship-design collections, queued fleet movement submissions are validated at the readiness boundary, and each fleet has one explicit `FleetLocation` variant representing either a stationed planet or a transit record. Provisional ship costs, resource deduction, and immediate single-design fleet creation are implemented. The complete player-facing build-selection process, same-phase scrapping, combat, fleet checkpoint coverage, and some movement validation remain future work. See the [active implementation checklist](Missing_Implementation_List.md#ship-design-creation).
 
 #### Phase 2b-Extended: GameState Architecture & Text Assets
 
@@ -80,7 +80,7 @@ Ideal temperature/gravity assignment and apparent-condition formulas are impleme
 
 #### Phase 2f: Economic Mechanics
 
-**Status:** Phase 1 economic-kernel ordering, the Dip Into Savings action model, economic submissions, readiness gating, and regression coverage are implemented. Population growth, planetary-income, research, mining, terraforming, and interest formulas remain provisional or require data-driven validation. Full beginning/economic/post-processing snapshots, queued fleet actions, and later fleet phases remain future work.
+**Status:** Phase 1 economic-kernel ordering, the Dip Into Savings action model, economic submissions, readiness gating, queued fleet movement submissions, and regression coverage are implemented. Population growth, planetary-income, research, mining, terraforming, and interest formulas remain provisional or require data-driven validation. Full beginning/economic/post-processing snapshots and later fleet phases remain future work.
 
 The economic path applies population growth, refreshes planetary income using the resulting population, calculates interest from beginning-of-turn savings, commits one effective-income value, and then applies allocations, research, mining, and terraforming. The Dip Into Savings action uses an immediate reversible savings adjustment and a locked amount applied during the following economic phase; persistent pension-plan mode is the default, with a separate one-time option. The dip is allowed to exceed current savings for now; the permitted-debt and bankruptcy limit remains a data-driven future rule. See the [data-driven implementation checklist](Missing_Implementation_List.md#data-driven-values-require-reverse-engineering).
 

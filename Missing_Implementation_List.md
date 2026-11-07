@@ -344,11 +344,16 @@ This testing should be performed before galaxy generation is considered producti
 - **Priority:** High
 
 #### Fleet Movement
-- **Status:** Movement implemented but insufficiently validated
+- **Status:** Queued movement and explicit stationed/transit state implemented; persistence and final validation remain
 - **Location:** `src/core/src/game.cpp`, `src/core/src/player.cpp`, and `src/core/src/fleet.cpp`
 - **Completed:**
  - [x] Fleet movement calculation (distance-based)
- - [x] Fleet arrival processing (requires validation of planet-ID to vector-index lookup)
+ - [x] Queue complete fleet movement submissions for the next turn's fleet-processing phase
+ - [x] Require valid fleet submissions at the readiness boundary
+ - [x] Represent each fleet with one explicit stationed-or-in-transit location state
+ - [x] Fleet arrival processing using canonical planet names
+ - [ ] Serialize and restore fleets and in-transit state in runtime checkpoints
+ - [ ] Complete movement validation against final fuel, range, and action-order rules
 - **Priority:** Medium-high
 
 #### Force Combat

@@ -192,7 +192,7 @@ std::vector<Fleet*> Player::get_fleets_in_transit()
 {
 	std::vector<Fleet*> result;
 	for (auto& fleet : fleets)
-		if (fleet.in_transit)
+		if (fleet.is_in_transit())
 			result.push_back(&fleet);
 	return result;
 }
@@ -201,7 +201,7 @@ const std::vector<const Fleet*> Player::get_fleets_in_transit() const
 {
 	std::vector<const Fleet*> result;
 	for (const auto& fleet : fleets)
-		if (fleet.in_transit)
+		if (fleet.is_in_transit())
 			result.push_back(&fleet);
 	return result;
 }
