@@ -246,6 +246,7 @@ void test_ship_construction()
     assert(game->get_player(1)->get_fleets().front().ship_stacks.front().design_id == design_id);
     assert(game->get_player(1)->get_fleets().front().newly_built_this_turn);
     assert(design->get_has_been_prototyped());
+    assert(game->get_player(1)->is_prototype_refund_candidate(design_id));
 
     const int64_t money_before_second_build = game->get_player(1)->get_money();
     const int64_t metal_before_second_build = game->get_player(1)->get_metal();
@@ -309,6 +310,7 @@ void test_ship_construction()
     game->process_turn();
     const Fleet& fleet_after_processing = game->get_player(1)->get_fleets().front();
     assert(!fleet_after_processing.newly_built_this_turn);
+    assert(!game->get_player(1)->is_prototype_refund_candidate(design_id));
     assert(fleet_after_processing.is_in_transit() ||
            fleet_after_processing.stationed_planet_name() == destination_name);
 	assert(game->get_player_fleets_stationed_at(1, origin_name).size() == 1);

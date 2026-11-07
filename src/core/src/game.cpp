@@ -605,6 +605,7 @@ void GameState::start_first_turn()
 		{
 			for (auto& fleet : player.fleets)
 				fleet.newly_built_this_turn = false;
+			player.prototype_refund_candidates.clear();
 		}
 	}
 
@@ -2102,6 +2103,7 @@ ErrorCode GameState::build_ships_from_design(uint32_t player_id, uint32_t design
 		return ErrorCode::INSUFFICIENT_MONEY;
 	if (player->metal_reserve < total_metal_cost)
 		return ErrorCode::INSUFFICIENT_METAL;
+	const bool first_prototype_this_build = !design->has_been_prototyped;
 
 	const uint32_t fleet_id = player->build_fleet(
 		allocate_fleet_id(), design_id, ship_count, planet->name);
@@ -2111,6 +2113,8 @@ ErrorCode GameState::build_ships_from_design(uint32_t player_id, uint32_t design
 	player->money_savings -= total_money_cost;
 	player->metal_reserve -= total_metal_cost;
 	design->has_been_prototyped = true;
+	if (first_prototype_this_build)
+		player->prototype_refund_candidates.insert(design_id);
 	return ErrorCode::SUCCESS;
 }
 

@@ -447,6 +447,7 @@ This testing should be performed before galaxy generation is considered producti
  - [x] Reject unaffordable actions without partial resource deductions
  - [x] Permit multiple build actions when resources remain sufficient
  - [x] Record prototype completion so later builds from that design omit the prototype cost
+ - [x] Track first-time prototype charges as Player-owned, turn-scoped refund candidates
  - [ ] Permit full-resource same-phase scrapping for newly built ships/fleets
  - [ ] Implement later scrapping for metal only at a heavy loss
  - [ ] Keep a newly created design in the player's library if all ships built from it are scrapped, but roll back its prototype marker before the player-action phase ends

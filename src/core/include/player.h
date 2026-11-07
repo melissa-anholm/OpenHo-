@@ -9,6 +9,7 @@
 #include "fleet.h"
 #include "economic_state.h"
 #include <cstdint>
+#include <unordered_set>
 #include <unordered_map>
 #include <vector>
 #include <string>
@@ -211,6 +212,12 @@ public:
 	const EconomicActionSubmission& get_economic_submission() const { return economic_submission; }
 	const FleetActionSubmission& get_fleet_action_submission() const { return fleet_action_submission; }
 	const EconomicAfterState& get_economic_afterstate() const { return economic_afterstate; }
+	/// Design IDs whose first-use prototype charge was paid this turn and may
+	/// still be eligible for rollback if the corresponding new fleet is scrapped.
+	bool is_prototype_refund_candidate(uint32_t design_id) const
+	{
+		return prototype_refund_candidates.count(design_id) != 0;
+	}
 	
 	// ========================================================================
 	// Fleet Management
@@ -315,8 +322,10 @@ private:
 	uint32_t next_ship_design_id;                // Counter for unique design IDs (never resets)
 	
 	
-	// Fleets (groups of identical ships)
+	// Fleets (each may contain multiple design-specific ship stacks)
 	std::vector<Fleet> fleets;                 // All fleets owned by this player
+	// Turn-scoped prototype charges that remain eligible for rollback.
+	std::unordered_set<uint32_t> prototype_refund_candidates;
 	
 	// Player public information history: player_id -> vector of PlayerPublicInfo (one per turn)
 	std::unordered_map<uint32_t, std::vector<PlayerPublicInfo>> player_info_history;
