@@ -247,6 +247,9 @@ public:
 	
 	/// Get all fleets currently in transit (const version)
 	[[nodiscard]] const std::vector<const Fleet*> get_fleets_in_transit() const;
+	/// Get this player's fleets currently stationed at a named planet.
+	[[nodiscard]] std::vector<const Fleet*> get_fleets_stationed_at(
+		const std::string& planet_name) const;
 	[[nodiscard]] KnowledgeGalaxy* get_knowledge_galaxy() const { return knowledge_galaxy; }
 	
 	// ========================================================================

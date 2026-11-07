@@ -552,12 +552,14 @@ void GameState::start_first_turn()
 	capture_fleet_action_submissions();
 }
 
-void GameState::process_turn()
-{
-	if (!all_players_ready())
-		return;
+	void GameState::process_turn()
+	{
+		if (!all_players_ready())
+			return;
 
-	// Phase 1 economic order:
+		expire_newly_built_fleet_flags();
+
+		// Phase 1 economic order:
 	// 1. Capture beginning-of-turn savings and public information.
 	// 2. Apply population growth.
 	// 3. Calculate planetary income using the new population.
@@ -594,10 +596,19 @@ void GameState::process_turn()
 		capture_economic_action_submissions();
 		capture_fleet_action_submissions();
 		for (auto& ready : turn_ready)
-		ready.second = false;
-}
+			ready.second = false;
+	}
 
-void GameState::capture_economic_action_submissions()
+	void GameState::expire_newly_built_fleet_flags()
+	{
+		for (auto& player : players)
+		{
+			for (auto& fleet : player.fleets)
+				fleet.newly_built_this_turn = false;
+		}
+	}
+
+	void GameState::capture_economic_action_submissions()
 {
 	for (auto& player : players)
 	{
@@ -1804,6 +1815,15 @@ const std::vector<Fleet>& GameState::get_player_fleets(uint32_t player_id) const
 		{ return emptyVector; }
 	
 	return player->fleets;
+}
+
+std::vector<const Fleet*> GameState::get_player_fleets_stationed_at(
+	uint32_t player_id, const std::string& planet_name) const
+{
+	const Player* player = get_player(player_id);
+	if (!player)
+		return {};
+	return player->get_fleets_stationed_at(planet_name);
 }
 
 bool GameState::delete_fleet(uint32_t player_id, uint32_t fleet_id)

@@ -117,6 +117,8 @@ public:
 	[[nodiscard]] Fleet* get_fleet(uint32_t player_id, uint32_t fleet_id);
 	[[nodiscard]] const Fleet* get_fleet(uint32_t player_id, uint32_t fleet_id) const;
 	[[nodiscard]] const std::vector<Fleet>& get_player_fleets(uint32_t player_id) const;
+	[[nodiscard]] std::vector<const Fleet*> get_player_fleets_stationed_at(
+		uint32_t player_id, const std::string& planet_name) const;
 	[[nodiscard]] bool delete_fleet(uint32_t player_id, uint32_t fleet_id);
 	void move_fleet(uint32_t player_id, uint32_t fleet_id, uint32_t destination_planet_id);
 	void move_fleet(uint32_t player_id, uint32_t fleet_id, const std::string& destination_planet_name);
@@ -279,6 +281,7 @@ private:
 	
 		void process_ships();
 		void process_queued_fleet_actions();
+		void expire_newly_built_fleet_flags();
 		void process_novae();
 		void process_queued_abandonments();
 		void capture_economic_action_submissions();

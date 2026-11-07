@@ -441,6 +441,7 @@ This testing should be performed before galaxy generation is considered producti
  - [ ] Apply the [Ship Building Cost Specification](#ship-building-cost-specification), including one prototype charge followed by `N × individual resource cost` for an unprototyped design
  - [ ] Allow construction at any planet owned by the player, with no shipyard or planet-specific build limit
  - [x] Build N ships of one design as one immediate fleet
+ - [x] Mark newly created fleets as newly built for the remainder of the current turn
  - [x] Charge the individual money and metal costs atomically
  - [x] Add the money-only prototype cost for the first ship built from a design
  - [x] Reject unaffordable actions without partial resource deductions
@@ -595,6 +596,7 @@ Final model questions:
  - [x] Fleet ID allocation
  - [x] Validate fleet parameters through the GameState/API path
  - [x] Add fleet to the player's fleet list
+ - [x] Query a player's non-empty fleets stationed at a named planet
 - **Missing:**
  - [ ] Combine ships or fleets with different designs
  - [ ] Split fleets into smaller fleets

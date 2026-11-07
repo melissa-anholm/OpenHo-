@@ -16,6 +16,7 @@ Fleet::Fleet(uint32_t fleet_id, PlayerID player_id, const ShipDesign* design,
 	  ship_design(design),
 	  ship_count(ship_count),
 	  fuel(design ? design->get_range() : 0),
+	  newly_built_this_turn(true),
 	  location(FleetStationedLocation{planet_name})
 {
 	if(ship_design && ship_design->type == SHIP_BIOLOGICAL)

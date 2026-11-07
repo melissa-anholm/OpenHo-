@@ -206,6 +206,19 @@ const std::vector<const Fleet*> Player::get_fleets_in_transit() const
 	return result;
 }
 
+std::vector<const Fleet*> Player::get_fleets_stationed_at(
+	const std::string& planet_name) const
+{
+	std::vector<const Fleet*> result;
+	for (const auto& fleet : fleets)
+	{
+		if (!fleet.is_in_transit() && fleet.ship_count > 0 &&
+			fleet.stationed_planet_name() == planet_name)
+			result.push_back(&fleet);
+	}
+	return result;
+}
+
 
 // ============================================================================
 // Ship Design Management

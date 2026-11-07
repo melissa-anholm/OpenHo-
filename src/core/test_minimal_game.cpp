@@ -242,6 +242,7 @@ void test_ship_construction()
     assert(game->get_player(1)->get_metal() == metal_before_first_build - 1329);
     assert(game->get_player(1)->get_fleets().size() == 1);
     assert(game->get_player(1)->get_fleets().front().ship_count == 3);
+    assert(game->get_player(1)->get_fleets().front().newly_built_this_turn);
     assert(design->get_has_been_prototyped());
 
     const int64_t money_before_second_build = game->get_player(1)->get_money();
@@ -252,6 +253,10 @@ void test_ship_construction()
     assert(game->get_player(1)->get_metal() == metal_before_second_build - 886);
     assert(game->get_player(1)->get_fleets().size() == 2);
     assert(game->get_player(1)->get_fleets()[1].ship_count == 2);
+	const std::string home_name =
+		game->get_player(1)->get_fleets().front().stationed_planet_name();
+	assert(game->get_player(1)->get_fleets_stationed_at(home_name).size() == 2);
+	assert(game->get_player_fleets_stationed_at(1, home_name).size() == 2);
 
     const int64_t money_before_failed_build = game->get_player(1)->get_money();
     const int64_t metal_before_failed_build = game->get_player(1)->get_metal();
@@ -301,8 +306,10 @@ void test_ship_construction()
     assert(game->mark_player_turn_ready(1) == ErrorCode::SUCCESS);
     game->process_turn();
     const Fleet& fleet_after_processing = game->get_player(1)->get_fleets().front();
+    assert(!fleet_after_processing.newly_built_this_turn);
     assert(fleet_after_processing.is_in_transit() ||
            fleet_after_processing.stationed_planet_name() == destination_name);
+	assert(game->get_player_fleets_stationed_at(1, origin_name).size() == 1);
 }
 
 void test_savings_rate_modifier()

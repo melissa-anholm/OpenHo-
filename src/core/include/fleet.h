@@ -52,6 +52,7 @@ public:
 	uint32_t ship_count;            // Number of identical ships in fleet (max 1000)
 	
 	int32_t fuel;                   // Current fuel level (all ships have same amount)
+	bool newly_built_this_turn;     // True only during the turn in which this fleet was built
 	
 	std::string descriptor;
 	FleetLocation location;
