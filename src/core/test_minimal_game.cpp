@@ -241,7 +241,9 @@ void test_ship_construction()
     assert(game->get_player(1)->get_money() == money_before_first_build - 57525);
     assert(game->get_player(1)->get_metal() == metal_before_first_build - 1329);
     assert(game->get_player(1)->get_fleets().size() == 1);
-    assert(game->get_player(1)->get_fleets().front().ship_count == 3);
+    assert(game->get_player(1)->get_fleets().front().total_ship_count() == 3);
+    assert(game->get_player(1)->get_fleets().front().ship_stacks.size() == 1);
+    assert(game->get_player(1)->get_fleets().front().ship_stacks.front().design_id == design_id);
     assert(game->get_player(1)->get_fleets().front().newly_built_this_turn);
     assert(design->get_has_been_prototyped());
 
@@ -252,7 +254,7 @@ void test_ship_construction()
     assert(game->get_player(1)->get_money() == money_before_second_build - 8850);
     assert(game->get_player(1)->get_metal() == metal_before_second_build - 886);
     assert(game->get_player(1)->get_fleets().size() == 2);
-    assert(game->get_player(1)->get_fleets()[1].ship_count == 2);
+    assert(game->get_player(1)->get_fleets()[1].total_ship_count() == 2);
 	const std::string home_name =
 		game->get_player(1)->get_fleets().front().stationed_planet_name();
 	assert(game->get_player(1)->get_fleets_stationed_at(home_name).size() == 2);

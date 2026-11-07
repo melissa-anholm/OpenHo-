@@ -2320,7 +2320,7 @@ void GameState::refresh_player_planet_views()
 			bool stationed_fleet = false;
 			for (const Fleet& fleet : player.fleets)
 			{
-					if (!fleet.is_in_transit() && fleet.ship_count > 0 &&
+					if (!fleet.is_in_transit() && fleet.total_ship_count() > 0 &&
 							fleet.stationed_planet_name() == planet.name)
 				{
 					stationed_fleet = true;

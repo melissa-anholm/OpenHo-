@@ -595,8 +595,9 @@ Final model questions:
  - [x] Basic Fleet object creation
  - [x] Fleet ID allocation
  - [x] Validate fleet parameters through the GameState/API path
- - [x] Add fleet to the player's fleet list
- - [x] Query a player's non-empty fleets stationed at a named planet
+	 - [x] Add fleet to the player's fleet list
+	 - [x] Query a player's non-empty fleets stationed at a named planet
+	 - [x] Represent fleet contents as design-specific ship stacks, while retaining one-stack construction as the current default
 - **Missing:**
  - [ ] Combine ships or fleets with different designs
  - [ ] Split fleets into smaller fleets

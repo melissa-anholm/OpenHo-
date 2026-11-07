@@ -105,7 +105,7 @@ uint32_t Player::build_fleet(uint32_t fleet_id, uint32_t design_id, uint32_t shi
 		{ return 0; }
 	
 	// Create fleet using private constructor (Player is a friend of Fleet)
-	Fleet new_fleet(fleet_id, id, design, ship_count, planet->name);
+	Fleet new_fleet(fleet_id, id, design_id, design, ship_count, planet->name);
 	
 	fleets.push_back(std::move(new_fleet));
 	//
@@ -212,7 +212,7 @@ std::vector<const Fleet*> Player::get_fleets_stationed_at(
 	std::vector<const Fleet*> result;
 	for (const auto& fleet : fleets)
 	{
-		if (!fleet.is_in_transit() && fleet.ship_count > 0 &&
+		if (!fleet.is_in_transit() && fleet.total_ship_count() > 0 &&
 			fleet.stationed_planet_name() == planet_name)
 			result.push_back(&fleet);
 	}

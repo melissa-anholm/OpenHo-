@@ -6,6 +6,7 @@
 #include <memory>
 #include <utility>
 #include <variant>
+#include <vector>
 
 // Forward declarations
 struct Planet;
@@ -33,25 +34,32 @@ struct FleetInTransitLocation
 
 using FleetLocation = std::variant<FleetStationedLocation, FleetInTransitLocation>;
 
-/// Fleet represents a group of identical ships traveling together
-/// All ships in a fleet must have the same design and fuel level
+struct FleetShipStack
+{
+	uint32_t design_id;
+	const ShipDesign* design;
+	uint32_t ship_count;
+};
+
+/// Fleet represents a group of ships traveling together.
+/// A fleet may contain multiple design-specific stacks.
 struct Fleet
 {
 	friend class Player;  // Only Player can construct Fleet instances
 	
 private:
 	/// Private constructor - only Player can create Fleet instances
-	Fleet(uint32_t fleet_id, PlayerID player_id, const ShipDesign* design,
+	Fleet(uint32_t fleet_id, PlayerID player_id, uint32_t design_id,
+	      const ShipDesign* design,
 	      uint32_t ship_count, const std::string& planet_name);
 
 public:
 	uint32_t id;                    // Unique fleet identifier
 	PlayerID owner;                 // Which player owns this fleet
 	
-	const ShipDesign* ship_design;  // All ships in fleet use same design (pointer, not owned)
-	uint32_t ship_count;            // Number of identical ships in fleet (max 1000)
+	std::vector<FleetShipStack> ship_stacks;
 	
-	int32_t fuel;                   // Current fuel level (all ships have same amount)
+	int32_t fuel;                   // Shared fleet fuel level
 	bool newly_built_this_turn;     // True only during the turn in which this fleet was built
 	
 	std::string descriptor;
@@ -67,7 +75,7 @@ public:
 	
 	// Member functions (implemented in fleet.cpp)
 	
-	/// Refuel fleet to maximum capacity (based on ship design's range)
+	/// Refuel fleet to maximum capacity (limited by the slowest ship stack)
 	void refuel();
 	
 	/// Refuel fleet by a specific amount, capped at maximum capacity
@@ -82,6 +90,8 @@ public:
 	[[nodiscard]] bool is_in_transit() const;
 	[[nodiscard]] const std::string& stationed_planet_name() const;
 	[[nodiscard]] const FleetInTransitLocation* transit_location() const;
+	[[nodiscard]] uint32_t total_ship_count() const;
+	[[nodiscard]] int32_t movement_range() const;
 };
 
 #endif // FLEET_H
