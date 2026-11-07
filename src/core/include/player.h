@@ -209,6 +209,7 @@ public:
 	/// Get this player's spending allocation
 	const MoneyAllocation& get_spending_allocation() const { return allocation; }
 	const EconomicActionSubmission& get_economic_submission() const { return economic_submission; }
+	const FleetActionSubmission& get_fleet_action_submission() const { return fleet_action_submission; }
 	const EconomicAfterState& get_economic_afterstate() const { return economic_afterstate; }
 	
 	// ========================================================================
@@ -246,6 +247,7 @@ public:
 	
 	/// Get all fleets currently in transit (const version)
 	[[nodiscard]] const std::vector<const Fleet*> get_fleets_in_transit() const;
+	[[nodiscard]] KnowledgeGalaxy* get_knowledge_galaxy() const { return knowledge_galaxy; }
 	
 	// ========================================================================
 	// Ship Design Management
@@ -298,6 +300,7 @@ private:
 	// Research progress (accumulated points per research stream)
 	PartialResearchProgress partial_research;
 	EconomicActionSubmission economic_submission;
+	FleetActionSubmission fleet_action_submission;
 	EconomicAfterState economic_afterstate;
 	// Colonized planets (owned by this player with allocation information)
 	std::vector<ColonizedPlanet> colonized_planets;

@@ -294,6 +294,14 @@ const EconomicActionSubmission& GameState::get_economic_action_submission(uint32
 	return player->get_economic_submission();
 }
 
+const FleetActionSubmission& GameState::get_fleet_action_submission(uint32_t player_id) const
+{
+	const Player* player = get_player(player_id);
+	if (!player)
+		throw std::runtime_error("Player not found");
+	return player->get_fleet_action_submission();
+}
+
 const EconomicAfterState& GameState::get_economic_afterstate(uint32_t player_id) const
 {
 	const Player* player = get_player(player_id);
@@ -385,6 +393,26 @@ ErrorCode GameState::submit_economic_action(
 	return ErrorCode::SUCCESS;
 }
 
+ErrorCode GameState::submit_fleet_actions(
+	uint32_t player_id, const FleetActionSubmission& submission)
+{
+	Player* player = get_player(player_id);
+	if (!player || submission.player_id != player_id)
+		return ErrorCode::INVALID_PLAYER_ID;
+	if (player->is_eliminated())
+		return ErrorCode::INVALID_TURN_STATE;
+	if (submission.target_turn != current_turn)
+		return ErrorCode::INVALID_TURN_STATE;
+
+	const ErrorCode validation = check_fleet_action_submission(player_id, submission);
+	if (validation != ErrorCode::SUCCESS)
+		return validation;
+
+	player->fleet_action_submission = submission;
+	turn_ready[player_id] = false;
+	return ErrorCode::SUCCESS;
+}
+
 // ============================================================================
 // Turn Processing
 // ============================================================================
@@ -397,8 +425,10 @@ ErrorCode GameState::mark_player_turn_ready(uint32_t player_id)
 			if (player->is_eliminated())
 				return ErrorCode::INVALID_TURN_STATE;
 			if (player->economic_submission.player_id != player_id ||
-				player->economic_submission.target_turn != current_turn)
-				return ErrorCode::INVALID_TURN_STATE;
+					player->economic_submission.target_turn != current_turn ||
+					player->fleet_action_submission.player_id != player_id ||
+					player->fleet_action_submission.target_turn != current_turn)
+					return ErrorCode::INVALID_TURN_STATE;
 
 			turn_ready[player_id] = true;
 			return ErrorCode::SUCCESS;
@@ -433,7 +463,10 @@ bool GameState::all_players_ready() const
 					continue;
 				required_player_exists = true;
 				if (player.economic_submission.player_id != player.id ||
-					player.economic_submission.target_turn != current_turn)
+					player.economic_submission.target_turn != current_turn ||
+					player.fleet_action_submission.player_id != player.id ||
+					player.fleet_action_submission.target_turn != current_turn ||
+					check_fleet_action_submission(player.id, player.fleet_action_submission) != ErrorCode::SUCCESS)
 					return false;
 				auto it = turn_ready.find(player.id);
 				if (it == turn_ready.end() || !it->second)
@@ -516,6 +549,7 @@ void GameState::start_first_turn()
 	// This is called during game initialization before any process_turn() calls
 	capture_and_distribute_player_public_info();
 	capture_economic_action_submissions();
+	capture_fleet_action_submissions();
 }
 
 void GameState::process_turn()
@@ -543,9 +577,10 @@ void GameState::process_turn()
 	apply_money_interest();
 	apply_dip_into_savings();
 	process_money_allocation();
-	process_research();
-		process_planets();
-		process_ships();
+		process_research();
+			process_planets();
+			process_queued_fleet_actions();
+			process_ships();
 		process_novae();
 		// Refresh views once, after queued fleet effects and colonization
 			// processing have settled and before the next player-action phase.
@@ -555,9 +590,10 @@ void GameState::process_turn()
 	capture_economic_afterstates();
 	increment_turn();
 	increment_year();
-	renew_persistent_dips();
-	capture_economic_action_submissions();
-	for (auto& ready : turn_ready)
+		renew_persistent_dips();
+		capture_economic_action_submissions();
+		capture_fleet_action_submissions();
+		for (auto& ready : turn_ready)
 		ready.second = false;
 }
 
@@ -585,6 +621,17 @@ void GameState::capture_economic_action_submissions()
 				submission.colony_allocations.push_back({
 					colony.get_name(), colony.get_funding_fraction(),
 					colony.get_mining_fraction(), colony.get_terraforming_fraction()});
+	}
+}
+
+void GameState::capture_fleet_action_submissions()
+{
+	for (auto& player : players)
+	{
+		FleetActionSubmission& submission = player.fleet_action_submission;
+		submission.player_id = player.id;
+		submission.target_turn = current_turn;
+		submission.moves.clear();
 	}
 }
 
@@ -1334,6 +1381,21 @@ void GameState::renew_persistent_dips()
 	}
 }
 
+void GameState::process_queued_fleet_actions()
+{
+	for (auto& player : players)
+	{
+		for (const FleetMoveAction& move : player.fleet_action_submission.moves)
+		{
+			Fleet* fleet = player.get_fleet(move.fleet_id);
+			if (!fleet || fleet->in_transit)
+				continue;
+			fleet->move_to(move.destination_planet_name,
+				player.get_knowledge_galaxy(), current_turn);
+		}
+	}
+}
+
 void GameState::process_ships()
 {
 	// Process fleet arrivals at their destinations
@@ -1775,8 +1837,18 @@ void GameState::move_fleet(uint32_t player_id,
                            const std::string& destination_planet_name)
 {
 	Player* player = get_player(player_id);
-	if (player)
-		player->move_fleet(fleet_id, destination_planet_name);
+	if (!player)
+		return;
+
+	FleetActionSubmission submission = player->fleet_action_submission;
+	auto existing = std::find_if(
+		submission.moves.begin(), submission.moves.end(),
+		[fleet_id](const FleetMoveAction& move) { return move.fleet_id == fleet_id; });
+	if (existing != submission.moves.end())
+		existing->destination_planet_name = destination_planet_name;
+	else
+		submission.moves.push_back({fleet_id, destination_planet_name});
+	submit_fleet_actions(player_id, submission);
 }
 
 void GameState::refuel_fleet(uint32_t player_id, uint32_t fleet_id)
@@ -2081,7 +2153,34 @@ ErrorCode GameState::check_player_move_fleet(uint32_t player_id,
 	// Check fleet is not already in transit
 	if (fleet->in_transit)
 		return ErrorCode::FLEET_IN_TRANSIT;
+	if (fleet->current_planet_name == destination_planet_name)
+		return ErrorCode::INVALID_TURN_STATE;
 	
+	return ErrorCode::SUCCESS;
+}
+
+ErrorCode GameState::check_fleet_action_submission(
+	uint32_t player_id, const FleetActionSubmission& submission) const
+{
+	const Player* player = get_player(player_id);
+	if (!player)
+		return ErrorCode::INVALID_PLAYER_ID;
+	if (submission.player_id != player_id || submission.target_turn != current_turn)
+		return ErrorCode::INVALID_TURN_STATE;
+
+	std::unordered_set<uint32_t> submitted_fleets;
+	for (const FleetMoveAction& move : submission.moves)
+	{
+		if (!submitted_fleets.insert(move.fleet_id).second)
+			return ErrorCode::INVALID_TURN_STATE;
+		const ErrorCode result = check_player_move_fleet(
+			player_id, move.fleet_id, move.destination_planet_name);
+		if (result != ErrorCode::SUCCESS)
+			return result;
+		const Fleet* fleet = player->get_fleet(move.fleet_id);
+		if (!fleet || fleet->current_planet_name == move.destination_planet_name)
+			return ErrorCode::INVALID_TURN_STATE;
+	}
 	return ErrorCode::SUCCESS;
 }
 

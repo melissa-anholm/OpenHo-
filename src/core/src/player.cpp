@@ -165,28 +165,20 @@ bool Player::delete_fleet(uint32_t fleet_id)
 
 void Player::move_fleet(uint32_t fleet_id, const std::string& destination_planet_name)
 {
-	// Validate fleet exists
-	Fleet* fleet = get_fleet(fleet_id);
-	if (!fleet)
-		{ return; }  // Fleet not found
-	
-	// Validate destination planet exists
-	if (!game_state)
-		{ return; }  // No game state reference
-	
-	Planet* destination = game_state->get_planet(destination_planet_name);
-	if (!destination)
-		{ return; }  // Destination planet not found
-	
-	// Validate knowledge galaxy exists
-	if (!knowledge_galaxy)
-		{ return; }  // No knowledge galaxy
-	
-	// Get current turn from game state
-	uint32_t current_turn = game_state->get_current_turn();
-	
-	// Delegate to Fleet::move_to() to initiate movement and create FleetTransit.
-	fleet->move_to(destination->name, knowledge_galaxy, current_turn);
+	if (!game_state || !get_fleet(fleet_id) ||
+		game_state->get_planet(destination_planet_name) == nullptr)
+		return;
+
+	fleet_action_submission.player_id = id;
+	fleet_action_submission.target_turn = game_state->get_current_turn();
+	auto existing = std::find_if(
+		fleet_action_submission.moves.begin(), fleet_action_submission.moves.end(),
+		[fleet_id](const FleetMoveAction& move) { return move.fleet_id == fleet_id; });
+	if (existing != fleet_action_submission.moves.end())
+		existing->destination_planet_name = destination_planet_name;
+	else
+		fleet_action_submission.moves.push_back({fleet_id, destination_planet_name});
+	game_state->mark_player_turn_unready(id);
 }
 
 void Player::move_fleet(uint32_t fleet_id, uint32_t destination_planet_id)

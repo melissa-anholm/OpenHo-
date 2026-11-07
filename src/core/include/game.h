@@ -142,10 +142,13 @@ public:
 	void clear_dip_amount(uint32_t player_id);
 	int64_t get_dip_amount(uint32_t player_id) const;
 	bool is_dip_persistent(uint32_t player_id) const;
-	const EconomicActionSubmission& get_economic_action_submission(uint32_t player_id) const;
-	const EconomicAfterState& get_economic_afterstate(uint32_t player_id) const;
-	[[nodiscard]] ErrorCode submit_economic_action(uint32_t player_id,
-		const EconomicActionSubmission& submission);
+		const EconomicActionSubmission& get_economic_action_submission(uint32_t player_id) const;
+		const FleetActionSubmission& get_fleet_action_submission(uint32_t player_id) const;
+		const EconomicAfterState& get_economic_afterstate(uint32_t player_id) const;
+		[[nodiscard]] ErrorCode submit_economic_action(uint32_t player_id,
+			const EconomicActionSubmission& submission);
+		[[nodiscard]] ErrorCode submit_fleet_actions(
+			uint32_t player_id, const FleetActionSubmission& submission);
 	
 	// ========================================================================
 	// Validation Methods (check_* pattern)
@@ -164,8 +167,10 @@ public:
 	[[nodiscard]] ErrorCode check_player_set_spending_allocation(uint32_t player_id, double savings_frac, double research_frac, double planets_frac) const;
 	
 	/// Check if a player can move a fleet
-	[[nodiscard]] ErrorCode check_player_move_fleet(uint32_t player_id, uint32_t fleet_id, uint32_t destination_planet_id) const;
-	[[nodiscard]] ErrorCode check_player_move_fleet(uint32_t player_id, uint32_t fleet_id, const std::string& destination_planet_name) const;
+		[[nodiscard]] ErrorCode check_player_move_fleet(uint32_t player_id, uint32_t fleet_id, uint32_t destination_planet_id) const;
+		[[nodiscard]] ErrorCode check_player_move_fleet(uint32_t player_id, uint32_t fleet_id, const std::string& destination_planet_name) const;
+		[[nodiscard]] ErrorCode check_fleet_action_submission(
+			uint32_t player_id, const FleetActionSubmission& submission) const;
 	
 	/// Check if a player can set planet allocation
 	[[nodiscard]] ErrorCode check_player_set_planet_allocation(uint32_t player_id, uint32_t planet_id, double mining_frac, double terraforming_frac) const;
@@ -272,10 +277,12 @@ private:
 	void process_planet_terraforming(Player& player, Planet* planet, int64_t terraforming_budget);
 	void process_planet_mining(Player& player, Planet* planet, int64_t mining_budget);
 	
-	void process_ships();
-	void process_novae();
-	void process_queued_abandonments();
-	void capture_economic_action_submissions();
+		void process_ships();
+		void process_queued_fleet_actions();
+		void process_novae();
+		void process_queued_abandonments();
+		void capture_economic_action_submissions();
+		void capture_fleet_action_submissions();
 	void capture_economic_afterstates();
 	
 };

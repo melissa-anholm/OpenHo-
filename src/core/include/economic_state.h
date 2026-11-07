@@ -40,6 +40,22 @@ struct EconomicActionSubmission
     bool dip_persistent = false;
 };
 
+struct FleetMoveAction
+{
+    uint32_t fleet_id = 0;
+    std::string destination_planet_name;
+};
+
+/// Complete set of fleet movement orders submitted for one turn.
+/// Fleet location and transit details remain authoritative on Fleet; these are
+/// only commands to be applied at the next fleet-processing phase.
+struct FleetActionSubmission
+{
+    uint32_t player_id = 0;
+    uint32_t target_turn = 0;
+    std::vector<FleetMoveAction> moves;
+};
+
 struct EconomicColonyAfterState
 {
     std::string planet_name;

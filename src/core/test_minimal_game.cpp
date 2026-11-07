@@ -274,6 +274,35 @@ void test_ship_construction()
     assert(game->get_player(1)->get_metal() == metal_before_failed_build);
     assert(game->get_player(1)->get_fleets().size() == 2);
     game->clear_dip_amount(1);
+
+    const Fleet& fleet_before_order = game->get_player(1)->get_fleets().front();
+    const std::string origin_name = fleet_before_order.current_planet_name;
+    std::string destination_name;
+    for (const Planet& planet : game->get_galaxy().planets)
+    {
+        if (planet.name != origin_name)
+        {
+            destination_name = planet.name;
+            break;
+        }
+    }
+    assert(!destination_name.empty());
+    assert(game->check_player_move_fleet(1, fleet_before_order.id, destination_name) ==
+           ErrorCode::SUCCESS);
+    game->move_fleet(1, fleet_before_order.id, destination_name);
+    assert(!game->get_player(1)->get_fleets().front().in_transit);
+    const FleetActionSubmission& fleet_submission =
+        game->get_fleet_action_submission(1);
+    assert(fleet_submission.target_turn == game->get_current_turn());
+    assert(fleet_submission.moves.size() == 1);
+    assert(fleet_submission.moves.front().fleet_id == fleet_before_order.id);
+    assert(fleet_submission.moves.front().destination_planet_name == destination_name);
+
+    assert(game->mark_player_turn_ready(1) == ErrorCode::SUCCESS);
+    game->process_turn();
+    const Fleet& fleet_after_processing = game->get_player(1)->get_fleets().front();
+    assert(fleet_after_processing.in_transit ||
+           fleet_after_processing.current_planet_name == destination_name);
 }
 
 void test_savings_rate_modifier()
