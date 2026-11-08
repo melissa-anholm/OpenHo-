@@ -24,12 +24,11 @@ Several systems remain provisional or incomplete, including parts of planetary i
 ## Immediate development direction
 
 The approved development sequence is:
-
-1. Keep the minimal multi-turn game loop stable and observable.
-2. Replace or complete provisional economics and population rules as their intended behavior is established.
-3. Implement placeholder ship construction as a real, inspectable state transition.
-4. Implement ship travel, exploration, and incomplete per-player knowledge.
-5. Implement ship combat and then ship-versus-planet combat.
+1. Keep the minimal multi-turn game loop and portable CLI stable and observable.
+2. Complete provisional economics, population, debt, and bankruptcy rules.
+3. Complete fleet movement validation and integrate fleet combat.
+4. Implement exploration, fleet visibility, and automatic colonization.
+5. Build the first interactive AppKit vertical slice on the stabilized adapter boundary.
 6. Treat nova events as the final major subsystem.
 
 The current galaxy-generation file split is an organization refactoring. Future work should preserve the existing overloads and behavior unless a separate rationale and approval establish otherwise.

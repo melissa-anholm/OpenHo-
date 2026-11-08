@@ -50,9 +50,9 @@ The core entity model, deterministic RNG, GameState structure, C API boundary, c
 
 #### Phase 2b: Fleet System & Ship Design
 
-**Status:** Foundational structures and provisional cost calculations are implemented; the complete player-facing build-selection process remains in progress.
+**Status:** Foundational fleet, ship-design, construction, composition, scrapping, persistence, and CLI workflows are implemented; final build-selection rules, movement validation, and combat remain.
 
-Players own fleet and ship-design collections, queued fleet movement submissions are validated at the readiness boundary, and each fleet has one explicit `FleetLocation` variant representing either a stationed planet or a transit record. A read-only Player/GameState query now lists a player's non-empty fleets stationed at a named planet. Fleet contents are represented as design-specific ship stacks, although every ship-building action currently creates a separate fleet containing one stack. Fuel is authoritative per stack; `effective_fuel`, `effective_range`, and `effective_speed` are derived fleet capabilities, with travel duration calculated as distance divided by effective speed and rounded up. Newly constructed fleets carry a turn-scoped `newly_built_this_turn` flag, which expires when that fleet reaches the next turn's processing boundary; immediate merge, split, and stack-transfer operations apply logical AND when newly-built contents are mixed and invalidate readiness. Player state also records which first-time prototype charges remain eligible for same-turn rollback. Provisional ship costs, resource deduction, immediate single-stack fleet creation, same-phase scrapping of newly built fleets, deferred heavy-loss scrapping of older stationed fleets, and runtime checkpoint coverage for ship designs, fleet stacks, transit locations, fleet IDs, and pending fleet actions are implemented. The complete player-facing build-selection process, combat, and some movement validation remain future work. See the [active implementation checklist](Missing_Implementation_List.md#ship-design-creation).
+Players own ship designs and fleets with explicit stationed/transit locations, heterogeneous design stacks, per-stack fuel, queued movement, immediate composition operations, and rule-dependent scrapping. Runtime checkpoints preserve designs, stacks, fuel, locations, fleet IDs, and pending fleet actions. The portable CLI exposes inspection and current fleet operations; detailed formulas, validation gaps, and remaining work are tracked in the [active implementation checklist](Missing_Implementation_List.md#ship-design-creation).
 
 #### Phase 2b-Extended: GameState Architecture & Text Assets
 
@@ -80,9 +80,9 @@ Ideal temperature/gravity assignment and apparent-condition formulas are impleme
 
 #### Phase 2f: Economic Mechanics
 
-**Status:** Phase 1 economic-kernel ordering, the Dip Into Savings action model, economic submissions, readiness gating, queued fleet movement submissions, and regression coverage are implemented. Population growth, planetary-income, research, mining, terraforming, and interest formulas remain provisional or require data-driven validation. Full beginning/economic/post-processing snapshots and later fleet phases remain future work.
+**Status:** The economic kernel, Dip Into Savings, submissions, readiness gating, queued fleet submissions, and regression coverage are implemented; formulas, bankruptcy consequences, and full snapshot history remain provisional or incomplete.
 
-The economic path applies population growth, refreshes planetary income using the resulting population, calculates interest from beginning-of-turn savings, commits one effective-income value, and then applies allocations, research, mining, and terraforming. The Dip Into Savings action uses an immediate reversible savings adjustment and a locked amount applied during the following economic phase; persistent pension-plan mode is the default, with a separate one-time option. The dip is allowed to exceed current savings for now; the permitted-debt and bankruptcy limit remains a data-driven future rule. See the [data-driven implementation checklist](Missing_Implementation_List.md#data-driven-values-require-reverse-engineering).
+Turn processing grows population, refreshes income, calculates interest from opening savings, commits effective income, and applies allocations and research. Dip selections adjust savings immediately and lock the income effect for the following phase. See the [data-driven implementation checklist](Missing_Implementation_List.md#data-driven-values-require-reverse-engineering).
 
 #### Phase 3: Native macOS UI Transition Assessment
 
@@ -98,11 +98,11 @@ RNG engine checkpoints now use a project-owned versioned little-endian binary st
 
 The first portable adapter-facing API is implemented in `src/core/include/ui_adapter.h` and `src/core/src/ui_adapter.cpp`. It produces retained-safe value snapshots and accepts validated economic, abandonment, readiness, and turn-processing commands. Private economic and colony data is included only for the observing player; no AppKit or other platform framework is involved.
 
-The portable session lifecycle is implemented in `src/core/include/game_session.h` and `src/core/src/game_session.cpp`. `GameSession` owns a `GameState`, rebuilds its `GameUiAdapter` when state is created or loaded, supports new-game creation, manual save, autosave, checkpoint loading, turn-processing-plus-autosave, and explicit close. Its load behavior is intentionally limited to the state that `GameState::serialize_state()` and `deserialize_state()` currently support; remaining gaps include public-information history and other intentionally incomplete checkpoint systems, not fleet state or pending fleet actions.
+The portable session lifecycle is implemented in `src/core/include/game_session.h` and `src/core/src/game_session.cpp`; it owns state, supports creation, save/load, autosave, turn processing, and close. Remaining checkpoint gaps are public-information history and other incomplete knowledge systems, not fleet state or pending fleet actions.
 
-The first functional frontend is now a portable line-oriented CLI in `src/cli`. The `openho_cli` executable accepts configurable player, planet, and human-player counts; remaining players are no-action AI players that automatically ready themselves. The first human is initially active, and `play_as NAME` switches among human players while preserving each player's pending economic submission. The `players` command explicitly reports human/AI type, readiness, elimination state, and active-player status. The CLI exercises status/player/planet display, readiness, turn processing, save, load, and quit through `GameSession` and `GameUiAdapter`. The CLI is the primary runnable frontend for development; AppKit work remains deferred until this path is expanded.
+The portable line-oriented CLI in `src/cli` is the primary runnable frontend. It supports configurable players, planets, and human players, active-human switching, status and planet views, economic and fleet commands, readiness, turn processing, and save/load. AppKit work remains deferred until the portable path is more complete.
 
-The first playable economic CLI vertical slice is now implemented. It supports pending global spending and research allocations, normalized one-parameter edits with proportional compensation across the relevant allocation hierarchy—including the mining/terraforming split for each colony—per-colony funding/mining/terraforming allocations, Dip Into Savings, queued abandonment, automatic economic submission when the local player marks ready, readiness gating, turn processing, save/load, and a repeatable CTest-backed scripted scenario. The CLI now also exposes fleet inspection and management: `fleets` lists the active player's fleets and then displays the complete queued movement and pending-scrap lists, while `fleet ID` shows one fleet's stacks, location, fuel, and effective capabilities; `fleets_at`, `move_fleet`, `merge_fleets`, `split_fleet`, `transfer_stack`, `scrap_fleet`, and `refuel_fleet` cover the current fleet operations. The command vocabulary remains intentionally provisional. Fleet battles and automatic colonization remain later gameplay milestones.
+The CLI’s economic and fleet slices are implemented and tested; command syntax remains provisional. Fleet battles and automatic colonization remain later gameplay milestones. Detailed command semantics belong in `BUILD_SYSTEM_PLAN.md`, while implementation gaps belong in `Missing_Implementation_List.md`.
 
 #### macOS UI Build and Runtime Verification Strategy
 
@@ -220,9 +220,9 @@ GitHub-hosted macOS runners may later provide an additional modern-macOS compile
 - Intentional actions such as ship building and Dip Into Savings share a provisional intentional-debt limit; a separate, larger provisional bankruptcy/default limit causes loss when reached. Both values and their final enforcement rules require data-driven replacement.
 - Mining transfers metal losslessly from a planet to the player's shared metal reserve; planetary metal cannot fall below zero. Mining requires positive effective income allocated to planetary development.
 - Terraforming consumes money but not metal, changes temperature immediately during economic processing, and uses a nonlinear spending formula. Overshoot is prevented and excess allocation is currently refunded to savings, pending a future refund-destination decision.
-- Ship designs are player-owned blueprint objects. Each design stores whether its ship type has already been prototyped; this flag determines whether the next build pays the additional money-only prototyping cost. There is no separate unassembled-ship inventory. Future fleet-composition actions may combine ship types, split fleets, or otherwise rearrange ships, but are separate later functionality.
+- Ship designs are player-owned blueprint objects. Each design stores whether its ship type has already been prototyped; this flag determines whether the next build pays the additional money-only prototyping cost. There is no separate unassembled-ship inventory. Fleet-composition actions can combine ship types, split fleets, and rearrange stacks immediately; final player-facing build selection and combat integration remain future work.
 - Ship construction offers two player-facing selection paths: choose an already-owned design, or configure a new design within the player's currently available technology levels. Current technology limits are enforced when a new design is created, but do not invalidate already-owned designs; future mechanics may grant designs that exceed the player's ordinary technology access. A proposed build also computes its maximum legal ship count from the shared metal reserve and available build money, using the shared intentional-debt policy. For an unprototyped design, the money requirement is one prototype charge plus N individual build costs.
-- If a new design is actually built, it is added to the player's design library and its prototype state is established as part of that build. Ships may be built at any planet owned by the player; there are no shipyards, construction facilities, or planet-specific build limits. A build action creates a fleet containing N ships of that design and charges money and metal atomically. There is no separate unassembled-ship inventory. Future fleet-composition actions may combine ship types, split fleets, or otherwise rearrange ships, but are separate later functionality.
+- If a new design is actually built, it is added to the player's design library and its prototype state is established as part of that build. Ships may be built at any planet owned by the player; there are no shipyards, construction facilities, or planet-specific build limits. A build action creates a fleet containing N ships of that design and charges money and metal atomically. There is no separate unassembled-ship inventory.
 - Same-phase scrapping is implemented for complete stationed fleets. It cancels any queued travel order, refunds construction money and metal, and rolls back a first-use prototype marker only when no ships of that design remain. Older-fleet scrapping refunds metal only; the provisional refund is `floor(0.15 × metal_build_cost_of_fleet)`, and this 15% factor requires data-driven calibration. Refund metal goes to the current colony owner, or back to the planet's unmined metal when the planet is unowned.
 - Unaffordable ship actions fail atomically. Ships built during the current player-action phase may be scrapped during that same phase without losing construction or prototyping resources; after the phase, scrapping recovers metal only at the provisional heavy loss.
 - Queued fleet actions first resolve travel. Fleets still in transit have no further queued actions that turn; fleets at planets then resolve battles.
@@ -247,59 +247,18 @@ GitHub-hosted macOS runners may later provide an additional modern-macOS compile
 
 ## Minimal Playable Game Roadmap
 
-The immediate objective is not feature completeness. It is a small, repeatable minimal playable game that can initialize a game and advance through multiple turns.
+The minimal playable foundation is complete enough for repeatable multi-turn CLI testing. Current milestone status is summarized below; detailed implementation history belongs in `Project_Implementation_Log.md`, and active work belongs in `Missing_Implementation_List.md`.
 
-### Stage 1: Reliable minimal galaxy
-
-- [x] Use the RANDOM galaxy generator as the first integration path because it is the least structurally risky current generator; its planet-count and density defects remain open.
-- [x] Confirm deterministic construction through the main `Galaxy`/`GameState` path with the minimal smoke test.
-- [ ] Validate exact counts, home-planet availability, and edge cases across all generator paths.
-
-### Stage 2: Correct player initialization
-
-- [x] Assign homeworlds and starting colony values.
-- [x] Initialize the minimal playable game's technology, research, allocations, and knowledge state.
-- [x] Initialize deliberate empty defaults for fleets and ship designs for the minimal playable game.
-- [ ] Decide whether starting fleets/designs belong in the original-game rules and add focused assertions for every initial field.
-
-### Stage 3: Multi-turn playable loop
-
-- [x] Implement turn-ready tracking and reset behavior.
-- [x] Advance a minimal two-player game through multiple turns without crashing.
-- [x] Keep provisional economics deterministic and non-crashing.
-- [ ] Resolve remaining income/population ordering and state-integrity issues before treating the loop as complete.
-
-### First minimal playable game milestone (October 23, 2026)
-
-The minimal playable game milestone established a deterministic RANDOM-galaxy path, initialized player homeworlds and knowledge state, and advanced a two-player game through three turns in a 40-planet smoke test. Turn-readiness tracking and the provisional economic sequence are operational; starting fleets/designs, full formula fidelity, and broader galaxy validation remain future work. The C++ core builds successfully with CMake.
-
-### Stage 4: Placeholder ship design and construction
-
-- [x] Rewrite the partial ship-design scaffold into a coherent player-owned design system.
-- [x] Store a `has_been_prototyped` flag directly with each design, and use it to charge the first-build prototype cost for that design.
-- [x] Use placeholder cost formulas initially, but charge money and metal atomically and accurately.
-- [x] Make each build action create its own same-design fleet immediately; no separate unassembled-ship inventory is required.
-- Defer mixed-design fleet assembly, fleet splitting, and other fleet-composition actions until after basic construction and travel are functional.
-
-### Stage 5: Ship travel, exploration, and knowledge
-
-- Implement ship travel through the galaxy.
-- Maintain incomplete or stale per-player knowledge of planets and fleets.
-- Validate movement, arrival, ownership, and discovery behavior before combat.
-
-### Stage 6: Ship combat
-
-- Implement ship-versus-ship combat only after ship construction and travel are real rather than placeholders.
-- Add combat resolution, damage, casualties, retreat, and victory/defeat state.
-
-### Stage 7: Ship-versus-planet combat
-
-- Extend the combat model to planetary attacks and defenses after ship combat is stable.
-
-### Stage 8: Nova events
-
-- Treat novae as the final major subsystem.
-- Keep them rare and optional while the rest of the game is being completed; the game can be considered effectively complete before nova processing is finalized.
+| Milestone | Status | Remaining focus |
+|---|---|---|
+| Deterministic minimal galaxy and initialization | Implemented | Validate all galaxy shapes, counts, spacing, and home-planet edge cases. |
+| Multi-turn economic loop and readiness gate | Implemented with provisional formulas | Finalize income, population, debt, bankruptcy, and snapshot-history rules. |
+| Ship design, construction, fleet movement, composition, and scrapping | Implemented with provisional costs and movement rules | Complete build selection, final movement validation, and battle integration. |
+| Fleet persistence and portable CLI fleet controls | Implemented and regression-tested | Add equivalent native AppKit controls later. |
+| Exploration, fleet visibility, and public-information history | Partial | Complete observation and knowledge integration. |
+| Fleet and planetary combat | Not implemented | Define and implement deterministic combat resolution. |
+| Automatic colonization after fleet processing | Not implemented | Connect surviving colony ships to `colonize_planet()`. |
+| Nova events | Placeholder | Implement only after the core gameplay loop is stable. |
 
 ### Documentation and approval rule
 
@@ -307,7 +266,7 @@ This roadmap is a planning decision, not authorization to modify implementation 
 
 ### Recent Milestone History
 
-Detailed session history and commit-level implementation notes are maintained in `Project_Implementation_Log.md`. The current active backlog is maintained in `Missing_Implementation_List.md`.
+Detailed session history and commit-level implementation notes are maintained in `Project_Implementation_Log.md`; the current active backlog is maintained in `Missing_Implementation_List.md`.
 
 ---
 
