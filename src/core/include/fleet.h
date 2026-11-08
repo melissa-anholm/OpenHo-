@@ -40,6 +40,9 @@ struct FleetShipStack
 	const ShipDesign* design = nullptr;
 	uint32_t ship_count = 0;
 	int32_t fuel = 0;
+	// For colony-ship stacks, one entry per individual ship: 10 when fully
+	// loaded and 0 after that ship's colonists have been deployed.
+	std::vector<uint8_t> colonists_on_board;
 };
 
 struct FleetCapabilities

@@ -282,7 +282,7 @@ private:
 	void renew_persistent_dips();
 	void process_research();
 	void process_research_stream(Player& player, TechStream stream, int64_t research_budget);
-	void process_planets();
+		void process_planets();
 	
 	// Planet processing helper functions
 	void process_planet_terraforming(Player& player, Planet* planet, int64_t terraforming_budget);
@@ -290,14 +290,15 @@ private:
 	
 			void process_ships();
 			void process_automatic_colonization();
+			void replenish_colony_ship_crews();
 			void process_queued_fleet_actions();
 		void expire_newly_built_fleet_flags();
 		void process_novae();
 		void process_queued_abandonments();
 		void capture_economic_action_submissions();
 		void capture_fleet_action_submissions();
-	void capture_economic_afterstates();
+		void capture_economic_afterstates();
 	
-};
+	};
 
 #endif // OPENHO_GAME_H

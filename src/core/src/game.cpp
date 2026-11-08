@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstring>
 #include <iostream>
+#include <map>
 #include <random>
 #include <stdexcept>
 #include <unordered_set>
@@ -579,8 +580,9 @@ void GameState::start_first_turn()
 	apply_money_interest();
 	apply_dip_into_savings();
 	process_money_allocation();
-		process_research();
-			process_planets();
+			process_research();
+				process_planets();
+				replenish_colony_ship_crews();
 				process_queued_fleet_actions();
 				process_ships();
 				process_automatic_colonization();
@@ -795,8 +797,9 @@ std::vector<uint8_t> GameState::serialize_state() const
 				fleet_state.owner = fleet.owner;
 				fleet_state.newly_built_this_turn = fleet.newly_built_this_turn;
 				fleet_state.descriptor = fleet.descriptor;
-				for (const FleetShipStack& stack : fleet.ship_stacks)
-					fleet_state.stacks.push_back({stack.design_id, stack.ship_count, stack.fuel});
+					for (const FleetShipStack& stack : fleet.ship_stacks)
+						fleet_state.stacks.push_back({stack.design_id, stack.ship_count, stack.fuel,
+							stack.colonists_on_board});
 				if (const auto* stationed = std::get_if<FleetStationedLocation>(&fleet.location))
 					fleet_state.planet_name = stationed->planet_name;
 				else
@@ -1013,8 +1016,11 @@ bool GameState::deserialize_state(const std::vector<uint8_t>& data)
 					for (const auto& saved_stack : saved_fleet.stacks)
 					{
 						const ShipDesign* design = player.get_ship_design(saved_stack.design_id);
-						restored.ship_stacks.push_back({saved_stack.design_id, design,
-							saved_stack.ship_count, saved_stack.fuel});
+							std::vector<uint8_t> colonists = saved_stack.colonists_on_board;
+							if (design && design->type == SHIP_COLONY && colonists.empty())
+								colonists.assign(saved_stack.ship_count, 10);
+							restored.ship_stacks.push_back({saved_stack.design_id, design,
+								saved_stack.ship_count, saved_stack.fuel, std::move(colonists)});
 					}
 					if (saved_fleet.in_transit)
 						restored.location = FleetInTransitLocation{
@@ -1576,25 +1582,105 @@ void GameState::process_ships()
 
 void GameState::process_automatic_colonization()
 {
+	struct Candidate
+	{
+		uint32_t player_id = 0;
+		uint32_t fleet_id = 0;
+		size_t stack_index = 0;
+		size_t ship_index = 0;
+		int32_t speed = 0;
+	};
+
+	std::map<std::string, std::vector<Candidate>> candidates_by_planet;
 	for (auto& player : players)
 	{
-		for (const auto& fleet : player.fleets)
+		for (auto& fleet : player.fleets)
 		{
 			if (fleet.is_in_transit())
 				continue;
 
-			const Planet* planet = get_planet(fleet.stationed_planet_name());
+			const std::string planet_name = fleet.stationed_planet_name();
+			const Planet* planet = get_planet(planet_name);
 			if (!planet || planet->owner != NOT_OWNED)
 				continue;
 
-			const bool carries_colony_ship = std::any_of(
-				fleet.ship_stacks.begin(), fleet.ship_stacks.end(),
-				[](const FleetShipStack& stack) {
-					return stack.ship_count > 0 && stack.design &&
-						stack.design->type == SHIP_COLONY;
-				});
-			if (carries_colony_ship)
-				colonize_planet(player.id, planet->id);
+			for (size_t stack_index = 0; stack_index < fleet.ship_stacks.size(); ++stack_index)
+			{
+				FleetShipStack& stack = fleet.ship_stacks[stack_index];
+				if (!stack.design || stack.design->type != SHIP_COLONY)
+					continue;
+				if (stack.colonists_on_board.size() < stack.ship_count)
+					stack.colonists_on_board.resize(stack.ship_count, 10);
+				for (size_t ship_index = 0; ship_index < stack.colonists_on_board.size(); ++ship_index)
+				{
+					if (stack.colonists_on_board[ship_index] == 10)
+						candidates_by_planet[planet_name].push_back({
+							player.id, fleet.id, stack_index, ship_index,
+							stack.design->get_speed()});
+				}
+			}
+		}
+	}
+
+	for (auto& [planet_name, candidates] : candidates_by_planet)
+	{
+		if (candidates.empty())
+			continue;
+		Planet* planet = get_planet(planet_name);
+		if (!planet || planet->owner != NOT_OWNED)
+			continue;
+
+		std::unordered_set<uint32_t> candidate_players;
+		for (const Candidate& candidate : candidates)
+			candidate_players.insert(candidate.player_id);
+		const bool multiple_players = candidate_players.size() > 1;
+		int32_t selected_speed = candidates.front().speed;
+		for (const Candidate& candidate : candidates)
+			selected_speed = multiple_players
+				? std::max(selected_speed, candidate.speed)
+				: std::min(selected_speed, candidate.speed);
+
+		std::vector<size_t> tied_indices;
+		for (size_t i = 0; i < candidates.size(); ++i)
+			if (candidates[i].speed == selected_speed)
+				tied_indices.push_back(i);
+		const size_t selected_index = tied_indices.size() == 1
+			? tied_indices.front()
+			: static_cast<size_t>(rng->nextInt32Range(
+				0, static_cast<int32_t>(tied_indices.size() - 1)));
+		const Candidate& selected = candidates[tied_indices[selected_index]];
+		if (colonize_planet(selected.player_id, planet->id) != ErrorCode::SUCCESS)
+			continue;
+		Fleet* selected_fleet = get_fleet(selected.player_id, selected.fleet_id);
+		if (selected_fleet && selected.stack_index < selected_fleet->ship_stacks.size())
+		{
+			FleetShipStack& stack = selected_fleet->ship_stacks[selected.stack_index];
+			if (selected.ship_index < stack.colonists_on_board.size())
+				stack.colonists_on_board[selected.ship_index] = 0;
+		}
+		}
+	}
+
+void GameState::replenish_colony_ship_crews()
+{
+	for (auto& player : players)
+	{
+		for (auto& fleet : player.fleets)
+		{
+			if (fleet.is_in_transit())
+				continue;
+			const Planet* planet = get_planet(fleet.stationed_planet_name());
+			if (!planet || planet->owner == NOT_OWNED)
+				continue;
+			for (auto& stack : fleet.ship_stacks)
+			{
+				if (!stack.design || stack.design->type != SHIP_COLONY)
+					continue;
+				if (stack.colonists_on_board.size() < stack.ship_count)
+					stack.colonists_on_board.resize(stack.ship_count, 10);
+				std::fill(stack.colonists_on_board.begin(),
+					stack.colonists_on_board.end(), 10);
+			}
 		}
 	}
 }

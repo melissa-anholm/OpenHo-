@@ -213,9 +213,9 @@ Post-economic combat, colonization, abandonment, and player actions may change p
 
 ## 4. Queued fleet actions
 
-Queued fleet actions resolve after economic processing. The implemented portion applies queued travel, deferred older-fleet scrapping, fleet-arrival processing, and a basic automatic-colonization pass for arrived fleets containing a colony ship; battle resolution and battle-aware colonization remain future phases.
+Queued fleet actions resolve after economic processing. The implemented portion applies queued travel, deferred older-fleet scrapping, fleet-arrival processing, colony-ship replenishment, and a basic automatic-colonization pass for arrived fleets containing a loaded colony ship; battle resolution and battle-aware colonization remain future phases.
 
-**Implementation status:** Queued movement submission, readiness validation, travel initiation, deferred older-fleet scrapping, arrival processing, and colony-ship qualification are implemented. The current `process_ships()` path does not resolve battles; automatic colonization therefore runs after arrival processing but before future battle integration.
+**Implementation status:** Queued movement submission, readiness validation, travel initiation, deferred older-fleet scrapping, arrival processing, per-ship colony capacity, replenishment, and loaded-colony-ship qualification are implemented. The current `process_ships()` path does not resolve battles; automatic colonization therefore runs after arrival processing but before future battle integration.
 
 ### 4.1 Fleet travel
 
@@ -237,15 +237,16 @@ There is no separate planet-capture operation. Combat population loss immediatel
 
 ### 4.3 Automatic colonization
 
-**Implementation status:** `GameState::colonize_planet()` provides the unified gameplay transition, and the current turn path automatically invokes it for an arrived fleet containing a `SHIP_COLONY` design at an unowned planet. Ordinary fleets cannot trigger this path. Battle resolution, survivor selection, and battle-aware ordering remain future work.
+**Implementation status:** `GameState::colonize_planet()` provides the unified gameplay transition, and the current turn path automatically invokes it for a currently stationed fleet containing a loaded `SHIP_COLONY` design at an unowned planet. Exactly one ship’s 10 colonists are consumed; other colony ships retain their own states. Ordinary fleets cannot trigger this path. Battle resolution and battle-aware ordering remain future work.
 
 After battles, a ship of the colony-ship design arriving at an uncolonized planet automatically establishes a colony. A colony ship is an ordinary ship of a particular design selected during construction, not a separate universal object.
 
 - Colonization is free; no ship or resource is consumed.
 - The projected income immediately shows the colony's current support cost, while economic effects begin with a later economic phase.
-- Multiple colony ships from the same player produce no special result.
+- Multiple colony ships from the same player retain independent 10/0 colonist states; only one loaded ship is consumed when a planet is colonized.
+- An empty colony ship replenishes to 10 after spending a turn stationed at a colonized planet.
 - Non-allied colony ships must fight before colonization.
-- If allied colony ships arrive together, speed technology determines which ship proceeds to colonization.
+- If eligible colony ships from multiple allied players are present, the globally fastest individual colony ship proceeds; if several ships tie, the deterministic game RNG selects one. If only one player has eligible colony ships, that player's slowest individual colony ship proceeds; equal-speed ties are randomized.
 - A colony ship that survives a battle may colonize during that same turn.
 - Planet desirability is calculated for immediate UI use when a player explores a planet; that initial rating need not be stored. If colonized, recalculate and store the rating with `ColonizedPlanet`, then recalculate it during later turn processing.
 

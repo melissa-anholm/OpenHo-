@@ -2,13 +2,11 @@
 
 **Purpose:** Track all functions and values that need implementation or reverse-engineering from the original game.
 
-**Last Updated:** November 8, 2026 (fleet-management CLI)
+**Last Updated:** November 8, 2026 (colony-ship state and replenishment)
 
 ---
 
-> **Economic-kernel status:** The main economic path now applies population growth, refreshes planetary income, calculates interest from beginning-of-turn savings, applies Dip Into Savings, and commits one effective-income value before allocation. Full snapshots, queued actions, and later fleet phases remain future work.
-
-> **Design reminder — double-check later:** Verify the ordering of colonization relative to economic processing. Leave `TurnProcessingOrder.md` unchanged for now.
+> **Economic-kernel status:** The main economic path now applies population growth, refreshes planetary income, calculates interest from beginning-of-turn savings, applies Dip Into Savings, and commits one effective-income value before allocation. Fleet arrival, scrapping, and basic colony-ship processing now run in the documented post-economic fleet phase; combat remains future work.
 
 ---
 
@@ -384,8 +382,12 @@ This testing should be performed before galaxy generation is considered producti
 - **Status:** Direct colonization and basic automatic colony-ship colonization are implemented; battle ordering, survivor selection, and final observation rules remain
 - **Location:** `src/core/src/game.cpp`, `src/core/src/player.cpp`, and `src/core/src/fleet.cpp`
 - **Required Behavior:**
-  - [x] After the current arrival-processing phase, automatically establish a colony when a fleet containing a colony ship arrives at an uncolonized planet
+  - [x] After the current arrival-processing phase, automatically establish a colony when a fleet containing a loaded colony ship arrives at an uncolonized planet
+  - [x] Track colony capacity per individual colony ship, with exactly 10 or 0 colonists on board
   - [x] Require the qualifying ship to use the `SHIP_COLONY` design type; ordinary fleets cannot colonize
+  - [x] Consume exactly one loaded colony ship's 10 colonists when colonization succeeds
+  - [x] Replenish empty colony ships to 10 after they spend a turn stationed at a colonized planet
+  - [x] Select the single-player slowest eligible ship, or the globally fastest eligible ship when multiple allied players are represented; randomize equal-speed ties with the deterministic RNG
   - [ ] Resolve non-allied colony-ship battles before colonization
   - [ ] Use colony-ship speed technology to determine which allied colony ship proceeds when allied ships arrive together
   - [ ] Permit a colony ship that survives battle to colonize during the same turn

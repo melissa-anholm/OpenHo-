@@ -588,9 +588,19 @@ std::vector<uint8_t> encode_runtime_payload(const RuntimeCheckpointPayload& chec
             append_integer<uint32_t>(output, static_cast<uint32_t>(fleet.stacks.size()));
             for (const auto& stack : fleet.stacks)
             {
+                if (stack.colonists_on_board.size() > stack.ship_count)
+                    return {};
                 append_integer<uint32_t>(output, stack.design_id);
                 append_integer<uint32_t>(output, stack.ship_count);
                 append_signed<int32_t>(output, stack.fuel);
+                append_integer<uint32_t>(output,
+                    static_cast<uint32_t>(stack.colonists_on_board.size()));
+                for (uint8_t colonists : stack.colonists_on_board)
+                {
+                    if (colonists != 0 && colonists != 10)
+                        return {};
+                    output.push_back(colonists);
+                }
             }
         }
         append_integer<uint32_t>(output, static_cast<uint32_t>(player.prototype_refund_candidates.size()));
@@ -779,11 +789,24 @@ bool decode_runtime_payload(const std::vector<uint8_t>& payload,
                 return false;
             fleet.stacks.resize(stack_count);
             for (auto& stack : fleet.stacks)
+            {
+                uint32_t colonist_count = 0;
                 if (!read_integer(payload, offset, stack.design_id) ||
                     !read_integer(payload, offset, stack.ship_count) ||
                     !read_signed<int32_t>(payload, offset, stack.fuel) ||
-                    stack.ship_count == 0)
+                    !read_integer(payload, offset, colonist_count) ||
+                    stack.ship_count == 0 || colonist_count > stack.ship_count)
                     return false;
+                stack.colonists_on_board.resize(colonist_count);
+                for (uint8_t& colonists : stack.colonists_on_board)
+                {
+                    if (offset >= payload.size())
+                        return false;
+                    colonists = payload[offset++];
+                    if (colonists != 0 && colonists != 10)
+                        return false;
+                }
+            }
         }
         uint32_t candidate_count = 0;
         if (!read_integer(payload, offset, candidate_count) || candidate_count > 100)

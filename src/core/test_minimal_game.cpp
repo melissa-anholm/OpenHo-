@@ -644,7 +644,7 @@ void test_automatic_colonization_requires_colony_ship()
 	const uint32_t colony_design = game->get_player(1)->create_ship_design(
 		"Colony Ship", SHIP_COLONY, 10, 10, 1, 1, 0);
 	assert(colony_design != 0);
-	assert(game->build_ships_from_design(1, colony_design, 1, home_id) ==
+	assert(game->build_ships_from_design(1, colony_design, 2, home_id) ==
 		   ErrorCode::SUCCESS);
 	const uint32_t colony_fleet_id = game->get_player(1)->get_fleets().back().id;
 	const std::string colony_destination = scout_destination;
@@ -657,6 +657,73 @@ void test_automatic_colonization_requires_colony_ship()
 	assert(colonized != nullptr);
 	assert(colonized->owner == 1);
 	assert(colonized->population == GameConstants::Colonization_Initial_Population);
+	const Fleet* colony_fleet = game->get_fleet(1, colony_fleet_id);
+	assert(colony_fleet != nullptr);
+	assert(colony_fleet->ship_stacks.size() == 1);
+	assert(colony_fleet->ship_stacks.front().colonists_on_board.size() == 2);
+	assert((colony_fleet->ship_stacks.front().colonists_on_board[0] == 0 &&
+			colony_fleet->ship_stacks.front().colonists_on_board[1] == 10) ||
+		   (colony_fleet->ship_stacks.front().colonists_on_board[0] == 10 &&
+			colony_fleet->ship_stacks.front().colonists_on_board[1] == 0));
+
+	const std::vector<uint8_t> checkpoint = game->serialize_state();
+	auto restored = create_ship_game();
+	assert(restored->deserialize_state(checkpoint));
+	const Fleet* restored_colony_fleet = restored->get_fleet(1, colony_fleet_id);
+	assert(restored_colony_fleet != nullptr);
+	assert(restored_colony_fleet->ship_stacks.front().colonists_on_board ==
+		   colony_fleet->ship_stacks.front().colonists_on_board);
+
+	process_ready_turn(*game);
+	colony_fleet = game->get_fleet(1, colony_fleet_id);
+	assert(colony_fleet->ship_stacks.front().colonists_on_board[0] == 10);
+	assert(colony_fleet->ship_stacks.front().colonists_on_board[1] == 10);
+}
+
+void test_colony_ship_speed_selection()
+{
+	auto game = create_ship_game();
+	process_ready_turn(*game);
+	const uint32_t home_id = game->get_player(1)->get_colonized_planets().front().get_id();
+	const std::string home_name = game->get_planet(home_id)->name;
+	const uint32_t slow_design = game->get_player(1)->create_ship_design(
+		"Slow Colony Ship", SHIP_COLONY, 10, 2, 1, 1, 0);
+	const uint32_t fast_design = game->get_player(1)->create_ship_design(
+		"Fast Colony Ship", SHIP_COLONY, 10, 10, 1, 1, 0);
+	assert(slow_design != 0 && fast_design != 0);
+	assert(game->build_ships_from_design(1, slow_design, 1, home_id) == ErrorCode::SUCCESS);
+	assert(game->build_ships_from_design(1, fast_design, 1, home_id) == ErrorCode::SUCCESS);
+	const uint32_t slow_fleet_id = game->get_player(1)->get_fleets().back().id - 1;
+	const uint32_t fast_fleet_id = game->get_player(1)->get_fleets().back().id;
+	assert(game->merge_fleets(1, fast_fleet_id, slow_fleet_id) == ErrorCode::SUCCESS);
+
+	std::string destination_name;
+	for (const Planet& planet : game->get_galaxy().planets)
+		if (planet.owner == NOT_OWNED &&
+			game->get_player(1)->get_knowledge_galaxy()->get_distance(
+				home_name, planet.name) <= 10)
+		{
+			destination_name = planet.name;
+			break;
+		}
+	assert(!destination_name.empty());
+	assert(game->check_player_move_fleet(1, slow_fleet_id, destination_name) ==
+		   ErrorCode::SUCCESS);
+	game->move_fleet(1, slow_fleet_id, destination_name);
+	process_ready_turn(*game);
+	for (int turn = 0; turn < 10 && game->get_fleet(1, slow_fleet_id)->is_in_transit(); ++turn)
+		process_ready_turn(*game);
+
+	const Fleet* fleet = game->get_fleet(1, slow_fleet_id);
+	assert(fleet != nullptr);
+	for (const FleetShipStack& stack : fleet->ship_stacks)
+	{
+		assert(stack.colonists_on_board.size() == 1);
+		if (stack.design_id == slow_design)
+			assert(stack.colonists_on_board.front() == 0);
+		else if (stack.design_id == fast_design)
+			assert(stack.colonists_on_board.front() == 10);
+	}
 }
 
 void test_planet_view_observation_precedence()
@@ -970,6 +1037,7 @@ int main()
     test_economic_submission_round_trip();
     test_colonization_and_abandonment_transitions();
 	test_automatic_colonization_requires_colony_ship();
+	test_colony_ship_speed_selection();
 	 test_planet_view_observation_precedence();
 	 test_append_only_save_file();
 		 test_rng_state_continuation();

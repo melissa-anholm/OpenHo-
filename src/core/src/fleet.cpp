@@ -15,9 +15,12 @@ Fleet::Fleet(uint32_t fleet_id, PlayerID player_id, uint32_t design_id,
              const ShipDesign* design,
              uint32_t ship_count, const std::string& planet_name)
 		: id(fleet_id),
-	  owner(player_id),
-	  ship_stacks{{design_id, design, ship_count,
-	               (design && design->type != SHIP_BIOLOGICAL) ? design->get_range() : 0}},
+		  owner(player_id),
+		  ship_stacks{{design_id, design, ship_count,
+		               (design && design->type != SHIP_BIOLOGICAL) ? design->get_range() : 0,
+		               design && design->type == SHIP_COLONY
+			               ? std::vector<uint8_t>(ship_count, 10)
+			               : std::vector<uint8_t>{}}},
 	  newly_built_this_turn(true),
 	  location(FleetStationedLocation{planet_name})
 {
@@ -71,6 +74,13 @@ bool Fleet::remove_from_stack(uint32_t design_id, uint32_t requested_count,
 		return false;
 	extracted = *stack;
 	extracted.ship_count = requested_count;
+	if (!stack->colonists_on_board.empty())
+	{
+		extracted.colonists_on_board.assign(
+			stack->colonists_on_board.end() - requested_count,
+			stack->colonists_on_board.end());
+		stack->colonists_on_board.resize(stack->colonists_on_board.size() - requested_count);
+	}
 	stack->ship_count -= requested_count;
 	if (stack->ship_count == 0)
 		ship_stacks.erase(std::remove_if(ship_stacks.begin(), ship_stacks.end(),
@@ -91,6 +101,8 @@ void Fleet::add_to_stack(const FleetShipStack& incoming)
 	}
 	existing->ship_count += incoming.ship_count;
 	existing->fuel = std::min(existing->fuel, incoming.fuel);
+	existing->colonists_on_board.insert(existing->colonists_on_board.end(),
+		incoming.colonists_on_board.begin(), incoming.colonists_on_board.end());
 }
 
 void Fleet::move_to(const std::string& destination_name,
