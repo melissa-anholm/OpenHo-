@@ -213,11 +213,11 @@ Post-economic combat, colonization, abandonment, and player actions may change p
 
 ## 4. Queued fleet actions
 
-Queued fleet actions resolve after economic processing. The implemented portion applies queued travel with per-stack fuel depletion, deferred older-fleet scrapping, colony-ship replenishment immediately after movement, fleet-arrival processing, and a basic automatic-colonization pass for currently stationed fleets containing a loaded colony ship; battle resolution and battle-aware colonization remain future phases.
+Queued fleet actions resolve after economic processing. The implemented portion applies queued travel with per-stack fuel depletion, refuels fleets that remain stationed after movement, processes fleet arrivals with immediate refueling at already-established colonies, replenishes colony ships, and runs a basic automatic-colonization pass for currently stationed fleets containing a loaded colony ship; battle resolution and battle-aware colonization remain future phases.
 
 **Implementation status:** Queued movement submission, readiness validation, travel initiation, deferred older-fleet scrapping, arrival processing, per-ship colony capacity, replenishment, and loaded-colony-ship qualification are implemented. The current `process_ships()` path does not resolve battles; automatic colonization therefore runs after arrival processing but before future battle integration.
 
-An empty colony ship replenishes only after the current turn's queued fleet-movement phase has completed. It therefore cannot replenish and then depart during the same movement phase; it must remain stationed through that phase and can move no earlier than the following turn.
+An empty colony ship replenishes only after the current turn's queued fleet-movement phase has completed. It therefore cannot replenish and then depart during the same movement phase. Fleets remaining at a colony are likewise refueled after movement; a fleet arriving at a colony that was already established before arrival is refueled immediately during arrival processing and can depart on the next movement phase. No immediate arrival refueling occurs at an unowned planet or at a colony established during the current turn.
 
 ### 4.1 Fleet travel
 

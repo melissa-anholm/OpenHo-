@@ -355,6 +355,8 @@ This testing should be performed before galaxy generation is considered producti
  - [x] Display the complete queued movement and pending-scrapping lists from the consolidated `fleets` command
  - [x] Reject movement when effective speed is zero, destination distance exceeds effective range, or effective fuel is insufficient
  - [x] Consume one fuel point per stored distance unit from every ship stack when transit begins
+ - [x] Fully refuel fleets that remain stationed at a colonized planet after queued movement
+ - [x] Immediately refuel fleets arriving at a colony that was already established before arrival; do not immediately refuel at newly colonized or unowned planets
  - [ ] Complete movement validation against final action-order rules
 - **Priority:** Medium-high
 

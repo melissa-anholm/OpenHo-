@@ -50,7 +50,7 @@ The core entity model, deterministic RNG, GameState structure, C API boundary, c
 
 #### Phase 2b: Fleet System & Ship Design
 
-**Status:** Foundational fleet, ship-design, construction, composition, scrapping, persistence, CLI workflows, movement validation, and distance-based fuel depletion are implemented; final build-selection rules and combat remain.
+**Status:** Foundational fleet, ship-design, construction, composition, scrapping, persistence, CLI workflows, movement validation, distance-based fuel depletion, and the initial refueling rules are implemented; final build-selection rules and combat remain.
 
 Players own ship designs and fleets with explicit stationed/transit locations, heterogeneous design stacks, per-stack fuel, queued movement, immediate composition operations, and rule-dependent scrapping. Runtime checkpoints preserve designs, stacks, fuel, locations, fleet IDs, and pending fleet actions. The portable CLI exposes inspection and current fleet operations; detailed formulas, validation gaps, and remaining work are tracked in the [active implementation checklist](Missing_Implementation_List.md#ship-design-creation).
 

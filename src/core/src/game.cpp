@@ -583,6 +583,7 @@ void GameState::start_first_turn()
 				process_research();
 					process_planets();
 					process_queued_fleet_actions();
+					refuel_stationed_fleets();
 					replenish_colony_ship_crews();
 					process_ships();
 				process_automatic_colonization();
@@ -1580,8 +1581,11 @@ void GameState::process_ships()
 				
 				if (destination)
 				{
+					const bool established_colony = destination->owner != NOT_OWNED;
 					// Move fleet from space to destination
 					fleet.location = FleetStationedLocation{destination->name};
+					if (established_colony)
+						fleet.refuel();
 				}
 			}
 		}
@@ -1689,6 +1693,21 @@ void GameState::replenish_colony_ship_crews()
 				std::fill(stack.colonists_on_board.begin(),
 					stack.colonists_on_board.end(), 10);
 			}
+		}
+	}
+}
+
+void GameState::refuel_stationed_fleets()
+{
+	for (auto& player : players)
+	{
+		for (auto& fleet : player.fleets)
+		{
+			if (fleet.is_in_transit())
+				continue;
+			const Planet* planet = get_planet(fleet.stationed_planet_name());
+			if (planet && planet->owner != NOT_OWNED)
+				fleet.refuel();
 		}
 	}
 }

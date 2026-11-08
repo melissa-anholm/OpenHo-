@@ -738,6 +738,92 @@ void test_colony_ship_speed_selection()
 	}
 }
 
+void test_stationed_fleet_refueling()
+{
+	auto game = create_ship_game();
+	process_ready_turn(*game);
+	const uint32_t home_id = game->get_player(1)->get_colonized_planets().front().get_id();
+	const std::string home_name = game->get_planet(home_id)->name;
+	const uint32_t design_id = game->get_player(1)->create_ship_design(
+		"Refueling Scout", SHIP_SCOUT, 10, 2, 1, 1, 0);
+	assert(design_id != 0);
+	assert(game->build_ships_from_design(1, design_id, 1, home_id) == ErrorCode::SUCCESS);
+	const uint32_t stationed_fleet_id = game->get_player(1)->get_fleets().back().id;
+	Fleet* stationed_fleet = game->get_fleet(1, stationed_fleet_id);
+	assert(stationed_fleet != nullptr);
+	assert(stationed_fleet->consume_fuel(4));
+	assert(stationed_fleet->effective_fuel() == 6);
+	process_ready_turn(*game);
+	stationed_fleet = game->get_fleet(1, stationed_fleet_id);
+	assert(stationed_fleet != nullptr);
+	assert(stationed_fleet->effective_fuel() == 10);
+
+	assert(game->build_ships_from_design(1, design_id, 1, home_id) == ErrorCode::SUCCESS);
+	const uint32_t moving_fleet_id = game->get_player(1)->get_fleets().back().id;
+	Fleet* moving_fleet = game->get_fleet(1, moving_fleet_id);
+	assert(moving_fleet != nullptr && moving_fleet->consume_fuel(4));
+	std::string destination_name;
+	for (const Planet& planet : game->get_galaxy().planets)
+	{
+		const double distance = game->get_player(1)->get_knowledge_galaxy()->get_distance(
+			home_name, planet.name);
+		if (planet.name != home_name && planet.owner == NOT_OWNED && distance <= 6.0)
+		{
+			destination_name = planet.name;
+			break;
+		}
+	}
+	assert(!destination_name.empty());
+	const int32_t fuel_cost = GameFormulas::calculate_fuel_consumption(
+		game->get_player(1)->get_knowledge_galaxy()->get_distance(home_name, destination_name));
+	assert(game->check_player_move_fleet(1, moving_fleet_id, destination_name) ==
+		   ErrorCode::SUCCESS);
+	game->move_fleet(1, moving_fleet_id, destination_name);
+	process_ready_turn(*game);
+	moving_fleet = game->get_fleet(1, moving_fleet_id);
+	assert(moving_fleet != nullptr && moving_fleet->is_in_transit());
+	assert(moving_fleet->effective_fuel() == 6 - fuel_cost);
+}
+
+void test_arrival_refueling_at_established_colony()
+{
+	auto game = create_ship_game();
+	process_ready_turn(*game);
+	const uint32_t home_id = game->get_player(1)->get_colonized_planets().front().get_id();
+	const std::string home_name = game->get_planet(home_id)->name;
+	std::string destination_name;
+	uint32_t destination_id = 0;
+	for (const Planet& planet : game->get_galaxy().planets)
+	{
+		const double distance = game->get_player(1)->get_knowledge_galaxy()->get_distance(
+			home_name, planet.name);
+		if (planet.name != home_name && planet.owner == NOT_OWNED && distance <= 10.0)
+		{
+			destination_name = planet.name;
+			destination_id = planet.id;
+			break;
+		}
+	}
+	assert(!destination_name.empty());
+	assert(game->colonize_planet(1, destination_id) == ErrorCode::SUCCESS);
+	const uint32_t design_id = game->get_player(1)->create_ship_design(
+		"Established Colony Scout", SHIP_SCOUT, 10, 10, 1, 1, 0);
+	assert(design_id != 0);
+	assert(game->build_ships_from_design(1, design_id, 1, home_id) == ErrorCode::SUCCESS);
+	const uint32_t fleet_id = game->get_player(1)->get_fleets().back().id;
+	Fleet* fleet = game->get_fleet(1, fleet_id);
+	assert(fleet != nullptr && fleet->consume_fuel(4));
+	assert(game->check_player_move_fleet(1, fleet_id, destination_name) ==
+		   ErrorCode::SUCCESS);
+	game->move_fleet(1, fleet_id, destination_name);
+	process_ready_turn(*game);
+	process_ready_turn(*game);
+	fleet = game->get_fleet(1, fleet_id);
+	assert(fleet != nullptr && !fleet->is_in_transit());
+	assert(fleet->stationed_planet_name() == destination_name);
+	assert(fleet->effective_fuel() == 10);
+}
+
 void test_planet_view_observation_precedence()
 {
     auto game = create_two_player_game();
@@ -1050,6 +1136,8 @@ int main()
     test_colonization_and_abandonment_transitions();
 	test_automatic_colonization_requires_colony_ship();
 	test_colony_ship_speed_selection();
+	test_stationed_fleet_refueling();
+	test_arrival_refueling_at_established_colony();
 	 test_planet_view_observation_precedence();
 	 test_append_only_save_file();
 		 test_rng_state_continuation();

@@ -290,6 +290,7 @@ private:
 	
 			void process_ships();
 			void process_automatic_colonization();
+			void refuel_stationed_fleets();
 			void replenish_colony_ship_crews();
 			void process_queued_fleet_actions();
 		void expire_newly_built_fleet_flags();
