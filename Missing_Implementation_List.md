@@ -362,6 +362,7 @@ This testing should be performed before galaxy generation is considered producti
  - [x] Retain structurally valid but temporarily fuel- or colonist-blocked movement orders for later retry
  - [x] Reject fuel-deficient movement immediately when the fleet has no existing refueling path at its current planet
  - [x] Handle empty colony ships stranded at unowned planets without replenishment, refueling, or indefinite movement retries
+ - [ ] Support differing arrival times per ship stack within a fleet, with the allowed timing modes `early`, `normal`, and `delayed`
  - [ ] Complete movement validation against final action-order rules
 - **Priority:** Medium-high
 

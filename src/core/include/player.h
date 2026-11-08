@@ -90,7 +90,7 @@ public:
 		  locked_dip_persistent(false),
 		  turn_opening_savings(0),
 		  metal_income(0),
-			  tech{1, 2, 2, 2, 0, 0},
+			  tech{6, 2, 2, 2, 0, 0},
 			  current_turn_income{0, 0, 0, 0},
 			  allocation{0.5, 0.25, 0.25, {1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0,
 			                                  1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0}},
