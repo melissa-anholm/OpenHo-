@@ -325,6 +325,9 @@ ErrorCode Player::merge_fleets(uint32_t source_fleet_id, uint32_t target_fleet_i
 		return ErrorCode::INVALID_PARAMETER;
 	if (source->ship_stacks.empty() || target->ship_stacks.empty())
 		return ErrorCode::INVALID_FLEET_SIZE;
+	if (source->post_colonization_ship_id != 0 &&
+		target->post_colonization_ship_id != 0)
+		return ErrorCode::INVALID_PARAMETER;
 
 	const bool target_was_new = target->newly_built_this_turn;
 	const bool source_was_new = source->newly_built_this_turn;
@@ -332,6 +335,16 @@ ErrorCode Player::merge_fleets(uint32_t source_fleet_id, uint32_t target_fleet_i
 	for (const auto& stack : source_stacks)
 		target->add_to_stack(stack);
 	target->newly_built_this_turn = target_was_new && source_was_new;
+	if (target->post_colonization_ship_id == 0)
+	{
+		target->post_colonization_ship_id = source->post_colonization_ship_id;
+		target->post_colonization_planet_name = source->post_colonization_planet_name;
+	}
+	fleet_action_submission.moves.erase(
+		std::remove_if(fleet_action_submission.moves.begin(), fleet_action_submission.moves.end(),
+			[source_fleet_id, target_fleet_id](const FleetMoveAction& move) {
+				return move.fleet_id == source_fleet_id || move.fleet_id == target_fleet_id;
+			}), fleet_action_submission.moves.end());
 	delete_fleet(source_fleet_id);
 	refresh_prototype_refund_candidates();
 	game_state->mark_player_turn_unready(id);
@@ -354,11 +367,25 @@ ErrorCode Player::split_fleet_to_new_fleet(
 
 	const std::string planet_name = source->stationed_planet_name();
 	const bool newly_built = source->newly_built_this_turn;
+	const bool founding_ship_extracted = source->post_colonization_ship_id != 0 &&
+		std::find(extracted.colony_ship_ids.begin(), extracted.colony_ship_ids.end(),
+			source->post_colonization_ship_id) != extracted.colony_ship_ids.end();
 	const uint32_t allocated_id = game_state->allocate_fleet_id();
 	Fleet new_fleet(allocated_id, id, design_id, extracted.design,
 		ship_count, planet_name);
 	new_fleet.ship_stacks.front() = extracted;
 	new_fleet.newly_built_this_turn = newly_built;
+	if (founding_ship_extracted)
+	{
+		new_fleet.post_colonization_ship_id = source->post_colonization_ship_id;
+		new_fleet.post_colonization_planet_name = source->post_colonization_planet_name;
+		source->post_colonization_ship_id = 0;
+		source->post_colonization_planet_name.clear();
+	}
+	fleet_action_submission.moves.erase(
+		std::remove_if(fleet_action_submission.moves.begin(), fleet_action_submission.moves.end(),
+			[source_fleet_id](const FleetMoveAction& move) { return move.fleet_id == source_fleet_id; }),
+		fleet_action_submission.moves.end());
 	fleets.push_back(std::move(new_fleet));
 	new_fleet_id = allocated_id;
 	if (source->ship_stacks.empty())
@@ -381,12 +408,35 @@ ErrorCode Player::move_stack_to_fleet(
 		return ErrorCode::FLEET_IN_TRANSIT;
 	if (source->stationed_planet_name() != target->stationed_planet_name())
 		return ErrorCode::INVALID_PARAMETER;
+	if (source->post_colonization_ship_id != 0 && target->post_colonization_ship_id != 0)
+	{
+		const FleetShipStack* source_stack = source->find_stack(design_id);
+		if (source_stack && std::find(source_stack->colony_ship_ids.begin(),
+			source_stack->colony_ship_ids.end(), source->post_colonization_ship_id) !=
+			source_stack->colony_ship_ids.end())
+			return ErrorCode::INVALID_PARAMETER;
+	}
 	FleetShipStack extracted;
 	if (!source->remove_from_stack(design_id, ship_count, extracted))
 		return ErrorCode::INVALID_FLEET_SIZE;
 	target->add_to_stack(extracted);
+	const bool founding_ship_extracted = source->post_colonization_ship_id != 0 &&
+		std::find(extracted.colony_ship_ids.begin(), extracted.colony_ship_ids.end(),
+			source->post_colonization_ship_id) != extracted.colony_ship_ids.end();
 	target->newly_built_this_turn =
 		target->newly_built_this_turn && source->newly_built_this_turn;
+	if (founding_ship_extracted)
+	{
+		target->post_colonization_ship_id = source->post_colonization_ship_id;
+		target->post_colonization_planet_name = source->post_colonization_planet_name;
+		source->post_colonization_ship_id = 0;
+		source->post_colonization_planet_name.clear();
+	}
+	fleet_action_submission.moves.erase(
+		std::remove_if(fleet_action_submission.moves.begin(), fleet_action_submission.moves.end(),
+			[source_fleet_id, target_fleet_id](const FleetMoveAction& move) {
+				return move.fleet_id == source_fleet_id || move.fleet_id == target_fleet_id;
+			}), fleet_action_submission.moves.end());
 	const bool source_empty = source->ship_stacks.empty();
 	if (source_empty)
 		delete_fleet(source_fleet_id);

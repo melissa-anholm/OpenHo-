@@ -415,13 +415,14 @@ This testing should be performed before galaxy generation is considered producti
 - **Priority:** Lowest
 
 #### Colony Abandonment
-- **Status:** Design specified; implementation remains future work
+- **Status:** Queued abandonment and founding-colony-ship restoration are implemented; final income/UI timing and broader ownership rules remain
 - **Location:** `src/core/src/game.cpp`, `src/core/src/player.cpp`, and colonized-planet state management
 - **Required Behavior:**
-  - [ ] Queue abandonment during player actions and process it at the beginning of the next turn's economic processing
-  - [ ] Remove the colony from the player's owned-colony state and kill its colonists
-  - [ ] Preserve any unmined planetary metal for a future colonizer
-  - [ ] Leave fleets stationed at the abandoned planet in place
+  - [x] Queue abandonment during player actions and process it at the beginning of the next turn's economic processing
+  - [x] Remove the colony from the player's owned-colony state and kill its colonists
+  - [x] Preserve any unmined planetary metal for a future colonizer
+  - [x] Leave fleets stationed at the abandoned planet in place
+  - [x] Restore the founding colony ship's ten colonists and clear its fleet-level post-colonization restriction
   - [ ] Update displayed/projected income when the abandonment is queued and again when it is applied
   - [ ] Apply the abandonment before calculating the next turn's income
 - **Priority:** Medium-high
@@ -626,6 +627,8 @@ Final model questions:
 		 - [x] Serialize and restore stationed and in-transit fleet locations
 		 - [x] Serialize and restore queued fleet movements and deferred scrapping requests
 		 - [x] Implement same-phase scrapping for newly built stationed fleets and deferred scrapping for older stationed fleets
+		 - [x] Preserve founding-ship provenance through split, transfer, and merge operations; reject ambiguous merges of two restricted fleets
+		 - [x] Cancel stale queued movement orders when composition changes invalidate their fleet state
 - **Note:** Composition actions require fleets to be stationed at the same planet. Matching-stack transfers and merges use the lower fuel value; newly-built status is combined with logical AND.
 - **Dependency:** Future fleet composition relies on sufficiently complete ship-design and ship-construction rules, but is not required for basic construction or travel.
 - **Priority:** Medium

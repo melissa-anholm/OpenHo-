@@ -223,6 +223,17 @@ int32_t Fleet::effective_speed() const
 	return speed == INT32_MAX ? 0 : speed;
 }
 
+bool Fleet::contains_colony_ship(uint64_t ship_id) const
+{
+	if (ship_id == 0)
+		return false;
+	for (const auto& stack : ship_stacks)
+		if (std::find(stack.colony_ship_ids.begin(), stack.colony_ship_ids.end(), ship_id) !=
+			stack.colony_ship_ids.end())
+			return true;
+	return false;
+}
+
 FleetCapabilities Fleet::capabilities() const
 {
 	return {effective_fuel(), effective_range(), effective_speed()};

@@ -120,6 +120,7 @@ public:
 	[[nodiscard]] bool consume_fuel(int32_t amount);
 	[[nodiscard]] int32_t effective_range() const;
 	[[nodiscard]] int32_t effective_speed() const;
+	[[nodiscard]] bool contains_colony_ship(uint64_t ship_id) const;
 	[[nodiscard]] FleetCapabilities capabilities() const;
 	[[nodiscard]] int32_t movement_range() const { return effective_range(); }
 };
