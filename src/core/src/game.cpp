@@ -579,12 +579,12 @@ void GameState::start_first_turn()
 	calculate_player_incomes();
 	apply_money_interest();
 	apply_dip_into_savings();
-	process_money_allocation();
-			process_research();
-				process_planets();
-				replenish_colony_ship_crews();
-				process_queued_fleet_actions();
-				process_ships();
+			process_money_allocation();
+				process_research();
+					process_planets();
+					process_queued_fleet_actions();
+					replenish_colony_ship_crews();
+					process_ships();
 				process_automatic_colonization();
 			process_novae();
 		// Refresh views once, after queued fleet effects and colonization

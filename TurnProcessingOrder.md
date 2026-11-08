@@ -213,9 +213,11 @@ Post-economic combat, colonization, abandonment, and player actions may change p
 
 ## 4. Queued fleet actions
 
-Queued fleet actions resolve after economic processing. The implemented portion applies queued travel, deferred older-fleet scrapping, fleet-arrival processing, colony-ship replenishment, and a basic automatic-colonization pass for arrived fleets containing a loaded colony ship; battle resolution and battle-aware colonization remain future phases.
+Queued fleet actions resolve after economic processing. The implemented portion applies queued travel, deferred older-fleet scrapping, colony-ship replenishment immediately after movement, fleet-arrival processing, and a basic automatic-colonization pass for currently stationed fleets containing a loaded colony ship; battle resolution and battle-aware colonization remain future phases.
 
 **Implementation status:** Queued movement submission, readiness validation, travel initiation, deferred older-fleet scrapping, arrival processing, per-ship colony capacity, replenishment, and loaded-colony-ship qualification are implemented. The current `process_ships()` path does not resolve battles; automatic colonization therefore runs after arrival processing but before future battle integration.
+
+An empty colony ship replenishes only after the current turn's queued fleet-movement phase has completed. It therefore cannot replenish and then depart during the same movement phase; it must remain stationed through that phase and can move no earlier than the following turn.
 
 ### 4.1 Fleet travel
 
