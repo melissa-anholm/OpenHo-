@@ -391,6 +391,40 @@ void test_savings_rate_modifier()
     assert(GameFormulas::calculate_money_interest(-100, player.get_savings_rate_modifier()) == -15);
 }
 
+void test_ship_design_technology_ceilings()
+{
+	auto game = create_ship_game();
+	const auto levels = game->get_player(1)->get_tech_levels();
+	const auto check = [&](const char* name, ShipType type, int32_t range,
+		int32_t speed, int32_t weapons, int32_t shields, int32_t mini) {
+		return game->check_player_design_ship(1, name, type, range, speed,
+			weapons, shields, mini);
+	};
+	assert(check("Ceiling Fighter", SHIP_FIGHTER, levels.range, levels.speed,
+		levels.weapons, levels.shields, levels.mini) == ErrorCode::SUCCESS);
+	assert(check("Ceiling Colony", SHIP_COLONY, levels.range, levels.speed,
+		levels.weapons, levels.shields, levels.mini) == ErrorCode::SUCCESS);
+	assert(check("Ceiling Dreadnought", SHIP_DREADNOUGHT, levels.range, levels.speed,
+		levels.weapons, levels.shields, levels.mini) == ErrorCode::SUCCESS);
+	assert(check("Ceiling Satellite", SHIP_SATELLITE, 0, levels.speed,
+		levels.weapons, levels.shields, levels.mini) == ErrorCode::SUCCESS);
+	assert(check("Ceiling Tanker", SHIP_TANKER, levels.range - 1, levels.speed - 1,
+		levels.weapons, levels.shields, levels.mini) == ErrorCode::SUCCESS);
+	assert(check("Ceiling Scout", SHIP_SCOUT, levels.range + 2, levels.speed,
+		levels.weapons - 1, levels.shields - 1, levels.mini) == ErrorCode::SUCCESS);
+
+	assert(check("Over Fighter Range", SHIP_FIGHTER, levels.range + 1, levels.speed,
+		levels.weapons, levels.shields, levels.mini) != ErrorCode::SUCCESS);
+	assert(check("Over Tanker Speed", SHIP_TANKER, levels.range - 1, levels.speed,
+		levels.weapons, levels.shields, levels.mini) != ErrorCode::SUCCESS);
+	assert(check("Over Scout Weapons", SHIP_SCOUT, levels.range + 2, levels.speed,
+		levels.weapons, levels.shields - 1, levels.mini) != ErrorCode::SUCCESS);
+	assert(check("Bad Satellite Range", SHIP_SATELLITE, 1, levels.speed,
+		levels.weapons, levels.shields, levels.mini) != ErrorCode::SUCCESS);
+	assert(check("Zero Speed", SHIP_FIGHTER, 0, 0, levels.weapons,
+		levels.shields, levels.mini) != ErrorCode::SUCCESS);
+}
+
 void test_fleet_scrapping()
 {
 	{
@@ -1206,6 +1240,7 @@ int main()
     test_game_initialization_and_readiness();
 	 test_dip_and_turn_processing();
 	 test_ship_construction();
+	 test_ship_design_technology_ceilings();
 	 test_fleet_scrapping();
 	 test_fleet_checkpoint_round_trip();
 	 test_savings_rate_modifier();

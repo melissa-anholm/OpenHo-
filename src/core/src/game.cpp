@@ -2356,7 +2356,11 @@ ErrorCode GameState::check_player_build_fleet(uint32_t player_id, uint32_t desig
 	return ErrorCode::SUCCESS;
 }
 
-ErrorCode GameState::check_player_design_ship(uint32_t player_id, const std::string& name, ShipType type, int32_t tech_range, int32_t tech_speed, int32_t tech_weapons, int32_t tech_shields, int32_t tech_mini) const
+ErrorCode GameState::check_player_design_ship(
+	uint32_t player_id, const std::string& name, ShipType type,
+	int32_t requested_range_level, int32_t requested_speed_level,
+	int32_t requested_weapons_level, int32_t requested_shields_level,
+	int32_t requested_miniaturization_level) const
 {
 	// Check player exists
 	const Player* player = get_player(player_id);
@@ -2371,7 +2375,9 @@ ErrorCode GameState::check_player_design_ship(uint32_t player_id, const std::str
 		if (type == SHIP_BIOLOGICAL)
 			{ return ErrorCode::INVALID_SHIP_TYPE; }
 		if (!GameFormulas::check_ship_design_levels(
-			type, tech_range, tech_speed, tech_weapons, tech_shields, tech_mini))
+			type, requested_range_level, requested_speed_level,
+			requested_weapons_level, requested_shields_level,
+			requested_miniaturization_level))
 			{ return ErrorCode::TECH_LEVEL_NOT_AVAILABLE; }
 	
 	// Check design name is not duplicate
@@ -2387,17 +2393,28 @@ ErrorCode GameState::check_player_design_ship(uint32_t player_id, const std::str
 	
 	// Check tech levels are available to player
 	const auto& tech = player->get_tech_levels();
-	if (type==SHIP_SATELLITE && tech_range != 0)
+	const int32_t player_range_level = tech.range;
+	const int32_t player_speed_level = tech.speed;
+	const int32_t player_weapons_level = tech.weapons;
+	const int32_t player_shields_level = tech.shields;
+	const int32_t player_miniaturization_level = tech.mini;
+	if (type == SHIP_SATELLITE && requested_range_level != 0)
 		return ErrorCode::TECH_LEVEL_NOT_AVAILABLE;
-	if (tech_range > tech.range || (tech_range < 1 && type!=SHIP_SATELLITE) )
+	if (requested_range_level > GameFormulas::ship_design_technology_ceiling(
+		type, TECH_RANGE, player_range_level))
 		return ErrorCode::TECH_LEVEL_NOT_AVAILABLE;
-	if (tech_speed > tech.speed || tech_speed < 2)
+	if (requested_speed_level > GameFormulas::ship_design_technology_ceiling(
+		type, TECH_SPEED, player_speed_level))
 		return ErrorCode::TECH_LEVEL_NOT_AVAILABLE;
-	if (tech_weapons > tech.weapons || tech_weapons < 1)
+	if (requested_weapons_level > GameFormulas::ship_design_technology_ceiling(
+		type, TECH_WEAPONS, player_weapons_level))
 		return ErrorCode::TECH_LEVEL_NOT_AVAILABLE;
-	if (tech_shields > tech.shields || tech_shields < 1)
+	if (requested_shields_level > GameFormulas::ship_design_technology_ceiling(
+		type, TECH_SHIELDS, player_shields_level))
 		return ErrorCode::TECH_LEVEL_NOT_AVAILABLE;
-	if (tech_mini > tech.mini || tech_mini < 0)
+	if (requested_miniaturization_level >
+		GameFormulas::ship_design_technology_ceiling(
+			type, TECH_MINI, player_miniaturization_level))
 		return ErrorCode::TECH_LEVEL_NOT_AVAILABLE;
 	
 	return ErrorCode::SUCCESS;

@@ -153,18 +153,40 @@ namespace GameFormulas
 		}
 	}
 
-	bool check_ship_design_levels(ShipType ship_type, int32_t tech_range,
-	                              int32_t tech_speed, int32_t tech_weapons,
-	                              int32_t tech_shields, int32_t tech_mini)
+	bool check_ship_design_levels(ShipType ship_type, int32_t requested_range_level,
+	                              int32_t requested_speed_level,
+	                              int32_t requested_weapons_level,
+	                              int32_t requested_shields_level,
+	                              int32_t requested_miniaturization_level)
 	{
 		if (!is_supported_ship_type(ship_type))
 			return false;
-		if (tech_range < 0 || tech_speed < 0 || tech_weapons < 0 ||
-			tech_shields < 0 || tech_mini < 0)
+		if (requested_range_level < 0 || requested_speed_level < 1 ||
+			requested_weapons_level < 1 || requested_shields_level < 1 ||
+			requested_miniaturization_level < 0)
 			return false;
-		if (ship_type == SHIP_SATELLITE && tech_range != 0)
+		if (ship_type == SHIP_SATELLITE && requested_range_level != 0)
 			return false;
 		return true;
+	}
+
+	int32_t ship_design_technology_ceiling(ShipType ship_type, TechStream stream,
+	                                       int32_t player_technology_level)
+	{
+		int32_t offset = 0;
+		if (ship_type == SHIP_SATELLITE && stream == TECH_RANGE)
+			return 0;
+		if (ship_type == SHIP_TANKER &&
+			(stream == TECH_RANGE || stream == TECH_SPEED))
+			offset = -1;
+		if (ship_type == SHIP_SCOUT)
+		{
+			if (stream == TECH_RANGE)
+				offset = 2;
+			else if (stream == TECH_WEAPONS || stream == TECH_SHIELDS)
+				offset = -1;
+		}
+		return player_technology_level + offset;
 	}
 
 	int64_t calculate_ship_design_build_cost(ShipType ship_type, int32_t tech_range,

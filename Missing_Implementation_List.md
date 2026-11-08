@@ -436,10 +436,12 @@ This testing should be performed before galaxy generation is considered producti
  - [x] Add design to the player's available design list
 - [x] Ensure all direct creation paths apply the same design validation
 - [x] Store a `has_been_prototyped` flag directly with each design
-- [x] Calculate and store provisional build, prototype, and metal costs
+ - [x] Calculate and store provisional build, prototype, and metal costs
+ - [x] Enforce global design minima: range 0, speed 1, weapons 1, shields 1, and miniaturization 0
+ - [x] Enforce ship-type ceilings relative to player technology: fighter/colony/dreadnought at player level; satellite at player level except range 0; tanker at player level minus 1 for range and speed; scout at player level plus 2 for range, player level for speed, and player level minus 1 for weapons and shields
 - **Remaining:**
  - [ ] Replace provisional cost formulas with final data-driven formulas
- - [ ] Enforce current technology limits when creating new designs, while allowing already-owned designs to remain buildable even if they exceed the player's current technology access
+ - [x] Enforce current ship-type-specific technology limits when creating new designs, while allowing already-owned designs to remain buildable even if they exceed the player's current technology access
  - [ ] Support an uncommitted proposed design in the build-selection flow without adding it to the design library until a build occurs
 - **Priority:** Medium
 

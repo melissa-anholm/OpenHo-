@@ -23,9 +23,15 @@ namespace GameFormulas
 	
 		/// Check structural validity of a ship design's technology levels.
 		/// Player technology availability is checked separately by GameState.
-		bool check_ship_design_levels(ShipType ship_type, int32_t tech_range,
-		                              int32_t tech_speed, int32_t tech_weapons,
-		                              int32_t tech_shields, int32_t tech_mini);
+		bool check_ship_design_levels(ShipType ship_type, int32_t requested_range_level,
+		                              int32_t requested_speed_level,
+		                              int32_t requested_weapons_level,
+		                              int32_t requested_shields_level,
+		                              int32_t requested_miniaturization_level);
+
+		/// Return the maximum design level for a stream relative to player technology.
+		int32_t ship_design_technology_ceiling(ShipType ship_type, TechStream stream,
+		                                       int32_t player_technology_level);
 
 		/// Calculate the money build cost for a ship design.
 		/// Inputs are assumed to have passed check_ship_design_levels().
