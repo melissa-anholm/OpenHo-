@@ -585,6 +585,8 @@ std::vector<uint8_t> encode_runtime_payload(const RuntimeCheckpointPayload& chec
             append_integer<uint32_t>(output, fleet.arrival_turn);
             append_double(output, fleet.distance);
             append_integer<uint32_t>(output, fleet.turns_to_travel);
+            append_integer<uint64_t>(output, fleet.post_colonization_ship_id);
+            append_string(output, fleet.post_colonization_planet_name);
             append_integer<uint32_t>(output, static_cast<uint32_t>(fleet.stacks.size()));
             for (const auto& stack : fleet.stacks)
             {
@@ -601,6 +603,10 @@ std::vector<uint8_t> encode_runtime_payload(const RuntimeCheckpointPayload& chec
                         return {};
                     output.push_back(colonists);
                 }
+                if (stack.colony_ship_ids.size() != stack.colonists_on_board.size())
+                    return {};
+                for (uint64_t ship_id : stack.colony_ship_ids)
+                    append_integer<uint64_t>(output, ship_id);
             }
         }
         append_integer<uint32_t>(output, static_cast<uint32_t>(player.prototype_refund_candidates.size()));
@@ -782,6 +788,8 @@ bool decode_runtime_payload(const std::vector<uint8_t>& payload,
                 !read_integer(payload, offset, fleet.arrival_turn) ||
                 !read_double(payload, offset, fleet.distance) ||
                 !read_integer(payload, offset, fleet.turns_to_travel) ||
+                !read_integer(payload, offset, fleet.post_colonization_ship_id) ||
+                !read_string(payload, offset, fleet.post_colonization_planet_name) ||
                 fleet.distance < 0.0)
                 return false;
             uint32_t stack_count = 0;
@@ -806,6 +814,10 @@ bool decode_runtime_payload(const std::vector<uint8_t>& payload,
                     if (colonists != 0 && colonists != 10)
                         return false;
                 }
+                stack.colony_ship_ids.resize(colonist_count);
+                for (uint64_t& ship_id : stack.colony_ship_ids)
+                    if (!read_integer(payload, offset, ship_id) || ship_id == 0)
+                        return false;
             }
         }
         uint32_t candidate_count = 0;

@@ -357,6 +357,11 @@ This testing should be performed before galaxy generation is considered producti
  - [x] Consume one fuel point per stored distance unit from every ship stack when transit begins
  - [x] Fully refuel fleets that remain stationed at a colonized planet after queued movement
  - [x] Immediately refuel fleets arriving at a colony that was already established before arrival; do not immediately refuel at newly colonized or unowned planets
+ - [x] Track the founding colony ship and apply the post-colonization movement restriction at fleet level
+ - [x] Return the founding ship's colonists when its newly established colony is abandoned
+ - [x] Retain structurally valid but temporarily fuel- or colonist-blocked movement orders for later retry
+ - [x] Reject fuel-deficient movement immediately when the fleet has no existing refueling path at its current planet
+ - [x] Handle empty colony ships stranded at unowned planets without replenishment, refueling, or indefinite movement retries
  - [ ] Complete movement validation against final action-order rules
 - **Priority:** Medium-high
 

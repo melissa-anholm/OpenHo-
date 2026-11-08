@@ -647,7 +647,6 @@ void GameState::capture_fleet_action_submissions()
 		FleetActionSubmission& submission = player.fleet_action_submission;
 		submission.player_id = player.id;
 		submission.target_turn = current_turn;
-		submission.moves.clear();
 		submission.scraps.clear();
 	}
 }
@@ -800,7 +799,9 @@ std::vector<uint8_t> GameState::serialize_state() const
 				fleet_state.descriptor = fleet.descriptor;
 					for (const FleetShipStack& stack : fleet.ship_stacks)
 						fleet_state.stacks.push_back({stack.design_id, stack.ship_count, stack.fuel,
-							stack.colonists_on_board});
+								stack.colonists_on_board, stack.colony_ship_ids});
+					fleet_state.post_colonization_ship_id = fleet.post_colonization_ship_id;
+					fleet_state.post_colonization_planet_name = fleet.post_colonization_planet_name;
 				if (const auto* stationed = std::get_if<FleetStationedLocation>(&fleet.location))
 					fleet_state.planet_name = stationed->planet_name;
 				else
@@ -1011,8 +1012,10 @@ bool GameState::deserialize_state(const std::vector<uint8_t>& data)
 						? saved_fleet.origin_planet_name : saved_fleet.planet_name;
 					Fleet restored(saved_fleet.id, player.id, first_stack.design_id,
 						first_design, first_stack.ship_count, initial_planet);
-					restored.descriptor = saved_fleet.descriptor;
-					restored.newly_built_this_turn = saved_fleet.newly_built_this_turn;
+						restored.descriptor = saved_fleet.descriptor;
+						restored.newly_built_this_turn = saved_fleet.newly_built_this_turn;
+						restored.post_colonization_ship_id = saved_fleet.post_colonization_ship_id;
+						restored.post_colonization_planet_name = saved_fleet.post_colonization_planet_name;
 					restored.ship_stacks.clear();
 					for (const auto& saved_stack : saved_fleet.stacks)
 					{
@@ -1021,7 +1024,8 @@ bool GameState::deserialize_state(const std::vector<uint8_t>& data)
 							if (design && design->type == SHIP_COLONY && colonists.empty())
 								colonists.assign(saved_stack.ship_count, 10);
 							restored.ship_stacks.push_back({saved_stack.design_id, design,
-								saved_stack.ship_count, saved_stack.fuel, std::move(colonists)});
+								saved_stack.ship_count, saved_stack.fuel, std::move(colonists),
+								saved_stack.colony_ship_ids});
 					}
 					if (saved_fleet.in_transit)
 						restored.location = FleetInTransitLocation{
@@ -1541,22 +1545,45 @@ void GameState::process_queued_fleet_actions()
 {
 	for (auto& player : players)
 	{
+		std::vector<FleetMoveAction> pending_moves;
 		for (const FleetMoveAction& move : player.fleet_action_submission.moves)
 		{
 			Fleet* fleet = player.get_fleet(move.fleet_id);
 			if (!fleet || fleet->is_in_transit())
 				continue;
+			if (check_player_move_fleet(player.id, move.fleet_id,
+				move.destination_planet_name) != ErrorCode::SUCCESS)
+			{
+				pending_moves.push_back(move);
+				continue;
+			}
+			const Planet* destination = get_planet(move.destination_planet_name);
+			const bool restricted = fleet->post_colonization_ship_id != 0;
+			const bool friendly_established = destination &&
+				destination->owner == static_cast<PlayerID>(player.id);
+			if (restricted && !friendly_established)
+			{
+				pending_moves.push_back(move);
+				continue;
+			}
 			KnowledgeGalaxy* knowledge = player.get_knowledge_galaxy();
 			if (!knowledge)
+			{
+				pending_moves.push_back(move);
 				continue;
+			}
 			const double distance = knowledge->get_distance(
 				fleet->stationed_planet_name(), move.destination_planet_name);
 			const int32_t fuel_cost = GameFormulas::calculate_fuel_consumption(distance);
 			if (!fleet->consume_fuel(fuel_cost))
+			{
+				pending_moves.push_back(move);
 				continue;
+			}
 			fleet->move_to(move.destination_planet_name,
 				player.get_knowledge_galaxy(), current_turn);
 		}
+		player.fleet_action_submission.moves = std::move(pending_moves);
 		for (uint32_t fleet_id : player.fleet_action_submission.scraps)
 			player.apply_scrap_fleet_now(fleet_id);
 	}
@@ -1600,6 +1627,7 @@ void GameState::process_automatic_colonization()
 		uint32_t fleet_id = 0;
 		size_t stack_index = 0;
 		size_t ship_index = 0;
+		uint64_t ship_id = 0;
 		int32_t speed = 0;
 	};
 
@@ -1628,6 +1656,7 @@ void GameState::process_automatic_colonization()
 					if (stack.colonists_on_board[ship_index] == 10)
 						candidates_by_planet[planet_name].push_back({
 							player.id, fleet.id, stack_index, ship_index,
+							stack.colony_ship_ids.size() > ship_index ? stack.colony_ship_ids[ship_index] : 0,
 							stack.design->get_speed()});
 				}
 			}
@@ -1669,6 +1698,8 @@ void GameState::process_automatic_colonization()
 			FleetShipStack& stack = selected_fleet->ship_stacks[selected.stack_index];
 			if (selected.ship_index < stack.colonists_on_board.size())
 				stack.colonists_on_board[selected.ship_index] = 0;
+			selected_fleet->post_colonization_ship_id = selected.ship_id;
+			selected_fleet->post_colonization_planet_name = planet->name;
 		}
 		}
 	}
@@ -1738,12 +1769,24 @@ void GameState::process_queued_abandonments()
 				continue;
 
 			Planet* planet = get_planet(planet_name);
-			if (planet && planet->owner == static_cast<PlayerID>(player.id))
-			{
-				planet->owner = NOT_OWNED;
-				planet->population = 0;
-			}
-			player.colonized_planets.erase(colony_it);
+				if (planet && planet->owner == static_cast<PlayerID>(player.id))
+				{
+					planet->owner = NOT_OWNED;
+					planet->population = 0;
+				}
+				for (auto& fleet : player.fleets)
+				{
+					if (fleet.post_colonization_planet_name != planet_name)
+						continue;
+					for (auto& stack : fleet.ship_stacks)
+						for (size_t i = 0; i < stack.colony_ship_ids.size(); ++i)
+							if (stack.colony_ship_ids[i] == fleet.post_colonization_ship_id &&
+								i < stack.colonists_on_board.size())
+								stack.colonists_on_board[i] = 10;
+					fleet.post_colonization_ship_id = 0;
+					fleet.post_colonization_planet_name.clear();
+				}
+				player.colonized_planets.erase(colony_it);
 		}
 		player.economic_submission.planets_to_abandon.clear();
 	}
@@ -2494,12 +2537,15 @@ ErrorCode GameState::check_player_move_fleet(uint32_t player_id,
 			fleet->stationed_planet_name(), destination_planet_name);
 		if (!std::isfinite(distance) || distance < 0.0)
 			return ErrorCode::INVALID_TURN_STATE;
-		if (distance > static_cast<double>(fleet->effective_range()))
-			return ErrorCode::FLEET_OUT_OF_RANGE;
-		if (distance > static_cast<double>(fleet->effective_fuel()))
-			return ErrorCode::INSUFFICIENT_FUEL;
-
-		return ErrorCode::SUCCESS;
+			if (distance > static_cast<double>(fleet->effective_range()))
+				return ErrorCode::FLEET_OUT_OF_RANGE;
+			if (distance > static_cast<double>(fleet->effective_fuel()))
+			{
+				const Planet* origin = get_planet(fleet->stationed_planet_name());
+				if (!origin || origin->owner == NOT_OWNED)
+					return ErrorCode::INSUFFICIENT_FUEL;
+			}
+			return ErrorCode::SUCCESS;
 }
 
 ErrorCode GameState::check_fleet_action_submission(

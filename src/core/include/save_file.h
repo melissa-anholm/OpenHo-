@@ -106,6 +106,7 @@ struct RuntimeFleetStackState
     uint32_t ship_count = 0;
     int32_t fuel = 0;
     std::vector<uint8_t> colonists_on_board;
+    std::vector<uint64_t> colony_ship_ids;
 };
 
 struct RuntimeFleetState
@@ -123,6 +124,8 @@ struct RuntimeFleetState
     double distance = 0.0;
     uint32_t turns_to_travel = 0;
     std::vector<RuntimeFleetStackState> stacks;
+    uint64_t post_colonization_ship_id = 0;
+    std::string post_colonization_planet_name;
 };
 
 struct RuntimeFleetMoveState
@@ -163,7 +166,7 @@ struct RuntimePlayerState
 
 struct RuntimeCheckpointPayload
 {
-    static constexpr uint32_t CURRENT_SCHEMA_VERSION = 11;
+    static constexpr uint32_t CURRENT_SCHEMA_VERSION = 12;
 
     uint32_t schema_version = CURRENT_SCHEMA_VERSION;
     uint32_t turn = 0;

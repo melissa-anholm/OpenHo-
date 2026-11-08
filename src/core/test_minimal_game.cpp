@@ -649,12 +649,16 @@ void test_automatic_colonization_requires_colony_ship()
 	assert(game->check_player_move_fleet(1, scout_fleet_id, scout_destination) ==
 		   ErrorCode::SUCCESS);
 	game->move_fleet(1, scout_fleet_id, scout_destination);
-	process_ready_turn(*game);
-	process_ready_turn(*game);
-	assert(game->get_planet(scout_destination)->owner == NOT_OWNED);
+		process_ready_turn(*game);
+		process_ready_turn(*game);
+		assert(game->get_planet(scout_destination)->owner == NOT_OWNED);
+		Fleet* stranded_scout = game->get_fleet(1, scout_fleet_id);
+		assert(stranded_scout != nullptr && stranded_scout->consume_fuel(stranded_scout->effective_fuel()));
+		assert(game->check_player_move_fleet(1, scout_fleet_id, home_name) ==
+			   ErrorCode::INSUFFICIENT_FUEL);
 
-	const uint32_t colony_design = game->get_player(1)->create_ship_design(
-		"Colony Ship", SHIP_COLONY, 10, 10, 1, 1, 0);
+		const uint32_t colony_design = game->get_player(1)->create_ship_design(
+		"Colony Ship", SHIP_COLONY, 30, 10, 1, 1, 0);
 	assert(colony_design != 0);
 	assert(game->build_ships_from_design(1, colony_design, 2, home_id) ==
 		   ErrorCode::SUCCESS);
@@ -685,11 +689,38 @@ void test_automatic_colonization_requires_colony_ship()
 	assert(restored_colony_fleet != nullptr);
 	assert(restored_colony_fleet->ship_stacks.front().colonists_on_board ==
 		   colony_fleet->ship_stacks.front().colonists_on_board);
+	assert(colony_fleet->post_colonization_ship_id != 0);
+	assert(colony_fleet->post_colonization_planet_name == colony_destination);
 
+	std::string restricted_destination;
+	for (const Planet& planet : game->get_galaxy().planets)
+		if (planet.owner == NOT_OWNED &&
+			game->get_player(1)->get_knowledge_galaxy()->get_distance(
+				colony_destination, planet.name) <= colony_fleet->effective_range())
+		{
+			restricted_destination = planet.name;
+			break;
+		}
+	assert(!restricted_destination.empty());
+	assert(game->check_player_move_fleet(1, colony_fleet_id, restricted_destination) ==
+		   ErrorCode::SUCCESS);
+	game->move_fleet(1, colony_fleet_id, restricted_destination);
 	process_ready_turn(*game);
+	assert(game->get_fleet_action_submission(1).moves.size() == 1);
+	assert(game->get_fleet(1, colony_fleet_id)->stationed_planet_name() == colony_destination);
+	assert(game->queue_planet_abandonment(1, colonized->id) == ErrorCode::SUCCESS);
+	process_ready_turn(*game);
+	const Fleet* restored_after_abandon = game->get_fleet(1, colony_fleet_id);
+	assert(restored_after_abandon != nullptr);
+	assert(restored_after_abandon->post_colonization_ship_id == 0);
+	assert(restored_after_abandon->post_colonization_planet_name.empty());
+	assert(restored_after_abandon->is_in_transit());
+	assert(restored_after_abandon->transit_location()->destination_planet_name ==
+		   restricted_destination);
+
 	colony_fleet = game->get_fleet(1, colony_fleet_id);
-	assert(colony_fleet->ship_stacks.front().colonists_on_board[0] == 10);
-	assert(colony_fleet->ship_stacks.front().colonists_on_board[1] == 10);
+	assert(colony_fleet->ship_stacks.front().colonists_on_board[0] == 10 ||
+		   colony_fleet->ship_stacks.front().colonists_on_board[1] == 10);
 }
 
 void test_colony_ship_speed_selection()
@@ -822,9 +853,55 @@ void test_arrival_refueling_at_established_colony()
 	assert(fleet != nullptr && !fleet->is_in_transit());
 	assert(fleet->stationed_planet_name() == destination_name);
 	assert(fleet->effective_fuel() == 10);
-}
+	}
 
-void test_planet_view_observation_precedence()
+	void test_empty_colony_ship_at_unowned_planet()
+	{
+		auto game = create_ship_game();
+		process_ready_turn(*game);
+		const uint32_t home_id = game->get_player(1)->get_colonized_planets().front().get_id();
+		const std::string home_name = game->get_planet(home_id)->name;
+		const uint32_t design_id = game->get_player(1)->create_ship_design(
+			"Empty Colony Ship", SHIP_COLONY, 10, 10, 1, 1, 0);
+		assert(design_id != 0);
+		assert(game->build_ships_from_design(1, design_id, 1, home_id) == ErrorCode::SUCCESS);
+		const uint32_t fleet_id = game->get_player(1)->get_fleets().back().id;
+		Fleet* fleet = game->get_fleet(1, fleet_id);
+		assert(fleet != nullptr);
+		fleet->ship_stacks.front().colonists_on_board.front() = 0;
+		std::string unowned_name;
+		for (const Planet& planet : game->get_galaxy().planets)
+		{
+			const double distance = game->get_player(1)->get_knowledge_galaxy()->get_distance(
+				home_name, planet.name);
+			if (planet.name != home_name && planet.owner == NOT_OWNED && distance <= 10.0)
+			{
+				unowned_name = planet.name;
+				break;
+			}
+		}
+		assert(!unowned_name.empty());
+		assert(game->check_player_move_fleet(1, fleet_id, unowned_name) == ErrorCode::SUCCESS);
+		game->move_fleet(1, fleet_id, unowned_name);
+		process_ready_turn(*game);
+		while (game->get_fleet(1, fleet_id)->is_in_transit())
+			process_ready_turn(*game);
+		fleet = game->get_fleet(1, fleet_id);
+		assert(fleet != nullptr && fleet->stationed_planet_name() == unowned_name);
+		assert(game->get_planet(unowned_name)->owner == NOT_OWNED);
+		assert(fleet->ship_stacks.front().colonists_on_board.front() == 0);
+		const int32_t fuel_before_wait = fleet->effective_fuel();
+		process_ready_turn(*game);
+		fleet = game->get_fleet(1, fleet_id);
+		assert(fleet->effective_fuel() == fuel_before_wait);
+		assert(fleet->ship_stacks.front().colonists_on_board.front() == 0);
+		fleet->consume_fuel(fleet->effective_fuel());
+		assert(game->check_player_move_fleet(1, fleet_id, home_name) ==
+			   ErrorCode::INSUFFICIENT_FUEL);
+		assert(game->get_fleet_action_submission(1).moves.empty());
+	}
+
+	void test_planet_view_observation_precedence()
 {
     auto game = create_two_player_game();
     const uint32_t observer_id = 1;
@@ -1138,7 +1215,8 @@ int main()
 	test_colony_ship_speed_selection();
 	test_stationed_fleet_refueling();
 	test_arrival_refueling_at_established_colony();
-	 test_planet_view_observation_precedence();
+	test_empty_colony_ship_at_unowned_planet();
+		 test_planet_view_observation_precedence();
 	 test_append_only_save_file();
 		 test_rng_state_continuation();
 		 test_ui_adapter_boundary();

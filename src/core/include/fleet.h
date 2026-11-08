@@ -43,6 +43,7 @@ struct FleetShipStack
 	// For colony-ship stacks, one entry per individual ship: 10 when fully
 	// loaded and 0 after that ship's colonists have been deployed.
 	std::vector<uint8_t> colonists_on_board;
+	std::vector<uint64_t> colony_ship_ids;
 };
 
 struct FleetCapabilities
@@ -75,6 +76,10 @@ public:
 	
 	std::string descriptor;
 	FleetLocation location;
+	// Nonzero while this fleet contains the colony ship that founded the named
+	// colony and that colony may still be abandoned for colonist restoration.
+	uint64_t post_colonization_ship_id = 0;
+	std::string post_colonization_planet_name;
 	
 	// Move semantics (required by unique_ptr)
 	Fleet(Fleet&&) = default;

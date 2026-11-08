@@ -20,11 +20,18 @@ Fleet::Fleet(uint32_t fleet_id, PlayerID player_id, uint32_t design_id,
 		               (design && design->type != SHIP_BIOLOGICAL) ? design->get_range() : 0,
 		               design && design->type == SHIP_COLONY
 			               ? std::vector<uint8_t>(ship_count, 10)
-			               : std::vector<uint8_t>{}}},
+			               : std::vector<uint8_t>{},
+			               design && design->type == SHIP_COLONY
+			               ? std::vector<uint64_t>(ship_count)
+			               : std::vector<uint64_t>{}}},
 	  newly_built_this_turn(true),
 	  location(FleetStationedLocation{planet_name})
 {
 	descriptor = "";
+	static uint64_t next_colony_ship_id = 1;
+	if (!ship_stacks.front().colony_ship_ids.empty())
+		for (uint64_t& ship_id : ship_stacks.front().colony_ship_ids)
+			ship_id = next_colony_ship_id++;
 }
 
 // ============================================================================
@@ -81,6 +88,13 @@ bool Fleet::remove_from_stack(uint32_t design_id, uint32_t requested_count,
 			stack->colonists_on_board.end());
 		stack->colonists_on_board.resize(stack->colonists_on_board.size() - requested_count);
 	}
+	if (!stack->colony_ship_ids.empty())
+	{
+		extracted.colony_ship_ids.assign(
+			stack->colony_ship_ids.end() - requested_count,
+			stack->colony_ship_ids.end());
+		stack->colony_ship_ids.resize(stack->colony_ship_ids.size() - requested_count);
+	}
 	stack->ship_count -= requested_count;
 	if (stack->ship_count == 0)
 		ship_stacks.erase(std::remove_if(ship_stacks.begin(), ship_stacks.end(),
@@ -103,6 +117,8 @@ void Fleet::add_to_stack(const FleetShipStack& incoming)
 	existing->fuel = std::min(existing->fuel, incoming.fuel);
 	existing->colonists_on_board.insert(existing->colonists_on_board.end(),
 		incoming.colonists_on_board.begin(), incoming.colonists_on_board.end());
+	existing->colony_ship_ids.insert(existing->colony_ship_ids.end(),
+		incoming.colony_ship_ids.begin(), incoming.colony_ship_ids.end());
 }
 
 void Fleet::move_to(const std::string& destination_name,
