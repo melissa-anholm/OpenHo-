@@ -476,6 +476,7 @@ std::vector<uint8_t> encode_runtime_payload(const RuntimeCheckpointPayload& chec
     append_integer<uint32_t>(output, checkpoint.schema_version);
     append_integer<uint32_t>(output, checkpoint.turn);
     append_integer<uint32_t>(output, checkpoint.year);
+    append_integer<uint32_t>(output, checkpoint.next_fleet_id);
     append_integer<uint64_t>(output, checkpoint.deterministic_seed);
     append_integer<uint64_t>(output, checkpoint.ai_seed);
     append_bytes(output, checkpoint.deterministic_rng_state);
@@ -541,6 +542,70 @@ std::vector<uint8_t> encode_runtime_payload(const RuntimeCheckpointPayload& chec
             append_signed<int32_t>(output, value);
         for (int64_t value : player.partial_research)
             append_signed<int64_t>(output, value);
+        if (player.ship_designs.size() > 100 || player.fleets.size() > 500 ||
+            player.prototype_refund_candidates.size() > 100 ||
+            player.fleet_moves.size() > 500 || player.fleet_scraps.size() > 500)
+            return {};
+        append_integer<uint32_t>(output, static_cast<uint32_t>(player.ship_designs.size()));
+        for (const auto& design : player.ship_designs)
+        {
+            if (design.type > SHIP_BIOLOGICAL || design.name.size() > 4096 ||
+                design.tech_range < 0 || design.tech_speed < 0 || design.tech_weapons < 0 ||
+                design.tech_shields < 0 || design.tech_mini < 0 || design.build_cost < 0 ||
+                design.prototype_cost < 0 || design.metal_cost < 0)
+                return {};
+            append_integer<uint32_t>(output, design.id);
+            append_string(output, design.name);
+            output.push_back(design.type);
+            append_signed<int32_t>(output, design.tech_range);
+            append_signed<int32_t>(output, design.tech_speed);
+            append_signed<int32_t>(output, design.tech_weapons);
+            append_signed<int32_t>(output, design.tech_shields);
+            append_signed<int32_t>(output, design.tech_mini);
+            append_signed<int64_t>(output, design.build_cost);
+            append_signed<int64_t>(output, design.prototype_cost);
+            append_signed<int64_t>(output, design.metal_cost);
+            append_bool(output, design.has_been_prototyped);
+        }
+        append_integer<uint32_t>(output, static_cast<uint32_t>(player.fleets.size()));
+        for (const auto& fleet : player.fleets)
+        {
+            if (fleet.stacks.size() > 100 || fleet.descriptor.size() > 4096 ||
+                !std::isfinite(fleet.distance) || fleet.distance < 0.0)
+                return {};
+            append_integer<uint32_t>(output, fleet.id);
+            append_signed<int32_t>(output, fleet.owner);
+            append_bool(output, fleet.newly_built_this_turn);
+            append_string(output, fleet.descriptor);
+            append_bool(output, fleet.in_transit);
+            append_string(output, fleet.planet_name);
+            append_string(output, fleet.origin_planet_name);
+            append_string(output, fleet.destination_planet_name);
+            append_integer<uint32_t>(output, fleet.departure_turn);
+            append_integer<uint32_t>(output, fleet.arrival_turn);
+            append_double(output, fleet.distance);
+            append_integer<uint32_t>(output, fleet.turns_to_travel);
+            append_integer<uint32_t>(output, static_cast<uint32_t>(fleet.stacks.size()));
+            for (const auto& stack : fleet.stacks)
+            {
+                append_integer<uint32_t>(output, stack.design_id);
+                append_integer<uint32_t>(output, stack.ship_count);
+                append_signed<int32_t>(output, stack.fuel);
+            }
+        }
+        append_integer<uint32_t>(output, static_cast<uint32_t>(player.prototype_refund_candidates.size()));
+        for (uint32_t design_id : player.prototype_refund_candidates)
+            append_integer<uint32_t>(output, design_id);
+        append_integer<uint32_t>(output, player.fleet_action_target_turn);
+        append_integer<uint32_t>(output, static_cast<uint32_t>(player.fleet_moves.size()));
+        for (const auto& move : player.fleet_moves)
+        {
+            append_integer<uint32_t>(output, move.fleet_id);
+            append_string(output, move.destination_planet_name);
+        }
+        append_integer<uint32_t>(output, static_cast<uint32_t>(player.fleet_scraps.size()));
+        for (uint32_t fleet_id : player.fleet_scraps)
+            append_integer<uint32_t>(output, fleet_id);
         append_integer<uint32_t>(output, static_cast<uint32_t>(player.colonies.size()));
         for (const auto& colony : player.colonies)
         {
@@ -587,10 +652,11 @@ bool decode_runtime_payload(const std::vector<uint8_t>& payload,
             return false;
 
     RuntimeCheckpointPayload parsed;
-    if (!read_integer(payload, offset, parsed.schema_version) ||
-        !read_integer(payload, offset, parsed.turn) ||
-        !read_integer(payload, offset, parsed.year) ||
-        !read_integer(payload, offset, parsed.deterministic_seed) ||
+	    if (!read_integer(payload, offset, parsed.schema_version) ||
+	        !read_integer(payload, offset, parsed.turn) ||
+	        !read_integer(payload, offset, parsed.year) ||
+	        !read_integer(payload, offset, parsed.next_fleet_id) ||
+	        !read_integer(payload, offset, parsed.deterministic_seed) ||
         !read_integer(payload, offset, parsed.ai_seed) ||
         !read_bytes(payload, offset, parsed.deterministic_rng_state, 1024 * 1024) ||
         !read_bytes(payload, offset, parsed.ai_rng_state, 1024 * 1024))
@@ -660,6 +726,88 @@ bool decode_runtime_payload(const std::vector<uint8_t>& payload,
                 return false;
         for (int64_t& value : player.partial_research)
             if (!read_signed<int64_t>(payload, offset, value))
+                return false;
+
+        uint32_t design_count = 0;
+        if (!read_integer(payload, offset, design_count) || design_count > 100)
+            return false;
+        player.ship_designs.resize(design_count);
+        for (auto& design : player.ship_designs)
+        {
+            if (!read_integer(payload, offset, design.id) ||
+                !read_string(payload, offset, design.name) || offset >= payload.size())
+                return false;
+            design.type = payload[offset++];
+            if (design.type > SHIP_BIOLOGICAL ||
+                !read_signed<int32_t>(payload, offset, design.tech_range) ||
+                !read_signed<int32_t>(payload, offset, design.tech_speed) ||
+                !read_signed<int32_t>(payload, offset, design.tech_weapons) ||
+                !read_signed<int32_t>(payload, offset, design.tech_shields) ||
+                !read_signed<int32_t>(payload, offset, design.tech_mini) ||
+                !read_signed<int64_t>(payload, offset, design.build_cost) ||
+                !read_signed<int64_t>(payload, offset, design.prototype_cost) ||
+                !read_signed<int64_t>(payload, offset, design.metal_cost) ||
+                !read_bool(payload, offset, design.has_been_prototyped) ||
+                design.tech_range < 0 || design.tech_speed < 0 || design.tech_weapons < 0 ||
+                design.tech_shields < 0 || design.tech_mini < 0 || design.build_cost < 0 ||
+                design.prototype_cost < 0 || design.metal_cost < 0)
+                return false;
+        }
+
+        uint32_t fleet_count = 0;
+        if (!read_integer(payload, offset, fleet_count) || fleet_count > 500)
+            return false;
+        player.fleets.resize(fleet_count);
+        for (auto& fleet : player.fleets)
+        {
+            if (!read_integer(payload, offset, fleet.id) ||
+                !read_signed<int32_t>(payload, offset, fleet.owner) ||
+                !read_bool(payload, offset, fleet.newly_built_this_turn) ||
+                !read_string(payload, offset, fleet.descriptor) ||
+                !read_bool(payload, offset, fleet.in_transit) ||
+                !read_string(payload, offset, fleet.planet_name) ||
+                !read_string(payload, offset, fleet.origin_planet_name) ||
+                !read_string(payload, offset, fleet.destination_planet_name) ||
+                !read_integer(payload, offset, fleet.departure_turn) ||
+                !read_integer(payload, offset, fleet.arrival_turn) ||
+                !read_double(payload, offset, fleet.distance) ||
+                !read_integer(payload, offset, fleet.turns_to_travel) ||
+                fleet.distance < 0.0)
+                return false;
+            uint32_t stack_count = 0;
+            if (!read_integer(payload, offset, stack_count) || stack_count > 100)
+                return false;
+            fleet.stacks.resize(stack_count);
+            for (auto& stack : fleet.stacks)
+                if (!read_integer(payload, offset, stack.design_id) ||
+                    !read_integer(payload, offset, stack.ship_count) ||
+                    !read_signed<int32_t>(payload, offset, stack.fuel) ||
+                    stack.ship_count == 0)
+                    return false;
+        }
+        uint32_t candidate_count = 0;
+        if (!read_integer(payload, offset, candidate_count) || candidate_count > 100)
+            return false;
+        player.prototype_refund_candidates.resize(candidate_count);
+        for (uint32_t& design_id : player.prototype_refund_candidates)
+            if (!read_integer(payload, offset, design_id))
+                return false;
+        if (!read_integer(payload, offset, player.fleet_action_target_turn))
+            return false;
+        uint32_t move_count = 0;
+        if (!read_integer(payload, offset, move_count) || move_count > 500)
+            return false;
+        player.fleet_moves.resize(move_count);
+        for (auto& move : player.fleet_moves)
+            if (!read_integer(payload, offset, move.fleet_id) ||
+                !read_string(payload, offset, move.destination_planet_name))
+                return false;
+        uint32_t scrap_count = 0;
+        if (!read_integer(payload, offset, scrap_count) || scrap_count > 500)
+            return false;
+        player.fleet_scraps.resize(scrap_count);
+        for (uint32_t& fleet_id : player.fleet_scraps)
+            if (!read_integer(payload, offset, fleet_id))
                 return false;
 
         uint32_t colony_count = 0;

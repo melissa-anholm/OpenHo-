@@ -415,6 +415,71 @@ void test_fleet_scrapping()
 	}
 }
 
+void test_fleet_checkpoint_round_trip()
+{
+	{
+		auto game = create_ship_game();
+		process_ready_turn(*game);
+		const uint32_t planet_id = game->get_player(1)->get_colonized_planets().front().get_id();
+		const std::string home_name = game->get_planet(planet_id)->name;
+		const uint32_t design_a = game->get_player(1)->create_ship_design(
+			"Checkpoint Scout", SHIP_SCOUT, 1, 2, 1, 1, 0);
+		const uint32_t design_b = game->get_player(1)->create_ship_design(
+			"Checkpoint Fighter", SHIP_FIGHTER, 1, 2, 1, 1, 0);
+		assert(game->build_ships_from_design(1, design_a, 2, planet_id) == ErrorCode::SUCCESS);
+		assert(game->build_ships_from_design(1, design_b, 1, planet_id) == ErrorCode::SUCCESS);
+		const uint32_t first_fleet_id = game->get_player(1)->get_fleets()[0].id;
+		const uint32_t second_fleet_id = game->get_player(1)->get_fleets()[1].id;
+		assert(game->merge_fleets(1, second_fleet_id, first_fleet_id) == ErrorCode::SUCCESS);
+		const Fleet& fleet = game->get_player(1)->get_fleets().front();
+		assert(fleet.ship_stacks.size() == 2);
+		std::string destination_name;
+		for (const Planet& planet : game->get_galaxy().planets)
+			if (planet.name != home_name)
+			{
+				destination_name = planet.name;
+				break;
+			}
+		game->move_fleet(1, fleet.id, destination_name);
+		assert(game->get_fleet_action_submission(1).moves.size() == 1);
+		const std::vector<uint8_t> payload = game->serialize_state();
+		auto restored = create_ship_game();
+		assert(restored->deserialize_state(payload));
+		assert(restored->get_player(1)->get_ship_designs().size() == 2);
+		assert(restored->get_player(1)->get_fleets().size() == 1);
+		const Fleet& restored_fleet = restored->get_player(1)->get_fleets().front();
+		assert(restored_fleet.id == fleet.id);
+		assert(!restored_fleet.is_in_transit());
+		assert(restored_fleet.ship_stacks.size() == 2);
+		assert(restored->get_fleet_action_submission(1).moves.size() == 1);
+		assert(restored->get_player(1)->is_prototype_refund_candidate(design_a));
+		assert(restored->get_player(1)->is_prototype_refund_candidate(design_b));
+		process_ready_turn(*restored);
+		const std::vector<uint8_t> transit_payload = restored->serialize_state();
+		auto transit_restored = create_ship_game();
+		assert(transit_restored->deserialize_state(transit_payload));
+		assert(transit_restored->get_player(1)->get_fleets().front().is_in_transit());
+	}
+
+	{
+		auto game = create_ship_game();
+		process_ready_turn(*game);
+		const uint32_t planet_id = game->get_player(1)->get_colonized_planets().front().get_id();
+		const uint32_t design_id = game->get_player(1)->create_ship_design(
+			"Deferred Checkpoint Scout", SHIP_SCOUT, 1, 2, 1, 1, 0);
+		const uint32_t fleet_id = game->get_player(1)->create_fleet(design_id, 1, planet_id);
+		process_ready_turn(*game);
+		assert(game->scrap_fleet(1, fleet_id) == ErrorCode::SUCCESS);
+		const std::vector<uint8_t> payload = game->serialize_state();
+		auto restored = create_ship_game();
+		assert(restored->deserialize_state(payload));
+		assert(restored->get_fleet(1, fleet_id) != nullptr);
+		assert(restored->get_fleet_action_submission(1).scraps.size() == 1);
+		process_ready_turn(*restored);
+		assert(restored->get_fleet(1, fleet_id) == nullptr);
+	}
+}
+
 void test_economic_submission_round_trip()
 {
     auto game = create_two_player_game();
@@ -816,6 +881,7 @@ int main()
 	 test_dip_and_turn_processing();
 	 test_ship_construction();
 	 test_fleet_scrapping();
+	 test_fleet_checkpoint_round_trip();
 	 test_savings_rate_modifier();
     test_economic_submission_round_trip();
     test_colonization_and_abandonment_transitions();

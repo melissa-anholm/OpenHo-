@@ -714,6 +714,7 @@ std::vector<uint8_t> GameState::serialize_state() const
 	RuntimeCheckpointPayload checkpoint;
 	checkpoint.turn = current_turn;
 	checkpoint.year = current_year;
+	checkpoint.next_fleet_id = next_fleet_id;
 	checkpoint.deterministic_seed = rng->getDeterministicSeed();
 	checkpoint.ai_seed = rng->getAISeed();
 	checkpoint.deterministic_rng_state = rng->serialize_deterministic_rng_state();
@@ -774,13 +775,49 @@ std::vector<uint8_t> GameState::serialize_state() const
 			player.allocation.research.research_radical_fraction};
 		state.technology_levels = {player.tech.range, player.tech.speed, player.tech.weapons,
 			player.tech.shields, player.tech.mini, player.tech.radical};
-		state.partial_research = {player.partial_research.research_points_range,
-			player.partial_research.research_points_speed,
-			player.partial_research.research_points_weapons,
-			player.partial_research.research_points_shields,
-			player.partial_research.research_points_mini,
-			player.partial_research.research_points_radical};
-		for (const ColonizedPlanet& colony : player.colonized_planets)
+			state.partial_research = {player.partial_research.research_points_range,
+				player.partial_research.research_points_speed,
+				player.partial_research.research_points_weapons,
+				player.partial_research.research_points_shields,
+				player.partial_research.research_points_mini,
+				player.partial_research.research_points_radical};
+			for (const ShipDesign& design : player.ship_designs)
+				state.ship_designs.push_back({design.id, design.name,
+					static_cast<uint8_t>(design.type), design.get_range(), design.get_speed(),
+					design.get_weapons(), design.get_shields(), design.get_mini(),
+					design.build_cost, design.prototype_cost, design.metal_cost,
+					design.has_been_prototyped});
+			for (const Fleet& fleet : player.fleets)
+			{
+				RuntimeFleetState fleet_state;
+				fleet_state.id = fleet.id;
+				fleet_state.owner = fleet.owner;
+				fleet_state.newly_built_this_turn = fleet.newly_built_this_turn;
+				fleet_state.descriptor = fleet.descriptor;
+				for (const FleetShipStack& stack : fleet.ship_stacks)
+					fleet_state.stacks.push_back({stack.design_id, stack.ship_count, stack.fuel});
+				if (const auto* stationed = std::get_if<FleetStationedLocation>(&fleet.location))
+					fleet_state.planet_name = stationed->planet_name;
+				else
+				{
+					const auto& transit = std::get<FleetInTransitLocation>(fleet.location);
+					fleet_state.in_transit = true;
+					fleet_state.origin_planet_name = transit.origin_planet_name;
+					fleet_state.destination_planet_name = transit.destination_planet_name;
+					fleet_state.departure_turn = transit.departure_turn;
+					fleet_state.arrival_turn = transit.arrival_turn;
+					fleet_state.distance = transit.distance;
+					fleet_state.turns_to_travel = transit.turns_to_travel;
+				}
+				state.fleets.push_back(std::move(fleet_state));
+			}
+			state.prototype_refund_candidates.assign(
+				player.prototype_refund_candidates.begin(), player.prototype_refund_candidates.end());
+			state.fleet_action_target_turn = player.fleet_action_submission.target_turn;
+			for (const FleetMoveAction& move : player.fleet_action_submission.moves)
+				state.fleet_moves.push_back({move.fleet_id, move.destination_planet_name});
+			state.fleet_scraps = player.fleet_action_submission.scraps;
+			for (const ColonizedPlanet& colony : player.colonized_planets)
 		{
 			RuntimeColonyState colony_state;
 			colony_state.planet_id = colony.get_id();
@@ -866,8 +903,49 @@ bool GameState::deserialize_state(const std::vector<uint8_t>& data)
 				if (colony_ids.find(planet_id) == colony_ids.end())
 					return false;
 		}
-	for (const auto& player : players)
-		if (!player.fleets.empty())
+		std::unordered_set<uint32_t> checkpoint_fleet_ids;
+		uint32_t maximum_fleet_id = 0;
+		for (const auto& player_state : checkpoint.players)
+		{
+			std::unordered_set<uint32_t> design_ids;
+			for (const auto& design : player_state.ship_designs)
+				if (!design_ids.insert(design.id).second)
+					return false;
+			for (const auto& fleet : player_state.fleets)
+			{
+				if (fleet.owner != static_cast<int32_t>(player_state.id) ||
+					fleet.stacks.empty() || !checkpoint_fleet_ids.insert(fleet.id).second ||
+					fleet.id == 0)
+					return false;
+				maximum_fleet_id = std::max(maximum_fleet_id, fleet.id);
+				if (fleet.in_transit)
+				{
+					if (!get_planet(fleet.origin_planet_name) ||
+						!get_planet(fleet.destination_planet_name) ||
+						fleet.arrival_turn < fleet.departure_turn)
+						return false;
+				}
+				else if (!get_planet(fleet.planet_name))
+					return false;
+				for (const auto& stack : fleet.stacks)
+					if (stack.ship_count == 0 || design_ids.count(stack.design_id) == 0)
+						return false;
+			}
+			for (uint32_t design_id : player_state.prototype_refund_candidates)
+				if (design_ids.count(design_id) == 0)
+					return false;
+				std::unordered_set<uint32_t> submitted_fleets;
+				for (const auto& move : player_state.fleet_moves)
+					if (checkpoint_fleet_ids.count(move.fleet_id) == 0 ||
+						!submitted_fleets.insert(move.fleet_id).second ||
+						!get_planet(move.destination_planet_name))
+						return false;
+				for (uint32_t fleet_id : player_state.fleet_scraps)
+					if (checkpoint_fleet_ids.count(fleet_id) == 0 ||
+						!submitted_fleets.insert(fleet_id).second)
+					return false;
+		}
+		if (checkpoint.next_fleet_id == 0 || checkpoint.next_fleet_id <= maximum_fleet_id)
 			return false;
 
 	for (auto& planet : galaxy->planets)
@@ -898,8 +976,64 @@ bool GameState::deserialize_state(const std::vector<uint8_t>& data)
 
 		for (auto& player : players)
 		{
-			const RuntimePlayerState& state = *saved_players.at(player.id);
-			player.economic_submission.player_id = player.id;
+				const RuntimePlayerState& state = *saved_players.at(player.id);
+				player.ship_designs.clear();
+				uint32_t maximum_design_id = 0;
+				for (const auto& saved_design : state.ship_designs)
+				{
+					ShipDesign design;
+					design.id = saved_design.id;
+					design.name = saved_design.name;
+					design.type = static_cast<ShipType>(saved_design.type);
+					design.build_cost = saved_design.build_cost;
+					design.prototype_cost = saved_design.prototype_cost;
+					design.metal_cost = saved_design.metal_cost;
+					design.has_been_prototyped = saved_design.has_been_prototyped;
+					set_ship_design_tech(design, saved_design.tech_range, saved_design.tech_speed,
+						saved_design.tech_weapons, saved_design.tech_shields, saved_design.tech_mini);
+					player.ship_designs.push_back(std::move(design));
+					maximum_design_id = std::max(maximum_design_id, saved_design.id);
+				}
+				player.next_ship_design_id = maximum_design_id + 1;
+				player.fleets.clear();
+				for (const auto& saved_fleet : state.fleets)
+				{
+					const auto& first_stack = saved_fleet.stacks.front();
+					const ShipDesign* first_design = player.get_ship_design(first_stack.design_id);
+					if (!first_design)
+						return false;
+					const std::string initial_planet = saved_fleet.in_transit
+						? saved_fleet.origin_planet_name : saved_fleet.planet_name;
+					Fleet restored(saved_fleet.id, player.id, first_stack.design_id,
+						first_design, first_stack.ship_count, initial_planet);
+					restored.descriptor = saved_fleet.descriptor;
+					restored.newly_built_this_turn = saved_fleet.newly_built_this_turn;
+					restored.ship_stacks.clear();
+					for (const auto& saved_stack : saved_fleet.stacks)
+					{
+						const ShipDesign* design = player.get_ship_design(saved_stack.design_id);
+						restored.ship_stacks.push_back({saved_stack.design_id, design,
+							saved_stack.ship_count, saved_stack.fuel});
+					}
+					if (saved_fleet.in_transit)
+						restored.location = FleetInTransitLocation{
+							saved_fleet.origin_planet_name, saved_fleet.destination_planet_name,
+							saved_fleet.departure_turn, saved_fleet.arrival_turn,
+							saved_fleet.distance, saved_fleet.turns_to_travel};
+					else
+						restored.location = FleetStationedLocation{saved_fleet.planet_name};
+					player.fleets.push_back(std::move(restored));
+				}
+				player.prototype_refund_candidates.clear();
+				player.prototype_refund_candidates.insert(
+					state.prototype_refund_candidates.begin(), state.prototype_refund_candidates.end());
+				player.fleet_action_submission.player_id = player.id;
+				player.fleet_action_submission.target_turn = state.fleet_action_target_turn;
+				player.fleet_action_submission.moves.clear();
+				for (const auto& move : state.fleet_moves)
+					player.fleet_action_submission.moves.push_back({move.fleet_id, move.destination_planet_name});
+				player.fleet_action_submission.scraps = state.fleet_scraps;
+				player.economic_submission.player_id = player.id;
 			player.economic_submission.target_turn = state.economic_submission_target_turn;
 			player.economic_afterstate = state.economic_afterstate;
 		player.set_eliminated(state.eliminated);
@@ -970,6 +1104,7 @@ bool GameState::deserialize_state(const std::vector<uint8_t>& data)
 	rng->deserialize_ai_rng_state(checkpoint.ai_rng_state);
 	current_turn = checkpoint.turn;
 	current_year = checkpoint.year;
+	next_fleet_id = checkpoint.next_fleet_id;
 	for (auto& ready : turn_ready)
 		ready.second = false;
 	for (auto& bankruptcy : bankruptcy_limit_reached)

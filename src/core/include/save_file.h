@@ -84,6 +84,52 @@ struct RuntimeColonyState
     double terraforming_fraction = 0.0;
 };
 
+struct RuntimeShipDesignState
+{
+    uint32_t id = 0;
+    std::string name;
+    uint8_t type = 0;
+    int32_t tech_range = 0;
+    int32_t tech_speed = 0;
+    int32_t tech_weapons = 0;
+    int32_t tech_shields = 0;
+    int32_t tech_mini = 0;
+    int64_t build_cost = 0;
+    int64_t prototype_cost = 0;
+    int64_t metal_cost = 0;
+    bool has_been_prototyped = false;
+};
+
+struct RuntimeFleetStackState
+{
+    uint32_t design_id = 0;
+    uint32_t ship_count = 0;
+    int32_t fuel = 0;
+};
+
+struct RuntimeFleetState
+{
+    uint32_t id = 0;
+    int32_t owner = 0;
+    bool newly_built_this_turn = false;
+    std::string descriptor;
+    bool in_transit = false;
+    std::string planet_name;
+    std::string origin_planet_name;
+    std::string destination_planet_name;
+    uint32_t departure_turn = 0;
+    uint32_t arrival_turn = 0;
+    double distance = 0.0;
+    uint32_t turns_to_travel = 0;
+    std::vector<RuntimeFleetStackState> stacks;
+};
+
+struct RuntimeFleetMoveState
+{
+    uint32_t fleet_id = 0;
+    std::string destination_planet_name;
+};
+
 struct RuntimePlayerState
 {
     uint32_t id = 0;
@@ -103,6 +149,12 @@ struct RuntimePlayerState
     std::array<double, 6> research_fractions{};
     std::array<int32_t, 6> technology_levels{};
     std::array<int64_t, 6> partial_research{};
+    std::vector<RuntimeShipDesignState> ship_designs;
+    std::vector<RuntimeFleetState> fleets;
+    std::vector<uint32_t> prototype_refund_candidates;
+    uint32_t fleet_action_target_turn = 0;
+    std::vector<RuntimeFleetMoveState> fleet_moves;
+    std::vector<uint32_t> fleet_scraps;
     std::vector<RuntimeColonyState> colonies;
     std::vector<uint32_t> planets_to_abandon;
     EconomicAfterState economic_afterstate;
@@ -110,11 +162,12 @@ struct RuntimePlayerState
 
 struct RuntimeCheckpointPayload
 {
-    static constexpr uint32_t CURRENT_SCHEMA_VERSION = 9;
+    static constexpr uint32_t CURRENT_SCHEMA_VERSION = 10;
 
     uint32_t schema_version = CURRENT_SCHEMA_VERSION;
     uint32_t turn = 0;
     uint32_t year = 2000;
+    uint32_t next_fleet_id = 1;
     uint64_t deterministic_seed = 0;
     uint64_t ai_seed = 0;
     std::vector<uint8_t> deterministic_rng_state;

@@ -54,6 +54,7 @@ struct FleetCapabilities
 struct Fleet
 {
 	friend class Player;  // Only Player can construct Fleet instances
+	friend class GameState;  // GameState restores fleets from checkpoints
 	
 private:
 	/// Private constructor - only Player can create Fleet instances

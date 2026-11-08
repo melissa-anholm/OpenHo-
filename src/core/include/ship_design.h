@@ -50,6 +50,7 @@ public:
 	bool get_has_been_prototyped() const { return has_been_prototyped; }
 	
 private:
+	friend class GameState;
 	// Technology levels associated with this design (immutable after construction)
 	int32_t tech_range = 0;
 	int32_t tech_speed = 0;

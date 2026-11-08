@@ -593,7 +593,7 @@ Final model questions:
 - Final intentional-debt and bankruptcy/default values and enforcement rules.
 
 #### Fleet Composition and Assembly
-- **Status:** Immediate merge, split, and stack-transfer operations are implemented; player-facing commands and persistence remain
+- **Status:** Immediate merge, split, stack-transfer, and runtime checkpoint restoration are implemented; player-facing commands remain
 - **Location:** `src/core/src/player.cpp`, `src/core/src/game.cpp`, and `src/core/src/gamestate_c_api_extensions.cpp`
 - **Completed:**
  - [x] Basic Fleet object creation
@@ -609,7 +609,9 @@ Final model questions:
 	 - [x] Mark the player unready after a successful composition action
 - **Missing:**
 	 - [ ] Add player-facing CLI/UI commands for fleet inspection and composition
-	 - [ ] Serialize and restore heterogeneous fleet contents and per-stack fuel
+		 - [x] Serialize and restore heterogeneous fleet contents and per-stack fuel
+		 - [x] Serialize and restore stationed and in-transit fleet locations
+		 - [x] Serialize and restore queued fleet movements and deferred scrapping requests
 		 - [x] Implement same-phase scrapping for newly built stationed fleets and deferred scrapping for older stationed fleets
 - **Note:** Composition actions require fleets to be stationed at the same planet. Matching-stack transfers and merges use the lower fuel value; newly-built status is combined with logical AND.
 - **Dependency:** Future fleet composition relies on sufficiently complete ship-design and ship-construction rules, but is not required for basic construction or travel.
