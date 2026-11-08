@@ -8,6 +8,7 @@
 #include "ship_design.h"
 #include "fleet.h"
 #include "economic_state.h"
+#include "error_codes.h"
 #include <cstdint>
 #include <unordered_set>
 #include <unordered_map>
@@ -244,6 +245,16 @@ public:
 	
 	/// Delete a fleet
 	[[nodiscard]] bool delete_fleet(uint32_t fleet_id);
+	/// Merge source into target immediately; the source fleet is deleted.
+	[[nodiscard]] ErrorCode merge_fleets(uint32_t source_fleet_id, uint32_t target_fleet_id);
+	/// Move ships from a stack into a newly-created fleet at the same planet.
+	[[nodiscard]] ErrorCode split_fleet_to_new_fleet(
+		uint32_t source_fleet_id, uint32_t design_id, uint32_t ship_count,
+		uint32_t& new_fleet_id);
+	/// Move ships from a stack into an existing fleet at the same planet.
+	[[nodiscard]] ErrorCode move_stack_to_fleet(
+		uint32_t source_fleet_id, uint32_t target_fleet_id,
+		uint32_t design_id, uint32_t ship_count);
 	
 	/// Move a fleet to a destination planet
 		void move_fleet(uint32_t fleet_id, const std::string& destination_planet_name);
@@ -326,6 +337,7 @@ private:
 	std::vector<Fleet> fleets;                 // All fleets owned by this player
 	// Turn-scoped prototype charges that remain eligible for rollback.
 	std::unordered_set<uint32_t> prototype_refund_candidates;
+	void refresh_prototype_refund_candidates();
 	
 	// Player public information history: player_id -> vector of PlayerPublicInfo (one per turn)
 	std::unordered_map<uint32_t, std::vector<PlayerPublicInfo>> player_info_history;

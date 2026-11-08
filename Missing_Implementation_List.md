@@ -590,7 +590,7 @@ Final model questions:
 - Final intentional-debt and bankruptcy/default values and enforcement rules.
 
 #### Fleet Composition and Assembly
-- **Status:** Basic fleet objects exist; future composition operations remain separate from basic ship construction
+- **Status:** Immediate merge, split, and stack-transfer operations are implemented; player-facing commands and persistence remain
 - **Location:** `src/core/src/player.cpp`, `src/core/src/game.cpp`, and `src/core/src/gamestate_c_api_extensions.cpp`
 - **Completed:**
  - [x] Basic Fleet object creation
@@ -599,10 +599,16 @@ Final model questions:
 	 - [x] Add fleet to the player's fleet list
 	 - [x] Query a player's non-empty fleets stationed at a named planet
 	 - [x] Represent fleet contents as design-specific ship stacks, while retaining one-stack construction as the current default
+	 - [x] Merge two stationed fleets immediately, coalescing matching design stacks
+	 - [x] Split a stack into a new stationed fleet immediately
+	 - [x] Move part or all of a stack into another stationed fleet immediately
+	 - [x] Store fuel per design stack and derive effective fleet fuel, range, and speed
+	 - [x] Mark the player unready after a successful composition action
 - **Missing:**
- - [ ] Combine ships or fleets with different designs
- - [ ] Split fleets into smaller fleets
- - [ ] Ensure future composition paths apply consistent validation
+	 - [ ] Add player-facing CLI/UI commands for fleet inspection and composition
+	 - [ ] Serialize and restore heterogeneous fleet contents and per-stack fuel
+	 - [ ] Implement same-phase and later fleet scrapping
+- **Note:** Composition actions require fleets to be stationed at the same planet. Matching-stack transfers and merges use the lower fuel value; newly-built status is combined with logical AND.
 - **Dependency:** Future fleet composition relies on sufficiently complete ship-design and ship-construction rules, but is not required for basic construction or travel.
 - **Priority:** Medium
 

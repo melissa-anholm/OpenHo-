@@ -256,10 +256,30 @@ void test_ship_construction()
     assert(game->get_player(1)->get_metal() == metal_before_second_build - 886);
     assert(game->get_player(1)->get_fleets().size() == 2);
     assert(game->get_player(1)->get_fleets()[1].total_ship_count() == 2);
-	const std::string home_name =
-		game->get_player(1)->get_fleets().front().stationed_planet_name();
-	assert(game->get_player(1)->get_fleets_stationed_at(home_name).size() == 2);
-	assert(game->get_player_fleets_stationed_at(1, home_name).size() == 2);
+	assert(game->get_player(1)->get_fleets().front().effective_fuel() == 1);
+	assert(game->get_player(1)->get_fleets().front().effective_range() == 1);
+	assert(game->get_player(1)->get_fleets().front().effective_speed() == 2);
+	const uint32_t first_fleet_id = game->get_player(1)->get_fleets()[0].id;
+	const uint32_t second_fleet_id = game->get_player(1)->get_fleets()[1].id;
+	assert(game->merge_fleets(1, second_fleet_id, first_fleet_id) == ErrorCode::SUCCESS);
+	assert(game->get_player(1)->get_fleets().size() == 1);
+	assert(game->get_player(1)->get_fleets().front().total_ship_count() == 5);
+	assert(game->get_player(1)->get_fleets().front().ship_stacks.size() == 1);
+	uint32_t split_fleet_id = 0;
+	assert(game->split_fleet_to_new_fleet(
+		1, first_fleet_id, design_id, 2, split_fleet_id) == ErrorCode::SUCCESS);
+	assert(split_fleet_id != 0 && split_fleet_id != first_fleet_id);
+	assert(game->get_player(1)->get_fleets().size() == 2);
+	assert(game->get_fleet(1, first_fleet_id)->total_ship_count() == 3);
+	assert(game->get_fleet(1, split_fleet_id)->total_ship_count() == 2);
+	assert(game->move_stack_to_fleet(
+		1, split_fleet_id, first_fleet_id, design_id, 1) == ErrorCode::SUCCESS);
+	assert(game->get_fleet(1, first_fleet_id)->total_ship_count() == 4);
+	assert(game->get_fleet(1, split_fleet_id)->total_ship_count() == 1);
+		const std::string home_name =
+			game->get_player(1)->get_fleets().front().stationed_planet_name();
+		assert(game->get_player(1)->get_fleets_stationed_at(home_name).size() == 2);
+		assert(game->get_player_fleets_stationed_at(1, home_name).size() == 2);
 
     const int64_t money_before_failed_build = game->get_player(1)->get_money();
     const int64_t metal_before_failed_build = game->get_player(1)->get_metal();

@@ -36,9 +36,17 @@ using FleetLocation = std::variant<FleetStationedLocation, FleetInTransitLocatio
 
 struct FleetShipStack
 {
-	uint32_t design_id;
-	const ShipDesign* design;
-	uint32_t ship_count;
+	uint32_t design_id = 0;
+	const ShipDesign* design = nullptr;
+	uint32_t ship_count = 0;
+	int32_t fuel = 0;
+};
+
+struct FleetCapabilities
+{
+	int32_t effective_fuel = 0;
+	int32_t effective_range = 0;
+	int32_t effective_speed = 0;
 };
 
 /// Fleet represents a group of ships traveling together.
@@ -59,7 +67,6 @@ public:
 	
 	std::vector<FleetShipStack> ship_stacks;
 	
-	int32_t fuel;                   // Shared fleet fuel level
 	bool newly_built_this_turn;     // True only during the turn in which this fleet was built
 	
 	std::string descriptor;
@@ -80,6 +87,15 @@ public:
 	
 	/// Refuel fleet by a specific amount, capped at maximum capacity
 	void partial_refuel(int32_t amount);
+
+	/// Return the stack for a design, or nullptr if this fleet does not contain it.
+	[[nodiscard]] FleetShipStack* find_stack(uint32_t design_id);
+	[[nodiscard]] const FleetShipStack* find_stack(uint32_t design_id) const;
+	/// Remove ships from a stack. The caller removes the fleet if it becomes empty.
+	[[nodiscard]] bool remove_from_stack(uint32_t design_id, uint32_t ship_count,
+	                                    FleetShipStack& extracted);
+	/// Add ships to a stack, coalescing by design and conservatively merging fuel.
+	void add_to_stack(const FleetShipStack& stack);
 	
 	/// Move fleet to destination planet
 	/// Sets up fleet movement with distance and turns calculated from distance matrix
@@ -91,7 +107,11 @@ public:
 	[[nodiscard]] const std::string& stationed_planet_name() const;
 	[[nodiscard]] const FleetInTransitLocation* transit_location() const;
 	[[nodiscard]] uint32_t total_ship_count() const;
-	[[nodiscard]] int32_t movement_range() const;
+	[[nodiscard]] int32_t effective_fuel() const;
+	[[nodiscard]] int32_t effective_range() const;
+	[[nodiscard]] int32_t effective_speed() const;
+	[[nodiscard]] FleetCapabilities capabilities() const;
+	[[nodiscard]] int32_t movement_range() const { return effective_range(); }
 };
 
 #endif // FLEET_H

@@ -1837,6 +1837,35 @@ bool GameState::delete_fleet(uint32_t player_id, uint32_t fleet_id)
 	return player->delete_fleet(fleet_id);
 }
 
+ErrorCode GameState::merge_fleets(
+	uint32_t player_id, uint32_t source_fleet_id, uint32_t target_fleet_id)
+{
+	Player* player = get_player(player_id);
+	return player ? player->merge_fleets(source_fleet_id, target_fleet_id)
+		           : ErrorCode::INVALID_PLAYER_ID;
+}
+
+ErrorCode GameState::split_fleet_to_new_fleet(
+	uint32_t player_id, uint32_t source_fleet_id, uint32_t design_id,
+	uint32_t ship_count, uint32_t& new_fleet_id)
+{
+	new_fleet_id = 0;
+	Player* player = get_player(player_id);
+	return player ? player->split_fleet_to_new_fleet(
+		source_fleet_id, design_id, ship_count, new_fleet_id)
+		           : ErrorCode::INVALID_PLAYER_ID;
+}
+
+ErrorCode GameState::move_stack_to_fleet(
+	uint32_t player_id, uint32_t source_fleet_id, uint32_t target_fleet_id,
+	uint32_t design_id, uint32_t ship_count)
+{
+	Player* player = get_player(player_id);
+	return player ? player->move_stack_to_fleet(
+		source_fleet_id, target_fleet_id, design_id, ship_count)
+		           : ErrorCode::INVALID_PLAYER_ID;
+}
+
 void GameState::move_fleet(uint32_t player_id, uint32_t fleet_id, uint32_t destination_planet_id)
 {
 	const Planet* destination = get_planet(destination_planet_id);

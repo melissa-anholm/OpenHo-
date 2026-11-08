@@ -163,6 +163,107 @@ bool Player::delete_fleet(uint32_t fleet_id)
 	return false;
 }
 
+void Player::refresh_prototype_refund_candidates()
+{
+	for (auto iterator = prototype_refund_candidates.begin();
+		 iterator != prototype_refund_candidates.end();)
+	{
+		const uint32_t design_id = *iterator;
+		const bool still_newly_built = std::any_of(
+			fleets.begin(), fleets.end(), [design_id](const Fleet& fleet) {
+				return fleet.newly_built_this_turn && fleet.find_stack(design_id) != nullptr;
+			});
+		if (!still_newly_built)
+			iterator = prototype_refund_candidates.erase(iterator);
+		else
+			++iterator;
+	}
+}
+
+ErrorCode Player::merge_fleets(uint32_t source_fleet_id, uint32_t target_fleet_id)
+{
+	if (source_fleet_id == target_fleet_id)
+		return ErrorCode::INVALID_PARAMETER;
+	Fleet* source = get_fleet(source_fleet_id);
+	Fleet* target = get_fleet(target_fleet_id);
+	if (!source || !target)
+		return ErrorCode::FLEET_NOT_FOUND;
+	if (source->is_in_transit() || target->is_in_transit())
+		return ErrorCode::FLEET_IN_TRANSIT;
+	if (source->stationed_planet_name() != target->stationed_planet_name())
+		return ErrorCode::INVALID_PARAMETER;
+	if (source->ship_stacks.empty() || target->ship_stacks.empty())
+		return ErrorCode::INVALID_FLEET_SIZE;
+
+	const bool target_was_new = target->newly_built_this_turn;
+	const bool source_was_new = source->newly_built_this_turn;
+	const std::vector<FleetShipStack> source_stacks = source->ship_stacks;
+	for (const auto& stack : source_stacks)
+		target->add_to_stack(stack);
+	target->newly_built_this_turn = target_was_new && source_was_new;
+	delete_fleet(source_fleet_id);
+	refresh_prototype_refund_candidates();
+	game_state->mark_player_turn_unready(id);
+	return ErrorCode::SUCCESS;
+}
+
+ErrorCode Player::split_fleet_to_new_fleet(
+	uint32_t source_fleet_id, uint32_t design_id, uint32_t ship_count,
+	uint32_t& new_fleet_id)
+{
+	new_fleet_id = 0;
+	Fleet* source = get_fleet(source_fleet_id);
+	if (!source)
+		return ErrorCode::FLEET_NOT_FOUND;
+	if (source->is_in_transit())
+		return ErrorCode::FLEET_IN_TRANSIT;
+	FleetShipStack extracted;
+	if (!source->remove_from_stack(design_id, ship_count, extracted))
+		return ErrorCode::INVALID_FLEET_SIZE;
+
+	const std::string planet_name = source->stationed_planet_name();
+	const bool newly_built = source->newly_built_this_turn;
+	const uint32_t allocated_id = game_state->allocate_fleet_id();
+	Fleet new_fleet(allocated_id, id, design_id, extracted.design,
+		ship_count, planet_name);
+	new_fleet.ship_stacks.front() = extracted;
+	new_fleet.newly_built_this_turn = newly_built;
+	fleets.push_back(std::move(new_fleet));
+	new_fleet_id = allocated_id;
+	if (source->ship_stacks.empty())
+		delete_fleet(source_fleet_id);
+	game_state->mark_player_turn_unready(id);
+	return ErrorCode::SUCCESS;
+}
+
+ErrorCode Player::move_stack_to_fleet(
+	uint32_t source_fleet_id, uint32_t target_fleet_id,
+	uint32_t design_id, uint32_t ship_count)
+{
+	if (source_fleet_id == target_fleet_id)
+		return ErrorCode::INVALID_PARAMETER;
+	Fleet* source = get_fleet(source_fleet_id);
+	Fleet* target = get_fleet(target_fleet_id);
+	if (!source || !target)
+		return ErrorCode::FLEET_NOT_FOUND;
+	if (source->is_in_transit() || target->is_in_transit())
+		return ErrorCode::FLEET_IN_TRANSIT;
+	if (source->stationed_planet_name() != target->stationed_planet_name())
+		return ErrorCode::INVALID_PARAMETER;
+	FleetShipStack extracted;
+	if (!source->remove_from_stack(design_id, ship_count, extracted))
+		return ErrorCode::INVALID_FLEET_SIZE;
+	target->add_to_stack(extracted);
+	target->newly_built_this_turn =
+		target->newly_built_this_turn && source->newly_built_this_turn;
+	const bool source_empty = source->ship_stacks.empty();
+	if (source_empty)
+		delete_fleet(source_fleet_id);
+	refresh_prototype_refund_candidates();
+	game_state->mark_player_turn_unready(id);
+	return ErrorCode::SUCCESS;
+}
+
 void Player::move_fleet(uint32_t fleet_id, const std::string& destination_planet_name)
 {
 	if (!game_state || !get_fleet(fleet_id) ||
