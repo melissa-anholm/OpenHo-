@@ -245,6 +245,9 @@ public:
 	
 	/// Delete a fleet
 	[[nodiscard]] bool delete_fleet(uint32_t fleet_id);
+	/// Scrap an entire stationed fleet and route its refunds according to the
+	/// planet and the fleet's same-turn eligibility.
+	[[nodiscard]] ErrorCode scrap_fleet(uint32_t fleet_id);
 	/// Merge source into target immediately; the source fleet is deleted.
 	[[nodiscard]] ErrorCode merge_fleets(uint32_t source_fleet_id, uint32_t target_fleet_id);
 	/// Move ships from a stack into a newly-created fleet at the same planet.
@@ -330,6 +333,7 @@ private:
 	
 	// Ship designs
 	std::vector<ShipDesign> ship_designs;      // All designs, ordered by creation (max 100)
+	[[nodiscard]] ErrorCode apply_scrap_fleet_now(uint32_t fleet_id);
 	uint32_t next_ship_design_id;                // Counter for unique design IDs (never resets)
 	
 	

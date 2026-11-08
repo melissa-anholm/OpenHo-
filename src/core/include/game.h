@@ -120,6 +120,7 @@ public:
 	[[nodiscard]] std::vector<const Fleet*> get_player_fleets_stationed_at(
 		uint32_t player_id, const std::string& planet_name) const;
 	[[nodiscard]] bool delete_fleet(uint32_t player_id, uint32_t fleet_id);
+	[[nodiscard]] ErrorCode scrap_fleet(uint32_t player_id, uint32_t fleet_id);
 	[[nodiscard]] ErrorCode merge_fleets(
 		uint32_t player_id, uint32_t source_fleet_id, uint32_t target_fleet_id);
 	[[nodiscard]] ErrorCode split_fleet_to_new_fleet(

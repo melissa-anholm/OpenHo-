@@ -4,6 +4,7 @@
 #include "game.h"
 #include "game_formulas.h"
 #include <cmath>
+#include <limits>
 #include <stdexcept>
 
 void Player::set_savings_rate_modifier(double value)
@@ -161,6 +162,136 @@ bool Player::delete_fleet(uint32_t fleet_id)
 		}
 	}
 	return false;
+}
+
+ErrorCode Player::scrap_fleet(uint32_t fleet_id)
+{
+	Fleet* fleet = get_fleet(fleet_id);
+	if (!fleet)
+		return ErrorCode::FLEET_NOT_FOUND;
+	if (fleet->is_in_transit())
+		return ErrorCode::FLEET_IN_TRANSIT;
+
+	// Validate the current location before changing any queued action. This
+	// prevents an in-transit fleet from losing its movement order accidentally.
+	const std::string planet_name = fleet->stationed_planet_name();
+	if (!game_state->get_planet(planet_name))
+		return ErrorCode::PLANET_NOT_FOUND;
+
+	fleet_action_submission.moves.erase(
+		std::remove_if(fleet_action_submission.moves.begin(),
+			fleet_action_submission.moves.end(),
+			[fleet_id](const FleetMoveAction& move) {
+				return move.fleet_id == fleet_id;
+			}), fleet_action_submission.moves.end());
+
+	if (fleet->newly_built_this_turn)
+	{
+		const ErrorCode result = apply_scrap_fleet_now(fleet_id);
+		if (result == ErrorCode::SUCCESS)
+			game_state->mark_player_turn_unready(id);
+		return result;
+	}
+
+	if (std::find(fleet_action_submission.scraps.begin(),
+			fleet_action_submission.scraps.end(), fleet_id) ==
+			fleet_action_submission.scraps.end())
+		fleet_action_submission.scraps.push_back(fleet_id);
+	fleet_action_submission.player_id = id;
+	fleet_action_submission.target_turn = game_state->get_current_turn();
+	game_state->mark_player_turn_unready(id);
+	return ErrorCode::SUCCESS;
+}
+
+ErrorCode Player::apply_scrap_fleet_now(uint32_t fleet_id)
+{
+	Fleet* fleet = get_fleet(fleet_id);
+	if (!fleet)
+		return ErrorCode::FLEET_NOT_FOUND;
+	if (fleet->is_in_transit())
+		return ErrorCode::FLEET_IN_TRANSIT;
+	if (fleet->ship_stacks.empty())
+		return ErrorCode::INVALID_FLEET_SIZE;
+
+	const std::string planet_name = fleet->stationed_planet_name();
+	Planet* planet = game_state->get_planet(planet_name);
+	if (!planet)
+		return ErrorCode::PLANET_NOT_FOUND;
+
+	const bool same_turn_refund = fleet->newly_built_this_turn;
+	__int128 construction_money = 0;
+	__int128 construction_metal = 0;
+	std::vector<uint32_t> prototype_rollbacks;
+	for (const FleetShipStack& stack : fleet->ship_stacks)
+	{
+		if (!stack.design || stack.ship_count == 0 ||
+			stack.design->build_cost < 0 || stack.design->metal_cost < 0)
+			return ErrorCode::VALIDATION_FAILED;
+		construction_money += static_cast<__int128>(stack.design->build_cost) * stack.ship_count;
+		construction_metal += static_cast<__int128>(stack.design->metal_cost) * stack.ship_count;
+
+		if (same_turn_refund && prototype_refund_candidates.count(stack.design_id) != 0)
+		{
+			bool design_remains_elsewhere = false;
+			for (const Fleet& other : fleets)
+			{
+				if (other.id != fleet_id && other.find_stack(stack.design_id) != nullptr)
+				{
+					design_remains_elsewhere = true;
+					break;
+				}
+			}
+			if (!design_remains_elsewhere)
+				prototype_rollbacks.push_back(stack.design_id);
+		}
+	}
+	for (uint32_t design_id : prototype_rollbacks)
+	{
+		for (const auto& design : ship_designs)
+		{
+			if (design.id == design_id)
+			{
+				construction_money += design.prototype_cost;
+				break;
+			}
+		}
+	}
+
+	if (construction_money > std::numeric_limits<int64_t>::max() ||
+		construction_metal > std::numeric_limits<int64_t>::max())
+		return ErrorCode::VALIDATION_FAILED;
+
+	const int64_t full_metal_refund = static_cast<int64_t>(construction_metal);
+	const int64_t metal_refund = same_turn_refund
+		? full_metal_refund
+		: static_cast<int64_t>((construction_metal * 15) / 100);
+	const int64_t money_refund = same_turn_refund
+		? static_cast<int64_t>(construction_money) : 0;
+
+	if (same_turn_refund)
+		money_savings += money_refund;
+
+	Player* colony_owner = nullptr;
+	if (planet->owner >= 0)
+		colony_owner = game_state->get_player(static_cast<uint32_t>(planet->owner));
+	if (colony_owner)
+		colony_owner->metal_reserve += metal_refund;
+	else
+		planet->metal += metal_refund;
+
+	for (uint32_t design_id : prototype_rollbacks)
+	{
+		for (auto& design : ship_designs)
+		{
+			if (design.id == design_id)
+				design.has_been_prototyped = false;
+		}
+		prototype_refund_candidates.erase(design_id);
+	}
+
+	delete_fleet(fleet_id);
+	refresh_prototype_refund_candidates();
+	return ErrorCode::SUCCESS;
 }
 
 void Player::refresh_prototype_refund_candidates()

@@ -213,9 +213,9 @@ Post-economic combat, colonization, abandonment, and player actions may change p
 
 ## 4. Queued fleet actions
 
-Queued fleet actions resolve after economic processing, in this order: travel, battle resolution, and automatic colonization.
+Queued fleet actions resolve after economic processing. The implemented portion currently applies queued travel and deferred older-fleet scrapping; battle resolution and automatic colonization remain future phases.
 
-**Implementation status:** The general queued-fleet phase is not yet implemented. The current `process_ships()` placeholder only resolves existing fleet arrivals; it does not yet implement the full travel queue, battles, or automatic colonization described below.
+**Implementation status:** Queued movement submission, readiness validation, travel initiation, and deferred older-fleet scrapping are implemented. The current `process_ships()` placeholder only resolves existing fleet arrivals; battles and automatic colonization are not yet implemented.
 
 ### 4.1 Fleet travel
 
@@ -259,7 +259,7 @@ Player actions occur after queued fleet actions. Immediate actions execute in th
 
 Building a ship costs money and metal, charges both immediately, and creates the ship immediately. The first ship of a given type also incurs a money-only prototyping cost, expected to be approximately ten times the individual ship's money construction cost until final formulas and data are established. Multiple ships may be built if each action is affordable when attempted. An unaffordable action fails atomically.
 
-A fleet is assembled from ships that have already been built; it is not a separately built resource-consuming object. Ships built during the current player-action phase may be scrapped during that phase without losing their construction or prototyping resources. After the phase ends, scrapping recovers metal only and at a heavy loss; prototyping and construction money is not recovered.
+A fleet is assembled from ships that have already been built; it is not a separately built resource-consuming object. A complete newly built stationed fleet may be scrapped immediately during the current player-action phase, with construction money and metal refunded and a first-use prototype marker rolled back when no ships of that design remain. Older stationed fleets may be marked for scrapping during player actions; the request is processed during the following turn's queued-fleet phase and refunds only `floor(0.15 × metal_build_cost_of_fleet)` metal. Fleets in transit cannot be scrapped. The 15% factor remains provisional and requires data-driven calibration.
 
 ### 5.2 Resource transfers
 

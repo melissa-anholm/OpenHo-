@@ -644,6 +644,7 @@ void GameState::capture_fleet_action_submissions()
 		submission.player_id = player.id;
 		submission.target_turn = current_turn;
 		submission.moves.clear();
+		submission.scraps.clear();
 	}
 }
 
@@ -1405,6 +1406,8 @@ void GameState::process_queued_fleet_actions()
 			fleet->move_to(move.destination_planet_name,
 				player.get_knowledge_galaxy(), current_turn);
 		}
+		for (uint32_t fleet_id : player.fleet_action_submission.scraps)
+			player.apply_scrap_fleet_now(fleet_id);
 	}
 }
 
@@ -1837,6 +1840,14 @@ bool GameState::delete_fleet(uint32_t player_id, uint32_t fleet_id)
 	return player->delete_fleet(fleet_id);
 }
 
+ErrorCode GameState::scrap_fleet(uint32_t player_id, uint32_t fleet_id)
+{
+	Player* player = get_player(player_id);
+
+	return player ? player->scrap_fleet(fleet_id)
+		           : ErrorCode::INVALID_PLAYER_ID;
+}
+
 ErrorCode GameState::merge_fleets(
 	uint32_t player_id, uint32_t source_fleet_id, uint32_t target_fleet_id)
 {
@@ -2224,8 +2235,21 @@ ErrorCode GameState::check_fleet_action_submission(
 		const Fleet* fleet = player->get_fleet(move.fleet_id);
 		if (!fleet || fleet->stationed_planet_name() == move.destination_planet_name)
 			return ErrorCode::INVALID_TURN_STATE;
-	}
-	return ErrorCode::SUCCESS;
+		}
+		for (uint32_t fleet_id : submission.scraps)
+		{
+			if (!submitted_fleets.insert(fleet_id).second)
+				return ErrorCode::INVALID_TURN_STATE;
+			const Fleet* fleet = player->get_fleet(fleet_id);
+			if (!fleet)
+				return ErrorCode::FLEET_NOT_FOUND;
+			if (fleet->is_in_transit())
+				return ErrorCode::FLEET_IN_TRANSIT;
+			if (fleet->newly_built_this_turn ||
+				get_planet(fleet->stationed_planet_name()) == nullptr)
+				return ErrorCode::INVALID_TURN_STATE;
+		}
+		return ErrorCode::SUCCESS;
 }
 
 ErrorCode GameState::check_player_set_planet_allocation(uint32_t player_id, uint32_t planet_id, double mining_frac, double terraforming_frac) const

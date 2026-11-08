@@ -430,7 +430,7 @@ This testing should be performed before galaxy generation is considered producti
 - **Priority:** Medium
 
 #### Ship Construction and Immediate Fleet Creation
-- **Status:** Basic construction is functionally implemented with provisional costs; the complete player-facing build process and same-phase scrapping remain.
+- **Status:** Basic construction and fleet scrapping are functionally implemented with provisional costs and refund calibration; the complete player-facing build process remains.
 - **Location:** `src/core/src/c_api.cpp`, `src/core/src/player.cpp`, `src/core/src/game_formulas.cpp`, and fleet creation paths
 - **Required Behavior:**
  - [ ] Allow the player to choose any already-owned design, or configure a new design whose levels are legal under the player's current technology
@@ -448,10 +448,13 @@ This testing should be performed before galaxy generation is considered producti
  - [x] Permit multiple build actions when resources remain sufficient
  - [x] Record prototype completion so later builds from that design omit the prototype cost
  - [x] Track first-time prototype charges as Player-owned, turn-scoped refund candidates
- - [ ] Permit full-resource same-phase scrapping for newly built ships/fleets
- - [ ] Implement later scrapping for metal only at a heavy loss
- - [ ] Keep a newly created design in the player's library if all ships built from it are scrapped, but roll back its prototype marker before the player-action phase ends
- - [ ] Prevent same-turn prototype rollback from avoiding the prototype charge on a later turn
+ - [x] Permit full-resource same-phase scrapping for newly built ships/fleets
+   - **Status:** Implemented for complete fleets; cancels any queued travel order first and invalidates readiness.
+ - [x] Implement later scrapping for metal only at a heavy loss
+   - **Provisional formula:** `refunded_metal = floor(0.15 × metal_build_cost_of_fleet)`
+   - **Status:** Implemented for stationed fleets; the 15% factor requires data-driven calibration before final deployment.
+ - [x] Keep a newly created design in the player's library if all ships built from it are scrapped, but roll back its prototype marker before the player-action phase ends
+ - [x] Prevent same-turn prototype rollback from avoiding the prototype charge on a later turn
 - **Priority:** High
 
 #### Ship Building Cost Specification
@@ -607,7 +610,7 @@ Final model questions:
 - **Missing:**
 	 - [ ] Add player-facing CLI/UI commands for fleet inspection and composition
 	 - [ ] Serialize and restore heterogeneous fleet contents and per-stack fuel
-	 - [ ] Implement same-phase and later fleet scrapping
+		 - [x] Implement same-phase scrapping for newly built stationed fleets and deferred scrapping for older stationed fleets
 - **Note:** Composition actions require fleets to be stationed at the same planet. Matching-stack transfers and merges use the lower fuel value; newly-built status is combined with logical AND.
 - **Dependency:** Future fleet composition relies on sufficiently complete ship-design and ship-construction rules, but is not required for basic construction or travel.
 - **Priority:** Medium

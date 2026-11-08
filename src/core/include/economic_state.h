@@ -54,6 +54,7 @@ struct FleetActionSubmission
     uint32_t player_id = 0;
     uint32_t target_turn = 0;
     std::vector<FleetMoveAction> moves;
+    std::vector<uint32_t> scraps;
 };
 
 struct EconomicColonyAfterState

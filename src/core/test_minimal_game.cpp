@@ -348,6 +348,73 @@ void test_savings_rate_modifier()
     assert(GameFormulas::calculate_money_interest(-100, player.get_savings_rate_modifier()) == -15);
 }
 
+void test_fleet_scrapping()
+{
+	{
+		auto game = create_ship_game();
+		process_ready_turn(*game);
+		const uint32_t planet_id =
+			game->get_player(1)->get_colonized_planets().front().get_id();
+		const std::string planet_name = game->get_planet(planet_id)->name;
+		const uint32_t design_id = game->get_player(1)->create_ship_design(
+			"Scrap Scout", SHIP_SCOUT, 1, 2, 1, 1, 0);
+		const ShipDesign* design = game->get_player(1)->get_ship_design(design_id);
+		assert(design != nullptr);
+		const int64_t money_before = game->get_player(1)->get_money();
+		const int64_t metal_before = game->get_player(1)->get_metal();
+		assert(game->build_ships_from_design(1, design_id, 2, planet_id) ==
+			ErrorCode::SUCCESS);
+		const uint32_t fleet_id = game->get_player(1)->get_fleets().front().id;
+		assert(game->get_fleet(1, fleet_id)->newly_built_this_turn);
+
+		std::string destination_name;
+		for (const Planet& planet : game->get_galaxy().planets)
+			if (planet.name != planet_name)
+			{
+				destination_name = planet.name;
+				break;
+			}
+		game->move_fleet(1, fleet_id, destination_name);
+		assert(game->get_fleet_action_submission(1).moves.size() == 1);
+		assert(game->scrap_fleet(1, fleet_id) == ErrorCode::SUCCESS);
+		assert(game->get_fleet(1, fleet_id) == nullptr);
+		assert(game->get_fleet_action_submission(1).moves.empty());
+		assert(game->get_player(1)->get_money() == money_before);
+		assert(game->get_player(1)->get_metal() == metal_before);
+		assert(!design->get_has_been_prototyped());
+		assert(!game->get_player(1)->is_prototype_refund_candidate(design_id));
+	}
+
+	{
+		auto game = create_ship_game();
+		process_ready_turn(*game);
+		const uint32_t planet_id =
+			game->get_player(1)->get_colonized_planets().front().get_id();
+		const std::string planet_name = game->get_planet(planet_id)->name;
+		const uint32_t design_id = game->get_player(1)->create_ship_design(
+			"Older Scrap Scout", SHIP_SCOUT, 1, 2, 1, 1, 0);
+		const ShipDesign* design = game->get_player(1)->get_ship_design(design_id);
+		assert(design != nullptr);
+		assert(game->build_ships_from_design(1, design_id, 2, planet_id) ==
+			ErrorCode::SUCCESS);
+		const uint32_t fleet_id = game->get_player(1)->get_fleets().front().id;
+		const int64_t expected_refund = design->get_metal_cost() * 2 * 15 / 100;
+		process_ready_turn(*game);
+		assert(!game->get_fleet(1, fleet_id)->newly_built_this_turn);
+		const int64_t money_before_scrap = game->get_player(1)->get_money();
+		const int64_t metal_before_scrap = game->get_player(1)->get_metal();
+		assert(game->scrap_fleet(1, fleet_id) == ErrorCode::SUCCESS);
+		assert(game->get_fleet(1, fleet_id) != nullptr);
+		assert(game->get_fleet_action_submission(1).scraps.size() == 1);
+		assert(game->get_player(1)->get_money() == money_before_scrap);
+		assert(game->get_player(1)->get_metal() == metal_before_scrap);
+		process_ready_turn(*game);
+		assert(game->get_player(1)->get_metal() >= metal_before_scrap + expected_refund);
+		assert(game->get_fleet(1, fleet_id) == nullptr);
+		assert(game->get_planet(planet_name)->metal >= 0);
+	}
+}
+
 void test_economic_submission_round_trip()
 {
     auto game = create_two_player_game();
@@ -748,7 +815,8 @@ int main()
     test_game_initialization_and_readiness();
 	 test_dip_and_turn_processing();
 	 test_ship_construction();
-    test_savings_rate_modifier();
+	 test_fleet_scrapping();
+	 test_savings_rate_modifier();
     test_economic_submission_round_trip();
     test_colonization_and_abandonment_transitions();
 	 test_planet_view_observation_precedence();

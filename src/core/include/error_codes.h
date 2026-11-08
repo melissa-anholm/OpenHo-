@@ -88,10 +88,10 @@ inline const char* error_code_to_string(ErrorCode code)
 			return "Fleet not found";
 		case ErrorCode::INVALID_FLEET_SIZE:
 			return "Invalid fleet size";
-		case ErrorCode::FLEET_LIMIT_REACHED:
-			return "Fleet limit reached";
-		case ErrorCode::FLEET_IN_TRANSIT:
-			return "Fleet is in transit";
+			case ErrorCode::FLEET_LIMIT_REACHED:
+				return "Fleet limit reached";
+			case ErrorCode::FLEET_IN_TRANSIT:
+				return "Fleet is in transit";
 		case ErrorCode::PLANET_NOT_OWNED:
 			return "Planet not owned by player";
 		case ErrorCode::PLANET_NOT_FOUND:
