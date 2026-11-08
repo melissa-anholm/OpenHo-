@@ -595,7 +595,7 @@ Final model questions:
 - Final intentional-debt and bankruptcy/default values and enforcement rules.
 
 #### Fleet Composition and Assembly
-- **Status:** Immediate merge, split, stack-transfer, and runtime checkpoint restoration are implemented; player-facing commands remain
+- **Status:** Immediate merge, split, stack-transfer, runtime checkpoint restoration, and portable CLI commands are implemented
 - **Location:** `src/core/src/player.cpp`, `src/core/src/game.cpp`, and `src/core/src/gamestate_c_api_extensions.cpp`
 - **Completed:**
  - [x] Basic Fleet object creation
@@ -609,8 +609,8 @@ Final model questions:
 	 - [x] Move part or all of a stack into another stationed fleet immediately
 	 - [x] Store fuel per design stack and derive effective fleet fuel, range, and speed
 	 - [x] Mark the player unready after a successful composition action
-- **Missing:**
-	 - [ ] Add player-facing CLI/UI commands for fleet inspection and composition
+	- **Missing:**
+	 - [ ] Add equivalent native AppKit UI commands for fleet inspection and composition
 		 - [x] Serialize and restore heterogeneous fleet contents and per-stack fuel
 		 - [x] Serialize and restore stationed and in-transit fleet locations
 		 - [x] Serialize and restore queued fleet movements and deferred scrapping requests

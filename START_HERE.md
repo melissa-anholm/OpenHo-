@@ -19,7 +19,7 @@ The core currently has:
 
 The RANDOM galaxy path is the current reliable minimal-game path. The other generators exist and can be exercised independently, but they still require broader validation of exact planet counts, minimum spacing, density behavior, home-planet placement, extreme parameters, reproducibility, and visual output.
 
-Several systems remain provisional or incomplete, including parts of planetary income, population growth, ship design and construction, serialization, fleet movement and combat, and nova processing. Existing source code is not automatically considered complete merely because a function exists or the project compiles.
+Several systems remain provisional or incomplete, including parts of planetary income, population growth, ship design and construction, final fleet-movement validation, fleet combat, public-information history, and nova processing. Authoritative fleet state and pending fleet actions are checkpointable, but this does not mean the broader gameplay system is complete. Existing source code is not automatically considered complete merely because a function exists or the project compiles.
 
 ## Immediate development direction
 
