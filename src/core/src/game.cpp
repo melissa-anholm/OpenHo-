@@ -581,9 +581,10 @@ void GameState::start_first_turn()
 	process_money_allocation();
 		process_research();
 			process_planets();
-			process_queued_fleet_actions();
-			process_ships();
-		process_novae();
+				process_queued_fleet_actions();
+				process_ships();
+				process_automatic_colonization();
+			process_novae();
 		// Refresh views once, after queued fleet effects and colonization
 			// processing have settled and before the next player-action phase.
 			refresh_player_planet_views();
@@ -1573,6 +1574,31 @@ void GameState::process_ships()
 	}
 }
 
+void GameState::process_automatic_colonization()
+{
+	for (auto& player : players)
+	{
+		for (const auto& fleet : player.fleets)
+		{
+			if (fleet.is_in_transit())
+				continue;
+
+			const Planet* planet = get_planet(fleet.stationed_planet_name());
+			if (!planet || planet->owner != NOT_OWNED)
+				continue;
+
+			const bool carries_colony_ship = std::any_of(
+				fleet.ship_stacks.begin(), fleet.ship_stacks.end(),
+				[](const FleetShipStack& stack) {
+					return stack.ship_count > 0 && stack.design &&
+						stack.design->type == SHIP_COLONY;
+				});
+			if (carries_colony_ship)
+				colonize_planet(player.id, planet->id);
+		}
+	}
+}
+
 void GameState::process_novae()
 {
 	// TODO: Process nova events (rare event - low priority)
@@ -2341,12 +2367,26 @@ ErrorCode GameState::check_player_move_fleet(uint32_t player_id,
 		return ErrorCode::INVALID_PLANET_ID;
 	
 	// Check fleet is not already in transit
-	if (fleet->is_in_transit())
-		return ErrorCode::FLEET_IN_TRANSIT;
-	if (fleet->stationed_planet_name() == destination_planet_name)
-		return ErrorCode::INVALID_TURN_STATE;
-	
-	return ErrorCode::SUCCESS;
+		if (fleet->is_in_transit())
+			return ErrorCode::FLEET_IN_TRANSIT;
+		if (fleet->stationed_planet_name() == destination_planet_name)
+			return ErrorCode::INVALID_TURN_STATE;
+		if (fleet->effective_speed() <= 0)
+			return ErrorCode::FLEET_NO_SPEED;
+
+		const KnowledgeGalaxy* knowledge = player->get_knowledge_galaxy();
+		if (!knowledge)
+			return ErrorCode::INVALID_TURN_STATE;
+		const double distance = knowledge->get_distance(
+			fleet->stationed_planet_name(), destination_planet_name);
+		if (!std::isfinite(distance) || distance < 0.0)
+			return ErrorCode::INVALID_TURN_STATE;
+		if (distance > static_cast<double>(fleet->effective_range()))
+			return ErrorCode::FLEET_OUT_OF_RANGE;
+		if (distance > static_cast<double>(fleet->effective_fuel()))
+			return ErrorCode::INSUFFICIENT_FUEL;
+
+		return ErrorCode::SUCCESS;
 }
 
 ErrorCode GameState::check_fleet_action_submission(

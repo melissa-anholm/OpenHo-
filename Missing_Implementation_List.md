@@ -344,7 +344,7 @@ This testing should be performed before galaxy generation is considered producti
 - **Priority:** High
 
 #### Fleet Movement
-- **Status:** Queued movement, explicit stationed/transit state, persistence, and CLI inspection/management are implemented; final validation remains
+- **Status:** Queued movement, explicit stationed/transit state, persistence, CLI inspection/management, and basic range/fuel/speed validation are implemented; fuel consumption and final action-order rules remain
 - **Location:** `src/core/src/game.cpp`, `src/core/src/player.cpp`, and `src/core/src/fleet.cpp`
 - **Completed:**
  - [x] Fleet movement calculation (distance-based)
@@ -355,7 +355,9 @@ This testing should be performed before galaxy generation is considered producti
  - [x] Serialize and restore fleets, heterogeneous stacks, per-stack fuel, and in-transit state in runtime checkpoints
  - [x] Expose fleet inspection, stationed-fleet listing, queued movement, immediate composition actions, refueling, and scrapping through the portable CLI
  - [x] Display the complete queued movement and pending-scrapping lists from the consolidated `fleets` command
- - [ ] Complete movement validation against final fuel, range, and action-order rules
+ - [x] Reject movement when effective speed is zero, destination distance exceeds effective range, or effective fuel is insufficient
+ - [ ] Consume fuel according to the final travel rule
+ - [ ] Complete movement validation against final action-order rules
 - **Priority:** Medium-high
 
 #### Force Combat
@@ -379,11 +381,11 @@ This testing should be performed before galaxy generation is considered producti
 - **Priority:** Medium-low
 
 #### Colonization
-- **Status:** Design specified; implementation remains future work
+- **Status:** Direct colonization and basic automatic colony-ship colonization are implemented; battle ordering, survivor selection, and final observation rules remain
 - **Location:** `src/core/src/game.cpp`, `src/core/src/player.cpp`, and `src/core/src/fleet.cpp`
 - **Required Behavior:**
-  - [ ] After battles resolve, automatically establish a colony when a colony ship arrives at an uncolonized planet
-  - [ ] Treat a colony ship as an ordinary ship of the colony-ship design
+  - [x] After the current arrival-processing phase, automatically establish a colony when a fleet containing a colony ship arrives at an uncolonized planet
+  - [x] Require the qualifying ship to use the `SHIP_COLONY` design type; ordinary fleets cannot colonize
   - [ ] Resolve non-allied colony-ship battles before colonization
   - [ ] Use colony-ship speed technology to determine which allied colony ship proceeds when allied ships arrive together
   - [ ] Permit a colony ship that survives battle to colonize during the same turn

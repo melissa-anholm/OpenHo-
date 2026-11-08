@@ -288,8 +288,9 @@ private:
 	void process_planet_terraforming(Player& player, Planet* planet, int64_t terraforming_budget);
 	void process_planet_mining(Player& player, Planet* planet, int64_t mining_budget);
 	
-		void process_ships();
-		void process_queued_fleet_actions();
+			void process_ships();
+			void process_automatic_colonization();
+			void process_queued_fleet_actions();
 		void expire_newly_built_fleet_flags();
 		void process_novae();
 		void process_queued_abandonments();

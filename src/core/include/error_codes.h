@@ -32,8 +32,11 @@ enum class ErrorCode : uint32_t
 	// Fleet errors
 	FLEET_NOT_FOUND = 30,
 	INVALID_FLEET_SIZE = 31,
-	FLEET_LIMIT_REACHED = 32,
+	FLEET_LIMIT_REACHED = 32,  // Max 100 fleets per player
 	FLEET_IN_TRANSIT = 33,  // Can't perform action on fleet in transit
+	FLEET_OUT_OF_RANGE = 34,
+	INSUFFICIENT_FUEL = 35,
+	FLEET_NO_SPEED = 36,
 	
 	// Planet errors
 	PLANET_NOT_OWNED = 40,
@@ -92,6 +95,12 @@ inline const char* error_code_to_string(ErrorCode code)
 				return "Fleet limit reached";
 			case ErrorCode::FLEET_IN_TRANSIT:
 				return "Fleet is in transit";
+			case ErrorCode::FLEET_OUT_OF_RANGE:
+				return "Fleet cannot reach destination within its effective range";
+			case ErrorCode::INSUFFICIENT_FUEL:
+				return "Fleet has insufficient fuel for destination";
+			case ErrorCode::FLEET_NO_SPEED:
+				return "Fleet has no effective speed";
 		case ErrorCode::PLANET_NOT_OWNED:
 			return "Planet not owned by player";
 		case ErrorCode::PLANET_NOT_FOUND:

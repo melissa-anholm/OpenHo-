@@ -213,9 +213,9 @@ Post-economic combat, colonization, abandonment, and player actions may change p
 
 ## 4. Queued fleet actions
 
-Queued fleet actions resolve after economic processing. The implemented portion currently applies queued travel and deferred older-fleet scrapping; battle resolution and automatic colonization remain future phases.
+Queued fleet actions resolve after economic processing. The implemented portion applies queued travel, deferred older-fleet scrapping, fleet-arrival processing, and a basic automatic-colonization pass for arrived fleets containing a colony ship; battle resolution and battle-aware colonization remain future phases.
 
-**Implementation status:** Queued movement submission, readiness validation, travel initiation, and deferred older-fleet scrapping are implemented. The current `process_ships()` placeholder only resolves existing fleet arrivals; battles and automatic colonization are not yet implemented.
+**Implementation status:** Queued movement submission, readiness validation, travel initiation, deferred older-fleet scrapping, arrival processing, and colony-ship qualification are implemented. The current `process_ships()` path does not resolve battles; automatic colonization therefore runs after arrival processing but before future battle integration.
 
 ### 4.1 Fleet travel
 
@@ -237,7 +237,7 @@ There is no separate planet-capture operation. Combat population loss immediatel
 
 ### 4.3 Automatic colonization
 
-**Implementation status:** `GameState::colonize_planet()` now provides the unified gameplay transition and can establish an unowned outpost colony. The automatic fleet-triggered call remains deferred until battle resolution and colony-ship qualification are implemented.
+**Implementation status:** `GameState::colonize_planet()` provides the unified gameplay transition, and the current turn path automatically invokes it for an arrived fleet containing a `SHIP_COLONY` design at an unowned planet. Ordinary fleets cannot trigger this path. Battle resolution, survivor selection, and battle-aware ordering remain future work.
 
 After battles, a ship of the colony-ship design arriving at an uncolonized planet automatically establishes a colony. A colony ship is an ordinary ship of a particular design selected during construction, not a separate universal object.
 

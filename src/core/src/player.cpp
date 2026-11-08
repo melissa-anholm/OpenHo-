@@ -397,8 +397,8 @@ ErrorCode Player::move_stack_to_fleet(
 
 void Player::move_fleet(uint32_t fleet_id, const std::string& destination_planet_name)
 {
-	if (!game_state || !get_fleet(fleet_id) ||
-		game_state->get_planet(destination_planet_name) == nullptr)
+	if (!game_state || game_state->check_player_move_fleet(
+		id, fleet_id, destination_planet_name) != ErrorCode::SUCCESS)
 		return;
 
 	fleet_action_submission.player_id = id;

@@ -301,39 +301,70 @@ void test_ship_construction()
            money_before_failed_build - std::min(requested_excessive_dip, maximum_ship_dip));
     assert(game->get_player(1)->get_metal() == metal_before_failed_build);
     assert(game->get_player(1)->get_fleets().size() == 2);
-    game->clear_dip_amount(1);
+	game->clear_dip_amount(1);
 
-    const Fleet& fleet_before_order = game->get_player(1)->get_fleets().front();
-    const std::string origin_name = fleet_before_order.stationed_planet_name();
-    std::string destination_name;
-    for (const Planet& planet : game->get_galaxy().planets)
-    {
-        if (planet.name != origin_name)
+	const Fleet& low_range_fleet = game->get_player(1)->get_fleets().front();
+	std::string out_of_range_destination;
+	for (const Planet& planet : game->get_galaxy().planets)
+		if (planet.name != low_range_fleet.stationed_planet_name() &&
+			game->get_player(1)->get_knowledge_galaxy()->get_distance(
+				low_range_fleet.stationed_planet_name(), planet.name) >
+				static_cast<double>(low_range_fleet.effective_range()))
+		{
+			out_of_range_destination = planet.name;
+			break;
+		}
+	assert(!out_of_range_destination.empty());
+	assert(game->check_player_move_fleet(
+			1, low_range_fleet.id, out_of_range_destination) ==
+		   ErrorCode::FLEET_OUT_OF_RANGE);
+	assert(game->get_fleet_action_submission(1).moves.empty());
+
+		const uint32_t movement_design_id = game->get_player(1)->create_ship_design(
+		"Movement Scout", SHIP_SCOUT, 10, 2, 1, 1, 0);
+	assert(movement_design_id != 0);
+	assert(game->build_ships_from_design(1, movement_design_id, 1, ship_planet_id) ==
+		   ErrorCode::SUCCESS);
+	const Fleet* fleet_before_order = nullptr;
+	for (const Fleet& fleet : game->get_player(1)->get_fleets())
+		if (fleet.id != first_fleet_id && fleet.effective_range() >= 10)
+		{
+			fleet_before_order = &fleet;
+			break;
+		}
+	assert(fleet_before_order != nullptr);
+	const std::string origin_name = fleet_before_order->stationed_planet_name();
+	std::string destination_name;
+	for (const Planet& planet : game->get_galaxy().planets)
+	{
+		if (planet.name != origin_name &&
+			game->get_player(1)->get_knowledge_galaxy()->get_distance(
+				origin_name, planet.name) <= fleet_before_order->effective_range())
         {
             destination_name = planet.name;
             break;
         }
     }
     assert(!destination_name.empty());
-    assert(game->check_player_move_fleet(1, fleet_before_order.id, destination_name) ==
-           ErrorCode::SUCCESS);
-    game->move_fleet(1, fleet_before_order.id, destination_name);
-    assert(!game->get_player(1)->get_fleets().front().is_in_transit());
+	assert(game->check_player_move_fleet(1, fleet_before_order->id, destination_name) ==
+	       ErrorCode::SUCCESS);
+	game->move_fleet(1, fleet_before_order->id, destination_name);
+	assert(!game->get_fleet(1, fleet_before_order->id)->is_in_transit());
     const FleetActionSubmission& fleet_submission =
         game->get_fleet_action_submission(1);
     assert(fleet_submission.target_turn == game->get_current_turn());
     assert(fleet_submission.moves.size() == 1);
-    assert(fleet_submission.moves.front().fleet_id == fleet_before_order.id);
+	assert(fleet_submission.moves.front().fleet_id == fleet_before_order->id);
     assert(fleet_submission.moves.front().destination_planet_name == destination_name);
 
     assert(game->mark_player_turn_ready(1) == ErrorCode::SUCCESS);
     game->process_turn();
-    const Fleet& fleet_after_processing = game->get_player(1)->get_fleets().front();
+	const Fleet& fleet_after_processing = *game->get_fleet(1, fleet_before_order->id);
     assert(!fleet_after_processing.newly_built_this_turn);
     assert(!game->get_player(1)->is_prototype_refund_candidate(design_id));
     assert(fleet_after_processing.is_in_transit() ||
            fleet_after_processing.stationed_planet_name() == destination_name);
-	assert(game->get_player_fleets_stationed_at(1, origin_name).size() == 1);
+		assert(game->get_player_fleets_stationed_at(1, origin_name).size() == 2);
 }
 
 void test_savings_rate_modifier()
@@ -357,7 +388,7 @@ void test_fleet_scrapping()
 			game->get_player(1)->get_colonized_planets().front().get_id();
 		const std::string planet_name = game->get_planet(planet_id)->name;
 		const uint32_t design_id = game->get_player(1)->create_ship_design(
-			"Scrap Scout", SHIP_SCOUT, 1, 2, 1, 1, 0);
+			"Scrap Scout", SHIP_SCOUT, 10, 2, 1, 1, 0);
 		const ShipDesign* design = game->get_player(1)->get_ship_design(design_id);
 		assert(design != nullptr);
 		const int64_t money_before = game->get_player(1)->get_money();
@@ -369,7 +400,9 @@ void test_fleet_scrapping()
 
 		std::string destination_name;
 		for (const Planet& planet : game->get_galaxy().planets)
-			if (planet.name != planet_name)
+			if (planet.name != planet_name &&
+				game->get_player(1)->get_knowledge_galaxy()->get_distance(
+					planet_name, planet.name) <= game->get_fleet(1, fleet_id)->effective_range())
 			{
 				destination_name = planet.name;
 				break;
@@ -392,7 +425,7 @@ void test_fleet_scrapping()
 			game->get_player(1)->get_colonized_planets().front().get_id();
 		const std::string planet_name = game->get_planet(planet_id)->name;
 		const uint32_t design_id = game->get_player(1)->create_ship_design(
-			"Older Scrap Scout", SHIP_SCOUT, 1, 2, 1, 1, 0);
+			"Older Scrap Scout", SHIP_SCOUT, 10, 2, 1, 1, 0);
 		const ShipDesign* design = game->get_player(1)->get_ship_design(design_id);
 		assert(design != nullptr);
 		assert(game->build_ships_from_design(1, design_id, 2, planet_id) ==
@@ -423,9 +456,9 @@ void test_fleet_checkpoint_round_trip()
 		const uint32_t planet_id = game->get_player(1)->get_colonized_planets().front().get_id();
 		const std::string home_name = game->get_planet(planet_id)->name;
 		const uint32_t design_a = game->get_player(1)->create_ship_design(
-			"Checkpoint Scout", SHIP_SCOUT, 1, 2, 1, 1, 0);
+			"Checkpoint Scout", SHIP_SCOUT, 10, 2, 1, 1, 0);
 		const uint32_t design_b = game->get_player(1)->create_ship_design(
-			"Checkpoint Fighter", SHIP_FIGHTER, 1, 2, 1, 1, 0);
+			"Checkpoint Fighter", SHIP_FIGHTER, 10, 2, 1, 1, 0);
 		assert(game->build_ships_from_design(1, design_a, 2, planet_id) == ErrorCode::SUCCESS);
 		assert(game->build_ships_from_design(1, design_b, 1, planet_id) == ErrorCode::SUCCESS);
 		const uint32_t first_fleet_id = game->get_player(1)->get_fleets()[0].id;
@@ -435,7 +468,9 @@ void test_fleet_checkpoint_round_trip()
 		assert(fleet.ship_stacks.size() == 2);
 		std::string destination_name;
 		for (const Planet& planet : game->get_galaxy().planets)
-			if (planet.name != home_name)
+				if (planet.name != home_name &&
+					game->get_player(1)->get_knowledge_galaxy()->get_distance(
+						home_name, planet.name) <= fleet.effective_range())
 			{
 				destination_name = planet.name;
 				break;
@@ -573,6 +608,55 @@ void test_colonization_and_abandonment_transitions()
     assert(restored_planet->population == 0);
     assert(restored_planet->metal == initial_metal);
     assert(restored_game->get_player(2)->get_colonized_planets().size() == 1);
+}
+
+void test_automatic_colonization_requires_colony_ship()
+{
+	auto game = create_ship_game();
+	process_ready_turn(*game);
+	const uint32_t home_id = game->get_player(1)->get_colonized_planets().front().get_id();
+	const std::string home_name = game->get_planet(home_id)->name;
+
+	auto find_reachable_unowned = [&](int32_t range) {
+		for (const Planet& planet : game->get_galaxy().planets)
+			if (planet.owner == NOT_OWNED &&
+				game->get_player(1)->get_knowledge_galaxy()->get_distance(
+					home_name, planet.name) <= range)
+				return planet.name;
+		return std::string();
+	};
+
+	const uint32_t scout_design = game->get_player(1)->create_ship_design(
+		"Ordinary Scout", SHIP_SCOUT, 10, 10, 1, 1, 0);
+	assert(scout_design != 0);
+	assert(game->build_ships_from_design(1, scout_design, 1, home_id) ==
+		   ErrorCode::SUCCESS);
+	const uint32_t scout_fleet_id = game->get_player(1)->get_fleets().back().id;
+	const std::string scout_destination = find_reachable_unowned(10);
+	assert(!scout_destination.empty());
+	assert(game->check_player_move_fleet(1, scout_fleet_id, scout_destination) ==
+		   ErrorCode::SUCCESS);
+	game->move_fleet(1, scout_fleet_id, scout_destination);
+	process_ready_turn(*game);
+	process_ready_turn(*game);
+	assert(game->get_planet(scout_destination)->owner == NOT_OWNED);
+
+	const uint32_t colony_design = game->get_player(1)->create_ship_design(
+		"Colony Ship", SHIP_COLONY, 10, 10, 1, 1, 0);
+	assert(colony_design != 0);
+	assert(game->build_ships_from_design(1, colony_design, 1, home_id) ==
+		   ErrorCode::SUCCESS);
+	const uint32_t colony_fleet_id = game->get_player(1)->get_fleets().back().id;
+	const std::string colony_destination = scout_destination;
+	assert(game->check_player_move_fleet(1, colony_fleet_id, colony_destination) ==
+		   ErrorCode::SUCCESS);
+	game->move_fleet(1, colony_fleet_id, colony_destination);
+	process_ready_turn(*game);
+	process_ready_turn(*game);
+	const Planet* colonized = game->get_planet(colony_destination);
+	assert(colonized != nullptr);
+	assert(colonized->owner == 1);
+	assert(colonized->population == GameConstants::Colonization_Initial_Population);
 }
 
 void test_planet_view_observation_precedence()
@@ -885,6 +969,7 @@ int main()
 	 test_savings_rate_modifier();
     test_economic_submission_round_trip();
     test_colonization_and_abandonment_transitions();
+	test_automatic_colonization_requires_colony_ship();
 	 test_planet_view_observation_precedence();
 	 test_append_only_save_file();
 		 test_rng_state_continuation();

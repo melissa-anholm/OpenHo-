@@ -50,7 +50,7 @@ The core entity model, deterministic RNG, GameState structure, C API boundary, c
 
 #### Phase 2b: Fleet System & Ship Design
 
-**Status:** Foundational fleet, ship-design, construction, composition, scrapping, persistence, and CLI workflows are implemented; final build-selection rules, movement validation, and combat remain.
+**Status:** Foundational fleet, ship-design, construction, composition, scrapping, persistence, CLI workflows, and basic movement validation are implemented; final build-selection rules, fuel consumption, and combat remain.
 
 Players own ship designs and fleets with explicit stationed/transit locations, heterogeneous design stacks, per-stack fuel, queued movement, immediate composition operations, and rule-dependent scrapping. Runtime checkpoints preserve designs, stacks, fuel, locations, fleet IDs, and pending fleet actions. The portable CLI exposes inspection and current fleet operations; detailed formulas, validation gaps, and remaining work are tracked in the [active implementation checklist](Missing_Implementation_List.md#ship-design-creation).
 
@@ -253,11 +253,11 @@ The minimal playable foundation is complete enough for repeatable multi-turn CLI
 |---|---|---|
 | Deterministic minimal galaxy and initialization | Implemented | Validate all galaxy shapes, counts, spacing, and home-planet edge cases. |
 | Multi-turn economic loop and readiness gate | Implemented with provisional formulas | Finalize income, population, debt, bankruptcy, and snapshot-history rules. |
-| Ship design, construction, fleet movement, composition, and scrapping | Implemented with provisional costs and movement rules | Complete build selection, final movement validation, and battle integration. |
+| Ship design, construction, fleet movement, composition, and scrapping | Implemented with provisional costs and movement rules | Complete build selection, fuel consumption, and battle integration. |
 | Fleet persistence and portable CLI fleet controls | Implemented and regression-tested | Add equivalent native AppKit controls later. |
 | Exploration, fleet visibility, and public-information history | Partial | Complete observation and knowledge integration. |
 | Fleet and planetary combat | Not implemented | Define and implement deterministic combat resolution. |
-| Automatic colonization after fleet processing | Not implemented | Connect surviving colony ships to `colonize_planet()`. |
+| Automatic colonization after fleet processing | Basic colony-ship trigger implemented | Integrate battle resolution, survivor selection, and final observation rules. |
 | Nova events | Placeholder | Implement only after the core gameplay loop is stable. |
 
 ### Documentation and approval rule
