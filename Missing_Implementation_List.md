@@ -2,7 +2,7 @@
 
 **Purpose:** Track all functions and values that need implementation or reverse-engineering from the original game.
 
-**Last Updated:** November 2, 2026 (checklist synchronization and ship-cost consolidation)
+**Last Updated:** November 8, 2026 (fleet-management CLI)
 
 ---
 
@@ -334,7 +334,7 @@ This testing should be performed before galaxy generation is considered producti
  - [ ] Capture canonical Turn N snapshots at the beginning of each turn, with Turn 0/year 2000 initialization
  - [ ] Capture economic after-state and post-processing state for history, diagnostics, and display
  - [ ] Complete end-of-turn state/knowledge updates with public/private filtering from the same snapshot boundary
- - [ ] Serialize and restore the complete mutable mid-game state, including fleets, pending actions, remaining knowledge/history systems, and RNG state. Planet-owned scalar `PlanetView` snapshots are now serialized alongside each planet, while fleet state, fleet sightings, and related public-information history remain incomplete. The current bounded between-turn payload includes explicit player elimination status, both RNG engine states, and the previous turn’s cached metal income; the immutable game-definition payload and append-only container are implemented separately
+ - [ ] Serialize and restore the complete mutable mid-game state, including remaining knowledge/history systems and RNG state. Planet-owned scalar `PlanetView` snapshots, heterogeneous fleet state, fleet sightings still not represented in views, and pending fleet actions are serialized; related public-information history remains incomplete. The current bounded between-turn payload includes explicit player elimination status, both RNG engine states, and the previous turn’s cached metal income; the immutable game-definition payload and append-only container are implemented separately
  - [ ] Synchronize critical state at least once per turn for host migration
  - [ ] Enforce readiness in the core turn-processing entry point
  - [ ] Exclude eliminated players from readiness requirements
@@ -344,7 +344,7 @@ This testing should be performed before galaxy generation is considered producti
 - **Priority:** High
 
 #### Fleet Movement
-- **Status:** Queued movement and explicit stationed/transit state implemented; persistence and final validation remain
+- **Status:** Queued movement, explicit stationed/transit state, persistence, and CLI inspection/management are implemented; final validation remains
 - **Location:** `src/core/src/game.cpp`, `src/core/src/player.cpp`, and `src/core/src/fleet.cpp`
 - **Completed:**
  - [x] Fleet movement calculation (distance-based)
@@ -352,7 +352,9 @@ This testing should be performed before galaxy generation is considered producti
  - [x] Require valid fleet submissions at the readiness boundary
  - [x] Represent each fleet with one explicit stationed-or-in-transit location state
  - [x] Fleet arrival processing using canonical planet names
- - [ ] Serialize and restore fleets and in-transit state in runtime checkpoints
+ - [x] Serialize and restore fleets, heterogeneous stacks, per-stack fuel, and in-transit state in runtime checkpoints
+ - [x] Expose fleet inspection, stationed-fleet listing, queued movement, immediate composition actions, refueling, and scrapping through the portable CLI
+ - [x] Display the complete queued movement and pending-scrapping lists from the consolidated `fleets` command
  - [ ] Complete movement validation against final fuel, range, and action-order rules
 - **Priority:** Medium-high
 

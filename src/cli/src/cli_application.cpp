@@ -416,6 +416,15 @@ void CliApplication::print_help() const
               << "  status                       Show turn, year, and save state.\n"
               << "  players                      Show players and readiness.\n"
               << "  planets                      Show the local player's planet views.\n"
+              << "  fleets                       Show fleets and queued fleet actions.\n"
+              << "  fleet ID                     Show one fleet in detail.\n"
+              << "  fleets_at PLANET             Show fleets stationed at a planet.\n"
+              << "  move_fleet ID PLANET         Queue a fleet movement.\n"
+              << "  merge_fleets SOURCE TARGET   Merge SOURCE into TARGET immediately.\n"
+              << "  split_fleet FLEET DESIGN N   Move N ships into a new fleet.\n"
+              << "  transfer_stack S T D N       Move N ships from S into T.\n"
+              << "  scrap_fleet ID               Scrap one fleet.\n"
+              << "  refuel_fleet ID              Refuel one fleet immediately.\n"
               << "  economy                      Show local economic state and pending choices.\n"
               << "  research                     Show pending research-stream allocations.\n"
               << "  set_spending S R P           Set savings/research/planets fractions.\n"
@@ -503,6 +512,109 @@ void CliApplication::print_planets() const
                   << " population=" << planet.apparent_population
                   << " observed=" << planet.observation_year << "\n";
     }
+}
+
+void CliApplication::print_fleet(uint32_t fleet_id) const
+{
+    if (!session_ || !session_->state())
+        return;
+    const Fleet* fleet = session_->state()->get_fleet(local_player_id_, fleet_id);
+    if (!fleet)
+    {
+        print_error("fleet", "fleet not found for active player");
+        return;
+    }
+    std::cout << "Fleet " << fleet->id
+              << ": ships=" << fleet->total_ship_count()
+              << ", newly_built=" << (fleet->newly_built_this_turn ? "yes" : "no")
+              << ", effective_fuel=" << fleet->effective_fuel()
+              << ", effective_range=" << fleet->effective_range()
+              << ", effective_speed=" << fleet->effective_speed() << "\n";
+    if (fleet->is_in_transit())
+    {
+        const FleetInTransitLocation& transit = *fleet->transit_location();
+        std::cout << "  Location: in transit from " << transit.origin_planet_name
+                  << " to " << transit.destination_planet_name
+                  << ", departing turn " << transit.departure_turn
+                  << ", arriving turn " << transit.arrival_turn
+                  << ", distance=" << transit.distance
+                  << ", turns=" << transit.turns_to_travel << "\n";
+    }
+    else
+        std::cout << "  Location: stationed at " << fleet->stationed_planet_name() << "\n";
+    for (const FleetShipStack& stack : fleet->ship_stacks)
+    {
+        std::cout << "  Stack: design=" << stack.design_id
+                  << ", ships=" << stack.ship_count
+                  << ", fuel=" << stack.fuel;
+        if (stack.design)
+            std::cout << ", name=" << stack.design->name;
+        std::cout << "\n";
+    }
+}
+
+void CliApplication::print_fleets() const
+{
+    if (!session_ || !session_->state())
+        return;
+    const GameState* state = session_->state();
+    const std::vector<Fleet>& fleets = state->get_player_fleets(local_player_id_);
+    std::cout << "Fleets owned by player " << local_player_id_ << ":\n";
+    if (fleets.empty())
+        std::cout << "  (none)\n";
+    else
+        for (const Fleet& fleet : fleets)
+        {
+            std::cout << "  Fleet " << fleet.id << ": ships=" << fleet.total_ship_count();
+            if (fleet.is_in_transit())
+            {
+                const FleetInTransitLocation& transit = *fleet.transit_location();
+                std::cout << ", in_transit=" << transit.origin_planet_name
+                          << "->" << transit.destination_planet_name
+                          << ", arrival_turn=" << transit.arrival_turn;
+            }
+            else
+                std::cout << ", stationed_at=" << fleet.stationed_planet_name();
+            std::cout << ", stacks=" << fleet.ship_stacks.size()
+                      << ", fuel=" << fleet.effective_fuel()
+                      << ", range=" << fleet.effective_range()
+                      << ", speed=" << fleet.effective_speed()
+                      << ", newly_built=" << (fleet.newly_built_this_turn ? "yes" : "no") << "\n";
+        }
+
+    const FleetActionSubmission& submission = state->get_fleet_action_submission(local_player_id_);
+    std::cout << "Queued fleet actions for turn " << submission.target_turn << ":\n";
+    if (submission.moves.empty())
+        std::cout << "  movements: (none)\n";
+    else
+        for (const FleetMoveAction& move : submission.moves)
+            std::cout << "  movement: fleet " << move.fleet_id
+                      << " -> " << move.destination_planet_name << "\n";
+    if (submission.scraps.empty())
+        std::cout << "  scrap requests: (none)\n";
+    else
+        for (uint32_t fleet_id : submission.scraps)
+            std::cout << "  scrap request: fleet " << fleet_id << "\n";
+}
+
+void CliApplication::print_fleets_at(const std::string& planet_name) const
+{
+    if (!session_ || !session_->state())
+        return;
+    const std::vector<const Fleet*> fleets =
+        session_->state()->get_player_fleets_stationed_at(local_player_id_, planet_name);
+    std::cout << "Fleets owned by player " << local_player_id_
+              << " stationed at " << planet_name << ":\n";
+    if (fleets.empty())
+    {
+        std::cout << "  (none)\n";
+        return;
+    }
+    for (const Fleet* fleet : fleets)
+        std::cout << "  Fleet " << fleet->id
+                  << ": ships=" << fleet->total_ship_count()
+                  << ", stacks=" << fleet->ship_stacks.size()
+                  << ", fuel=" << fleet->effective_fuel() << "\n";
 }
 
 void CliApplication::print_economy() const
@@ -596,6 +708,127 @@ bool CliApplication::handle_command(const std::string& raw_line)
     else if (command == "planets")
     {
         print_planets();
+    }
+    else if (command == "fleets")
+    {
+        print_fleets();
+    }
+    else if (command == "fleet")
+    {
+        uint32_t fleet_id = 0;
+        if (!(input >> fleet_id))
+            print_error(command, "expected fleet ID");
+        else
+            print_fleet(fleet_id);
+    }
+    else if (command == "fleets_at")
+    {
+        const std::string planet_name = trim(line.substr(command.size()));
+        if (planet_name.empty())
+            print_error(command, "expected planet name");
+        else
+            print_fleets_at(planet_name);
+    }
+    else if (command == "move_fleet")
+    {
+        uint32_t fleet_id = 0;
+        std::string destination;
+        input >> fleet_id;
+        std::getline(input, destination);
+        destination = trim(destination);
+        if (!input || destination.empty())
+            print_error(command, "expected fleet ID and destination planet name");
+        else
+        {
+            const ErrorCode check = session_->state()->check_player_move_fleet(
+                local_player_id_, fleet_id, destination);
+            if (check != ErrorCode::SUCCESS)
+                print_error(command, error_code_to_string(check));
+            else
+            {
+                session_->state()->move_fleet(local_player_id_, fleet_id, destination);
+                std::cout << "Fleet movement queued.\n";
+            }
+        }
+    }
+    else if (command == "merge_fleets")
+    {
+        uint32_t source_id = 0;
+        uint32_t target_id = 0;
+        if (!(input >> source_id >> target_id))
+            print_error(command, "expected source and target fleet IDs");
+        else
+        {
+            const ErrorCode result = session_->state()->merge_fleets(
+                local_player_id_, source_id, target_id);
+            if (result != ErrorCode::SUCCESS)
+                print_error(command, error_code_to_string(result));
+            else
+                std::cout << "Fleets merged immediately.\n";
+        }
+    }
+    else if (command == "split_fleet")
+    {
+        uint32_t source_id = 0;
+        uint32_t design_id = 0;
+        uint32_t ship_count = 0;
+        if (!(input >> source_id >> design_id >> ship_count))
+            print_error(command, "expected source fleet ID, design ID, and ship count");
+        else
+        {
+            uint32_t new_fleet_id = 0;
+            const ErrorCode result = session_->state()->split_fleet_to_new_fleet(
+                local_player_id_, source_id, design_id, ship_count, new_fleet_id);
+            if (result != ErrorCode::SUCCESS)
+                print_error(command, error_code_to_string(result));
+            else
+                std::cout << "Created fleet " << new_fleet_id << " from the selected stack.\n";
+        }
+    }
+    else if (command == "transfer_stack")
+    {
+        uint32_t source_id = 0;
+        uint32_t target_id = 0;
+        uint32_t design_id = 0;
+        uint32_t ship_count = 0;
+        if (!(input >> source_id >> target_id >> design_id >> ship_count))
+            print_error(command, "expected source fleet, target fleet, design ID, and ship count");
+        else
+        {
+            const ErrorCode result = session_->state()->move_stack_to_fleet(
+                local_player_id_, source_id, target_id, design_id, ship_count);
+            if (result != ErrorCode::SUCCESS)
+                print_error(command, error_code_to_string(result));
+            else
+                std::cout << "Ship stack transferred immediately.\n";
+        }
+    }
+    else if (command == "scrap_fleet")
+    {
+        uint32_t fleet_id = 0;
+        if (!(input >> fleet_id))
+            print_error(command, "expected fleet ID");
+        else
+        {
+            const ErrorCode result = session_->state()->scrap_fleet(local_player_id_, fleet_id);
+            if (result != ErrorCode::SUCCESS)
+                print_error(command, error_code_to_string(result));
+            else
+                std::cout << "Fleet scrapping processed or queued.\n";
+        }
+    }
+    else if (command == "refuel_fleet")
+    {
+        uint32_t fleet_id = 0;
+        if (!(input >> fleet_id))
+            print_error(command, "expected fleet ID");
+        else if (!session_->state()->get_fleet(local_player_id_, fleet_id))
+            print_error(command, "fleet not found for active player");
+        else
+        {
+            session_->state()->refuel_fleet(local_player_id_, fleet_id);
+            std::cout << "Fleet refueled.\n";
+        }
     }
     else if (command == "economy")
     {

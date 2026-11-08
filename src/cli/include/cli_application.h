@@ -51,6 +51,9 @@ private:
     void print_status() const;
     void print_players() const;
     void print_planets() const;
+    void print_fleets() const;
+    void print_fleet(uint32_t fleet_id) const;
+    void print_fleets_at(const std::string& planet_name) const;
     void print_economy() const;
     void print_research_allocations() const;
     void print_error(const std::string& operation, const std::string& detail) const;
