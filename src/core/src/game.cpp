@@ -1545,6 +1545,14 @@ void GameState::process_queued_fleet_actions()
 			Fleet* fleet = player.get_fleet(move.fleet_id);
 			if (!fleet || fleet->is_in_transit())
 				continue;
+			KnowledgeGalaxy* knowledge = player.get_knowledge_galaxy();
+			if (!knowledge)
+				continue;
+			const double distance = knowledge->get_distance(
+				fleet->stationed_planet_name(), move.destination_planet_name);
+			const int32_t fuel_cost = GameFormulas::calculate_fuel_consumption(distance);
+			if (!fleet->consume_fuel(fuel_cost))
+				continue;
 			fleet->move_to(move.destination_planet_name,
 				player.get_knowledge_galaxy(), current_turn);
 		}

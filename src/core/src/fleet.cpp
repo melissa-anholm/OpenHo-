@@ -170,6 +170,15 @@ int32_t Fleet::effective_fuel() const
 	return fuel == INT32_MAX ? 0 : fuel;
 }
 
+bool Fleet::consume_fuel(int32_t amount)
+{
+	if (amount < 0 || effective_fuel() < amount)
+		return false;
+	for (auto& stack : ship_stacks)
+		stack.fuel -= amount;
+	return true;
+}
+
 int32_t Fleet::effective_range() const
 {
 	if (ship_stacks.empty())

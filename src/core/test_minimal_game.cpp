@@ -325,13 +325,15 @@ void test_ship_construction()
 	assert(movement_design_id != 0);
 	assert(game->build_ships_from_design(1, movement_design_id, 1, ship_planet_id) ==
 		   ErrorCode::SUCCESS);
-	const Fleet* fleet_before_order = nullptr;
-	for (const Fleet& fleet : game->get_player(1)->get_fleets())
-		if (fleet.id != first_fleet_id && fleet.effective_range() >= 10)
-		{
-			fleet_before_order = &fleet;
-			break;
-		}
+	const uint32_t movement_fleet_id = game->get_player(1)->get_fleets().back().id;
+	const uint32_t escort_design_id = game->get_player(1)->create_ship_design(
+		"Movement Escort", SHIP_SCOUT, 15, 2, 1, 1, 0);
+	assert(escort_design_id != 0);
+	assert(game->build_ships_from_design(1, escort_design_id, 1, ship_planet_id) ==
+		   ErrorCode::SUCCESS);
+	const uint32_t escort_fleet_id = game->get_player(1)->get_fleets().back().id;
+	assert(game->merge_fleets(1, escort_fleet_id, movement_fleet_id) == ErrorCode::SUCCESS);
+	const Fleet* fleet_before_order = game->get_fleet(1, movement_fleet_id);
 	assert(fleet_before_order != nullptr);
 	const std::string origin_name = fleet_before_order->stationed_planet_name();
 	std::string destination_name;
@@ -341,11 +343,17 @@ void test_ship_construction()
 			game->get_player(1)->get_knowledge_galaxy()->get_distance(
 				origin_name, planet.name) <= fleet_before_order->effective_range())
         {
-            destination_name = planet.name;
-            break;
-        }
-    }
-    assert(!destination_name.empty());
+				destination_name = planet.name;
+				break;
+			}
+	    }
+	    assert(!destination_name.empty());
+	const double travel_distance = game->get_player(1)->get_knowledge_galaxy()->get_distance(
+		origin_name, destination_name);
+	const int32_t expected_fuel_cost = GameFormulas::calculate_fuel_consumption(travel_distance);
+	assert(fleet_before_order->ship_stacks.size() == 2);
+	const int32_t first_stack_fuel_before = fleet_before_order->ship_stacks[0].fuel;
+	const int32_t second_stack_fuel_before = fleet_before_order->ship_stacks[1].fuel;
 	assert(game->check_player_move_fleet(1, fleet_before_order->id, destination_name) ==
 	       ErrorCode::SUCCESS);
 	game->move_fleet(1, fleet_before_order->id, destination_name);
@@ -362,8 +370,12 @@ void test_ship_construction()
 	const Fleet& fleet_after_processing = *game->get_fleet(1, fleet_before_order->id);
     assert(!fleet_after_processing.newly_built_this_turn);
     assert(!game->get_player(1)->is_prototype_refund_candidate(design_id));
-    assert(fleet_after_processing.is_in_transit() ||
-           fleet_after_processing.stationed_planet_name() == destination_name);
+	assert(fleet_after_processing.is_in_transit() ||
+		   fleet_after_processing.stationed_planet_name() == destination_name);
+	assert(fleet_after_processing.ship_stacks[0].fuel ==
+		   first_stack_fuel_before - expected_fuel_cost);
+	assert(fleet_after_processing.ship_stacks[1].fuel ==
+		   second_stack_fuel_before - expected_fuel_cost);
 		assert(game->get_player_fleets_stationed_at(1, origin_name).size() == 2);
 }
 

@@ -282,6 +282,11 @@ namespace GameFormulas
 	// ========================================================================
 	// Future Formula Functions
 	// ========================================================================
+
+	/// Calculate fuel consumed by a fleet transit action.
+	/// The current rule is one fuel point per stored distance unit.
+	int32_t calculate_fuel_consumption(double distance);
+
 	// Add new formula functions here as needed for game mechanics.
 
 	}  // namespace GameFormulas

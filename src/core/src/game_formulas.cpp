@@ -506,4 +506,13 @@ double calculate_apparent_temperature(double ideal_temperature, double true_temp
 	return perceived_temp;
 }
 
+int32_t calculate_fuel_consumption(double distance)
+{
+	if (!std::isfinite(distance) || distance <= 0.0)
+		return 0;
+	if (distance >= static_cast<double>(std::numeric_limits<int32_t>::max()))
+		return std::numeric_limits<int32_t>::max();
+	return static_cast<int32_t>(std::round(distance));
+}
+
 }  // namespace GameFormulas

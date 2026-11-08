@@ -213,7 +213,7 @@ Post-economic combat, colonization, abandonment, and player actions may change p
 
 ## 4. Queued fleet actions
 
-Queued fleet actions resolve after economic processing. The implemented portion applies queued travel, deferred older-fleet scrapping, colony-ship replenishment immediately after movement, fleet-arrival processing, and a basic automatic-colonization pass for currently stationed fleets containing a loaded colony ship; battle resolution and battle-aware colonization remain future phases.
+Queued fleet actions resolve after economic processing. The implemented portion applies queued travel with per-stack fuel depletion, deferred older-fleet scrapping, colony-ship replenishment immediately after movement, fleet-arrival processing, and a basic automatic-colonization pass for currently stationed fleets containing a loaded colony ship; battle resolution and battle-aware colonization remain future phases.
 
 **Implementation status:** Queued movement submission, readiness validation, travel initiation, deferred older-fleet scrapping, arrival processing, per-ship colony capacity, replenishment, and loaded-colony-ship qualification are implemented. The current `process_ships()` path does not resolve battles; automatic colonization therefore runs after arrival processing but before future battle integration.
 
@@ -221,7 +221,7 @@ An empty colony ship replenishes only after the current turn's queued fleet-move
 
 ### 4.1 Fleet travel
 
-Each fleet performs its queued travel action. After travel, it is either at a specific planet or still in transit. Fleets still in transit have no further queued-fleet action that turn.
+Each fleet performs its queued travel action. The stored distance is rounded to an integer during galaxy construction, and each ship stack loses one fuel point per stored distance unit when the transit begins. After travel begins, the fleet is either at a specific planet or still in transit. Fleets still in transit have no further queued-fleet action that turn.
 
 ### 4.2 Battle resolution
 

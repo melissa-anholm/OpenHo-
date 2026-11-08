@@ -112,6 +112,7 @@ public:
 	[[nodiscard]] const FleetInTransitLocation* transit_location() const;
 	[[nodiscard]] uint32_t total_ship_count() const;
 	[[nodiscard]] int32_t effective_fuel() const;
+	[[nodiscard]] bool consume_fuel(int32_t amount);
 	[[nodiscard]] int32_t effective_range() const;
 	[[nodiscard]] int32_t effective_speed() const;
 	[[nodiscard]] FleetCapabilities capabilities() const;

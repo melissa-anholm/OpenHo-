@@ -342,7 +342,7 @@ This testing should be performed before galaxy generation is considered producti
 - **Priority:** High
 
 #### Fleet Movement
-- **Status:** Queued movement, explicit stationed/transit state, persistence, CLI inspection/management, and basic range/fuel/speed validation are implemented; fuel consumption and final action-order rules remain
+- **Status:** Queued movement, explicit stationed/transit state, persistence, CLI inspection/management, range/fuel/speed validation, and distance-based fuel consumption are implemented; final action-order rules remain
 - **Location:** `src/core/src/game.cpp`, `src/core/src/player.cpp`, and `src/core/src/fleet.cpp`
 - **Completed:**
  - [x] Fleet movement calculation (distance-based)
@@ -354,7 +354,7 @@ This testing should be performed before galaxy generation is considered producti
  - [x] Expose fleet inspection, stationed-fleet listing, queued movement, immediate composition actions, refueling, and scrapping through the portable CLI
  - [x] Display the complete queued movement and pending-scrapping lists from the consolidated `fleets` command
  - [x] Reject movement when effective speed is zero, destination distance exceeds effective range, or effective fuel is insufficient
- - [ ] Consume fuel according to the final travel rule
+ - [x] Consume one fuel point per stored distance unit from every ship stack when transit begins
  - [ ] Complete movement validation against final action-order rules
 - **Priority:** Medium-high
 
