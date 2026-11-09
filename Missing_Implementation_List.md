@@ -280,6 +280,8 @@ Six galaxy shapes now have coordinate generation implemented. However, comprehen
 
 This testing should be performed before galaxy generation is considered production-ready.
 
+**Planet-name reuse rule:** When the source name list is exhausted, names may receive numeric suffixes such as `"Spica 2"`. A source name is ineligible for suffixing when it ends in a decimal digit or a canonical uppercase Roman numeral, including a Roman numeral attached directly to the final word (for example, `"Omicron Persei 8"`, `"Vega IX"`, and `"VegaIX"`). Lowercase Roman-looking endings and non-canonical uppercase sequences remain eligible.
+
 
 ---
 ### Logistical

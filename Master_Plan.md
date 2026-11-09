@@ -259,6 +259,7 @@ The minimal playable foundation is complete enough for repeatable multi-turn CLI
 | Multi-turn economic loop and readiness gate | Implemented with provisional formulas | Finalize income, population, debt, bankruptcy, and snapshot-history rules. |
 | Ship design, construction, fleet movement, composition, and scrapping | Implemented with provisional costs and distance-based fuel depletion | Complete build selection and battle integration. |
 | Fleet persistence and portable CLI fleet controls | Implemented and regression-tested | Add equivalent native AppKit controls later. |
+| Dedicated core test executable and regression suite | Partial: minimal-game and ship-cost executables exist | Consolidate and expand the core test harness so economic, fleet, persistence, combat, and edge-case behavior are independently verifiable. |
 | Exploration, fleet visibility, and public-information history | Partial | Complete observation and knowledge integration. |
 | Fleet and planetary combat | Not implemented | Define and implement deterministic combat resolution. |
 | Automatic colonization after fleet processing | Basic colony-ship trigger implemented | Integrate battle resolution, survivor selection, and final observation rules. |

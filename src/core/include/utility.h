@@ -131,7 +131,9 @@ namespace TemperatureUtils
  * If n_items > source_list.size():
  *   Selects additional names randomly from the source list. Repeated names
  *   receive the smallest available numeric suffix (" 2", " 3", etc.). A
- *   source name ending in a numeral is never selected for suffixing.
+ *   source name ending in a decimal numeral or a canonical, uppercase Roman
+ *   numeral is never selected for suffixing. Roman numerals may be attached
+ *   directly to the preceding word.
  * 
  * @tparam T Type of items in the list (typically std::string)
  * @param source_list The list to select from
@@ -145,9 +147,83 @@ std::vector<T> generate_randomized_subset(
 	uint32_t n_items,
 	class DeterministicRNG& rng);
 
-// ============================================================================
+namespace PlanetNameUtils
+{
+	inline int roman_numeral_value(char character)
+	{
+		switch (character)
+		{
+		case 'I': return 1;
+		case 'V': return 5;
+		case 'X': return 10;
+		case 'L': return 50;
+		case 'C': return 100;
+		case 'D': return 500;
+		case 'M': return 1000;
+		default: return 0;
+		}
+	}
+
+	inline std::string canonical_roman_numeral(int value)
+	{
+		static const std::pair<int, const char*> symbols[] = {
+			{1000, "M"}, {900, "CM"}, {500, "D"}, {400, "CD"},
+			{100, "C"}, {90, "XC"}, {50, "L"}, {40, "XL"},
+			{10, "X"}, {9, "IX"}, {5, "V"}, {4, "IV"}, {1, "I"}
+		};
+		std::string result;
+		for (const auto& symbol : symbols)
+		{
+			while (value >= symbol.first)
+			{
+				result += symbol.second;
+				value -= symbol.first;
+			}
+		}
+		return result;
+	}
+
+	inline bool is_canonical_roman_numeral(const std::string& token)
+	{
+		if (token.empty())
+			return false;
+		int value = 0;
+		for (size_t i = 0; i < token.size(); ++i)
+		{
+			const int current = roman_numeral_value(token[i]);
+			if (current == 0)
+				return false;
+			const int next = i + 1 < token.size()
+				? roman_numeral_value(token[i + 1]) : 0;
+			value += current < next ? -current : current;
+		}
+		return value > 0 && value <= 3999 && canonical_roman_numeral(value) == token;
+	}
+
+	inline bool has_ineligible_planet_name_suffix(const std::string& name)
+	{
+		if (name.empty())
+			return false;
+		size_t end = name.size();
+		while (end > 0 && std::isspace(static_cast<unsigned char>(name[end - 1])) != 0)
+			--end;
+		if (end == 0)
+			return false;
+		if (std::isdigit(static_cast<unsigned char>(name[end - 1])) != 0)
+			return true;
+
+		size_t suffix_start = end;
+		while (suffix_start > 0 &&
+				roman_numeral_value(name[suffix_start - 1]) != 0)
+			--suffix_start;
+		return suffix_start < end &&
+			is_canonical_roman_numeral(name.substr(suffix_start, end - suffix_start));
+	}
+}
+
+// ==========================================================================
 // Template Implementation
-// ============================================================================
+// ==========================================================================
 
 template<typename T>
 std::vector<T> generate_randomized_subset(
@@ -188,11 +264,11 @@ std::vector<T> generate_randomized_subset(
 		}
 
 		std::vector<std::string> repeatable_names;
-		for (const auto& name : unique_source)
-		{
-			if (!name.empty() && std::isdigit(static_cast<unsigned char>(name.back())) == 0)
-				repeatable_names.push_back(name);
-		}
+			for (const auto& name : unique_source)
+			{
+				if (!PlanetNameUtils::has_ineligible_planet_name_suffix(name))
+					repeatable_names.push_back(name);
+			}
 		if (result.size() < n_items && repeatable_names.empty())
 			throw std::runtime_error("not enough suffixable planet names");
 

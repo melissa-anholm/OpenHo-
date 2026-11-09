@@ -49,25 +49,38 @@ void process_ready_turn(GameState& game)
 
 void test_planet_name_reuse_rules()
 {
-    DeterministicRNG rng(1234, 5678);
-    const std::vector<std::string> source = {
-        "Spica", "Pollux", "Omicron Persei 8"
-    };
-    const std::vector<std::string> names =
-        generate_randomized_subset(source, 8, rng);
+	assert(PlanetNameUtils::has_ineligible_planet_name_suffix("VegaIX"));
+	assert(PlanetNameUtils::has_ineligible_planet_name_suffix("Vega MIX"));
+	assert(PlanetNameUtils::has_ineligible_planet_name_suffix("MIX"));
+	assert(PlanetNameUtils::has_ineligible_planet_name_suffix("Planet 8"));
+	assert(!PlanetNameUtils::has_ineligible_planet_name_suffix("Vegaix"));
+	assert(!PlanetNameUtils::has_ineligible_planet_name_suffix("VegaVIX"));
+	assert(!PlanetNameUtils::has_ineligible_planet_name_suffix("VegaIM"));
 
-    std::unordered_set<std::string> unique_names(names.begin(), names.end());
-    assert(names.size() == 8);
-    assert(unique_names.size() == names.size());
-    for (const std::string& name : names)
-        assert(name.rfind("Omicron Persei 8 ", 0) != 0);
+	DeterministicRNG rng(1234, 5678);
+	const std::vector<std::string> source = {
+		"Spica", "Pollux", "Omicron Persei 8", "VegaIX", "Vegaix",
+		"Alpha MIX", "VegaVIX"
+	};
+	const std::vector<std::string> names = generate_randomized_subset(source, 14, rng);
 
-    bool has_suffix = false;
-    for (const std::string& name : names)
-    {
-        if (name.rfind("Spica ", 0) == 0 || name.rfind("Pollux ", 0) == 0)
-            has_suffix = true;
-    }
+	std::unordered_set<std::string> unique_names(names.begin(), names.end());
+	assert(names.size() == 14);
+	assert(unique_names.size() == names.size());
+	for (const std::string& name : names)
+	{
+		assert(name.rfind("Omicron Persei 8 ", 0) != 0);
+		assert(name.rfind("VegaIX ", 0) != 0);
+		assert(name.rfind("Alpha MIX ", 0) != 0);
+	}
+
+	bool has_suffix = false;
+	for (const std::string& name : names)
+	{
+		if (name.rfind("Spica ", 0) == 0 || name.rfind("Pollux ", 0) == 0 ||
+			name.rfind("Vegaix ", 0) == 0 || name.rfind("VegaVIX ", 0) == 0)
+			has_suffix = true;
+	}
     assert(has_suffix);
 }
 
