@@ -22,7 +22,19 @@ int main()
 	expect_equal(calculate_ship_design_metal_cost(
 		SHIP_FIGHTER, 0, 0, 0, 0, 0), 600);
 	expect_equal(calculate_ship_design_prototype_cost(
-		SHIP_FIGHTER, 0, 0, 0, 0, 0), 60000);
+		SHIP_FIGHTER, 0, 0, 0, 0, 0), 24000);
+	expect_equal(calculate_ship_design_prototype_cost(
+		SHIP_SATELLITE, 0, 0, 1, 0, 0), 4160);
+	expect_equal(calculate_ship_design_prototype_cost(
+		SHIP_DREADNOUGHT, 2, 0, 0, 0, 0), 308000);
+
+	// Colony ships and tankers use the same heavy-ship 2x multiplier.
+	expect_equal(calculate_ship_design_prototype_cost(
+		SHIP_COLONY, 0, 0, 0, 0, 0),
+		2 * calculate_ship_design_build_cost(SHIP_COLONY, 0, 0, 0, 0, 0));
+	expect_equal(calculate_ship_design_prototype_cost(
+		SHIP_TANKER, 0, 0, 0, 0, 0),
+		2 * calculate_ship_design_build_cost(SHIP_TANKER, 0, 0, 0, 0, 0));
 
 	// Ordinary technology increments use the ship-type multipliers.
 	expect_equal(calculate_ship_design_build_cost(
@@ -59,8 +71,8 @@ int main()
 		SHIP_FIGHTER, 0, 0, 0, 0, 3), 438);
 
 	// Structural validation is separate from the calculations.
-	assert(check_ship_design_levels(SHIP_FIGHTER, 0, 0, 0, 0, 0));
-	assert(check_ship_design_levels(SHIP_SATELLITE, 0, 4, 0, 0, 10));
+	assert(check_ship_design_levels(SHIP_FIGHTER, 0, 1, 1, 1, 0));
+	assert(check_ship_design_levels(SHIP_SATELLITE, 0, 4, 1, 1, 10));
 	assert(!check_ship_design_levels(SHIP_SATELLITE, 1, 0, 0, 0, 0));
 	assert(!check_ship_design_levels(SHIP_FIGHTER, -1, 0, 0, 0, 0));
 	assert(!check_ship_design_levels(SHIP_BIOLOGICAL, 0, 0, 0, 0, 0));

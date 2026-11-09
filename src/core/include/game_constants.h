@@ -124,7 +124,8 @@ namespace GameConstants
 
 		constexpr double Ship_Build_Mini_Metal_Factor = 0.9;
 		constexpr double Ship_Build_Mini_Money_Contribution = 3.0;
-		constexpr double Ship_Build_Prototype_Multiplier = 10.0;
+			constexpr double Ship_Build_Prototype_Multiplier_Light = 4.0;
+			constexpr double Ship_Build_Prototype_Multiplier_Heavy = 2.0;
 	
 	// ========================================================================
 	// Money and Resources

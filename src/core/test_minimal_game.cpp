@@ -230,9 +230,9 @@ void test_ship_construction()
     assert(design_id != 0);
 
     const ShipDesign* design = game->get_player(1)->get_ship_design(design_id);
-    assert(design != nullptr);
-    assert(design->get_build_cost() == 4425);
-    assert(design->get_prototype_cost() == 44250);
+	assert(design != nullptr);
+	assert(design->get_build_cost() == 4425);
+	assert(design->get_prototype_cost() == 17700);
     assert(design->get_metal_cost() == 443);
     assert(!design->get_has_been_prototyped());
 
@@ -240,7 +240,7 @@ void test_ship_construction()
     const int64_t metal_before_first_build = game->get_player(1)->get_metal();
     assert(game->build_ships_from_design(1, design_id, 3, ship_planet_id) ==
            ErrorCode::SUCCESS);
-    assert(game->get_player(1)->get_money() == money_before_first_build - 57525);
+	assert(game->get_player(1)->get_money() == money_before_first_build - 30975);
     assert(game->get_player(1)->get_metal() == metal_before_first_build - 1329);
     assert(game->get_player(1)->get_fleets().size() == 1);
     assert(game->get_player(1)->get_fleets().front().total_ship_count() == 3);

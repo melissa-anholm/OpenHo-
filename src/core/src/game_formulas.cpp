@@ -21,10 +21,27 @@ namespace GameFormulas
 			return static_cast<int64_t>(std::ceil(std::nextafter(value, 0.0)));
 		}
 
-		bool is_supported_ship_type(ShipType ship_type)
-		{
-			return ship_type >= SHIP_SCOUT && ship_type <= SHIP_DREADNOUGHT;
-		}
+			bool is_supported_ship_type(ShipType ship_type)
+			{
+				return ship_type >= SHIP_SCOUT && ship_type <= SHIP_DREADNOUGHT;
+			}
+
+			double prototype_multiplier(ShipType ship_type)
+			{
+				switch (ship_type)
+				{
+				case SHIP_COLONY:
+				case SHIP_TANKER:
+				case SHIP_DREADNOUGHT:
+					return GameConstants::Ship_Build_Prototype_Multiplier_Heavy;
+				case SHIP_SCOUT:
+				case SHIP_FIGHTER:
+				case SHIP_SATELLITE:
+					return GameConstants::Ship_Build_Prototype_Multiplier_Light;
+				default:
+					return 0.0;
+				}
+			}
 
 		double calculate_range_money_increment(double current_level)
 		{
@@ -201,8 +218,8 @@ namespace GameFormulas
 	                                              int32_t tech_speed, int32_t tech_weapons,
 	                                              int32_t tech_shields, int32_t tech_mini)
 	{
-		return round_up_cost(GameConstants::Ship_Build_Prototype_Multiplier
-			* unrounded_money_cost(
+			return round_up_cost(prototype_multiplier(ship_type)
+				* unrounded_money_cost(
 				ship_type, tech_range, tech_speed, tech_weapons, tech_shields, tech_mini));
 	}
 

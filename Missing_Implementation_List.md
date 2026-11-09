@@ -46,6 +46,7 @@
 - Current-turn interest is calculated from beginning-of-turn savings before Dip Into Savings and allocation.
 - **Rate modifier:** `Player::savings_rate_modifier` now augments the positive base savings rate only: `actual_savings_rate = base_positive_savings_rate × savings_rate_modifier`. It defaults to `1.0` and is not yet serialized. Negative interest is a separate debt rule and is not modified by this factor under the current design.
 - **Application:** Calculated interest, whether positive or negative, is added to player income; it is not applied directly to the savings balance.
+- **Future rate model:** The true positive-savings interest rate should not be fixed. As accumulated savings increase, the interest rate should decrease. More data is required to model this relationship accurately; the current provisional implementation remains unchanged for now.
 - **Priority:** Medium-low
 
 #### Mining Efficiency
@@ -540,13 +541,16 @@ All intermediate calculations remain `double`; each public final resource cost r
 
 The `0.9` metal factor and `3.0` positive-level money contribution are adjustable placeholders. The money function will probably become explicitly level-dependent.
 
-**Prototype and multi-ship accounting:** The first ship built from a design incurs a provisional **money-only** prototype charge:
+**Prototype and multi-ship accounting:** The first ship built from a design incurs a final **money-only** prototype charge. The multiplier is determined by ship type:
 
 ```text
-prototype money cost = ceil(10 × unrounded money build-cost expression)
+prototype money cost = ceil(prototype multiplier × unrounded money build-cost expression)
+
+Colony ship, tanker, dreadnought: 2×
+Satellite, fighter, scout:          4×
 ```
 
-The 10× multiplier is placeholder behavior. Prototype calculations also retain `double` precision until their own final upward rounding and must not truncate the underlying money expression. No separate prototype metal charge applies.
+These multipliers are final. The underlying build-cost expressions and their component formulas remain provisional and require future balance work. Prototype calculations retain `double` precision until their own final upward rounding and must not truncate the underlying money expression. No separate prototype metal charge applies.
 
 For `N` ships, money and metal remain separate:
 
