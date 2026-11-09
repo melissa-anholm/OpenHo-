@@ -439,6 +439,7 @@ void test_savings_rate_modifier()
     assert(player.get_savings_rate_modifier() == 1.0);
     player.set_savings_rate_modifier(2.0);
     assert(player.get_savings_rate_modifier() == 2.0);
+    assert(GameFormulas::calculate_money_interest(2500) == 500);
     assert(GameFormulas::calculate_money_interest(100, player.get_savings_rate_modifier()) == 200);
     assert(GameFormulas::calculate_money_interest(-100, player.get_savings_rate_modifier()) == -15);
 }

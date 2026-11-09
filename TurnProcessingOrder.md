@@ -48,7 +48,7 @@ Economic processing reads the beginning-of-turn snapshot. For the first turn, ex
 
 ### 2.1 Population and planetary income
 
-For each owned planet, calculate population growth using beginning-of-turn population, beginning-of-turn temperature, actual gravity, and the owning player's relevant conditions or ideals. Apply growth before calculating current-turn planetary income.
+For each owned planet, the intended population-growth calculation will use current population and apparent temperature and gravity, with additional Pre-Boom and Boom subdivisions. The known Pre-Boom → Boom transition occurs when planetary income reaches `-7,500` or higher. The current implementation remains a flat 10% placeholder and does not yet use these environmental inputs; the planetary-income formula and Boom → Post-Boom soft-maximum rule remain unresolved. Apply growth before calculating current-turn planetary income.
 
 Calculate each planet's income once for current-turn economics using:
 

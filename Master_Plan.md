@@ -206,10 +206,15 @@ GitHub-hosted macOS runners may later provide an additional modern-macOS compile
 
 **Economic System:**
 - Interest applied to income, not savings directly
-- The positive-savings interest rate must eventually decrease as accumulated savings increase; the current fixed-rate formula is provisional and remains unchanged pending more data.
+- Positive savings interest is verified as `10.0 × sqrt(turn-opening savings)` with the positive rate modifier applied; the result is added to current-turn income rather than directly to savings. Debt-interest and bankruptcy rules remain provisional.
 - Income allocated by fractions before spending
 - Turn order must be corrected so planetary income is refreshed and interest is calculated before allocation
 - The Normal scenario's zeroth-to-first-turn projection (500,000 to 550,000 population and 30,000 to 5,500,000 planetary income) clearly demonstrates that the current population-growth and planetary-income calculations need to be fixed.
+- The intended population model has Pre-Boom, Boom, and Post-Boom regimes, with additional subdivisions within Pre-Boom and Boom. All regime rates and transition points depend on current population, apparent temperature, and apparent gravity. The known Pre-Boom → Boom trigger is planetary income `>= -7,500`; the income formula and the Boom → Post-Boom soft-maximum rule remain unspecified.
+- The first specified Pre-Boom subdivision, **pre-mult. additive**, uses a flat inclusive random-integer range of `[2, 7]` and is expected to apply only to the absolute worst-quality planets. These extrema are a well-verified placeholder and are the intended model despite the likely quality dependence of the underlying rule.
+- The next specified Pre-Boom subdivision, **pre-boom multiplicative**, lasts only a few turns: approximately four turns for planets that are bad but not literally the worst, decreasing to approximately two turns for the best planets. Its provisional form is `next_population = 3 × old_population + additive_term`, with the additive term probably drawn uniformly from inclusive `[0, 5]`; the distribution and endpoints remain unverified.
+- The third specified Pre-Boom subdivision, **pre-boom additive**, follows the multiplicative phase when applicable. It is skipped by the best planets and by the absolute worst planets, but can last a very long time on nearly-worst planets that still reach it. Each turn adds a flat-distribution random amount whose center and likely width vary with planet quality; approximate centers are 250, 275 near the profitability boundary, and 325 at the higher-quality end of the applicable planets.
+- The remaining sequence is **actual boom multiplicative**, followed when applicable by **actual boom additive**. Post-Boom has no subdivisions and is additive. Numerical rates, distributions, durations, and exact transition conditions for these phases remain unspecified.
 - Negative effective income is charged directly against savings; no research, planetary development, or savings allocation is funded while income is negative. The bankruptcy limit remains data-driven and must be implemented.
 - Refunds for insufficient resources (metal, temperature overshoot)
 - Square root formulas for diminishing returns on mining/terraforming

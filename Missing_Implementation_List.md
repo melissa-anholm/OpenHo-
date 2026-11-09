@@ -41,13 +41,14 @@
 ### Provisional/Placeholder Formulas (Functional, but Likely Incorrect); Needs Data-Driven Update to Calculations - 3 items
 
 #### Savings Interest
-- **Status:** Provisional functionality.  No idea whether this formula is correct.
+- **Status:** Positive-savings formula verified accurate; debt-interest and bankruptcy rules remain provisional.
 - **Formula:** `interest = 10.0 × sqrt(savings)` for positive savings.
 - Current-turn interest is calculated from beginning-of-turn savings before Dip Into Savings and allocation.
-- **Rate modifier:** `Player::savings_rate_modifier` now augments the positive base savings rate only: `actual_savings_rate = base_positive_savings_rate × savings_rate_modifier`. It defaults to `1.0` and is not yet serialized. Negative interest is a separate debt rule and is not modified by this factor under the current design.
+- **Rate modifier:** `Player::savings_rate_modifier` augments the positive base savings rate only: `actual_savings_rate = base_positive_savings_rate × savings_rate_modifier`. It defaults to `1.0` and is serialized in runtime checkpoints. Negative interest is a separate debt rule and is not modified by this factor under the current design.
 - **Application:** Calculated interest, whether positive or negative, is added to player income; it is not applied directly to the savings balance.
-- **Future rate model:** The true positive-savings interest rate should not be fixed. As accumulated savings increase, the interest rate should decrease. More data is required to model this relationship accurately; the current provisional implementation remains unchanged for now.
-- **Priority:** Medium-low
+- **Verification:** With the default modifier of `1.0`, the implementation uses exactly `10.0 × sqrt(savings)` and truncates the result to the integer income amount. The positive formula is now treated as finalized.
+- **Remaining:** Replace the separate provisional debt-interest and bankruptcy rules with data-driven behavior, and implement bankruptcy consequences.
+- **Priority:** Medium-low for debt/bankruptcy follow-up
 
 #### Mining Efficiency
 - **Status:** Provisional functionality.  No idea whether this formula is correct.
@@ -135,9 +136,18 @@
 - **Priority:** Medium
 
 #### Population Growth
-- **Status:** Integrated into the Phase 1 economic order, but formula remains a placeholder
+- **Status:** Integrated into the Phase 1 economic order, but the formula remains a placeholder and the intended model is only partially specified
 - **Location:** `src/core/src/game_formulas.cpp`
-- **Current Implementation:**  Returns 10% growth regardless of gravity/temperature mismatch, capped at the centralized `GameConstants::Maximum_Population` of 2,000,000. Accepts environmental parameters but doesn't use them.
+- **Current Implementation:** Returns 10% growth regardless of gravity/temperature mismatch, capped at the centralized `GameConstants::Maximum_Population` of 2,000,000. It accepts environmental parameters but does not use them.
+- **Intended broad regimes:** Population growth has three broad behaviors: **Pre-Boom** (slow growth at relatively low population), **Boom** (rapid growth after a population milestone), and **Post-Boom** (dramatically slower growth once population reaches or exceeds the planet's soft maximum).
+- **Further subdivisions:** Pre-Boom and Boom each contain additional behavioral subdivisions. Their exact rates, boundaries, and formulas are not yet available.
+- **Specified Pre-Boom subdivision — pre-mult. additive:** The possible first Pre-Boom phase, expected to apply only to the absolute worst-quality planets, selects a random integer from a flat distribution over the inclusive range `[2, 7]`. The extrema are a well-verified placeholder: the true limits may depend on planet quality, but this range has the correct functional behavior and is the model to use because better underlying data is not expected to become available.
+- **Specified Pre-Boom subdivision — pre-boom multiplicative:** This phase applies for only a few turns to planets ranging from quality that is bad enough not to become profitable, but is not literally the worst, through the highest-quality planets. Its duration is approximately four turns at the lower end of that quality range and approximately two turns at the highest end. The following-turn population is `3 × old_population + additive_term`, where the additive term is probably selected from a flat distribution over the inclusive range `[0, 5]`. The distribution shape and endpoints remain unverified.
+- **Specified Pre-Boom subdivision — pre-boom additive:** This phase follows the pre-boom multiplicative phase when applicable. It is not used by the best planets, and it lasts for a very long time on planets that are nearly the worst but still use this phase. The absolute worst planets do not reach it. Each turn, the population increment is sampled from a flat distribution whose center, and probably its width, depend on planet quality. Approximate centers are 250 for some of the worst planets in this phase, 275 near the boundary of possible profitability, and 325 at the higher-quality end of the planets that use it. These values are approximate and the quality-dependent distribution remains unspecified.
+- **Remaining phase structure:** When applicable, the actual Boom multiplicative phase occurs before the actual Boom additive phase. The Post-Boom phase has no further subdivisions and is additive. The rates, distributions, durations, and exact transition conditions for these phases remain unspecified.
+- **Required inputs:** Each growth behavior will depend on current population, apparent temperature, and apparent gravity. Equivalent implementations may instead use actual and ideal temperature/gravity values after first calculating the apparent conditions.
+- **Known transition rule:** The Pre-Boom → Boom transition occurs when planetary income reaches `-7,500` or higher. A just-colonized planet currently has income `-7,501`; becoming less negative than that value is the known trigger.
+- **Unresolved dependencies:** The planetary-income formula needed to evaluate this transition is not currently correct or available as a reliable placeholder. The Boom → Post-Boom transition, including the planet-specific soft maximum, also remains unspecified.
 - **Priority:** Medium-high
 
 #### Research Conversion
