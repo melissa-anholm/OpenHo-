@@ -645,7 +645,7 @@ Final model questions:
 #### Player Initial Setup
 - **Status:** Mostly implemented for the minimal game; starting fleets/designs and explicit initialization tests remain
 - **Location:** `src/core/src/game.cpp`, `src/core/src/game_setup.cpp`, and `src/core/src/game_constants.h`
-- **Starting-quality values:** Only the **Normal** row is currently finalized and considered accurate. The values for all other starting qualities are provisional and will need to be updated during balance and scenario-definition work.
+- **Starting-quality values:** The **Normal**, **Advanced**, **Thriving**, and **Abundant** rows are finalized and considered accurate. The Outpost, Barren, and Backward rows remain provisional and will need to be updated during balance and scenario-definition work.
 
 | Starting quality | Population | Metal reserve | Savings | Unmined metal | Starting colony income |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -653,9 +653,12 @@ Final model questions:
 | Barren | 375,000 | 5,000 | 25,000 | 5,000 | 20,000 |
 | Backward | 437,500 | 5,000 | 25,000 | 7,500 | 25,000 |
 | **Normal** | **500,000** | **5,000** | **25,000** | **10,000** | **30,000** |
-| Advanced | 625,000 | 5,000 | 25,000 | 12,500 | 37,500 |
-| Thriving | 750,000 | 5,000 | 25,000 | 15,000 | 45,000 |
-| Abundant | 1,000,000 | 5,000 | 25,000 | 20,000 | 60,000 |
+| **Advanced** | **625,000** | **12,000** | **50,000** | **10,000** | **41,000** |
+| **Thriving** | **750,000** | **20,000** | **100,000** | **10,000** | **51,000** |
+| **Abundant** | **750,000** | **30,000** | **250,000** | **10,000** | **58,500** |
+
+* **Not implemented:** The Abundant scenario's secondary starting planet should begin with a population of 10,000, planetary income of `-7,500`, and 2,500 unmined metal.
+** **Not implemented:** Starting fleets are scenario-dependent. Normal and lower-quality scenarios begin with no ships; Advanced begins with 2 scouts; Thriving and Abundant each begin with 2 scouts and 1 colony ship.
 
 For the finalized Normal scenario, the current placeholder population-growth and planetary-income formulas produce the following values after economic processing:
 
@@ -668,14 +671,15 @@ For the finalized Normal scenario, the current placeholder population-growth and
  - [x] Basic property initialization
  - [x] Initialize the homeworld and `colonized_planets`
  - [x] Initialize `KnowledgeGalaxy`
-	 - [x] Assign starting population, income, and metal based on colony quality using the current centralized Normal-scenario values and quality tables
-	 - [x] Initialize player savings and metal reserve from quality-indexed starting tables; all current quality entries are 25,000 savings and 5,000 metal
-	 - [x] Initialize the default technology, research, and allocation state
- - [x] Initialize empty fleet and ship-design lists
+		 - [x] Assign starting population, income, and metal based on colony quality using the centralized starting-value tables
+		 - [x] Initialize player savings and metal reserve from quality-indexed starting tables
+		 - [x] Initialize the default technology, research, and allocation state
+	 - [x] Initialize the current minimal game's empty fleet and ship-design lists
 - **Missing or requiring a decision:**
-	 - [ ] Define the remaining first-turn starting values, including allocations, fleets, and ship designs
- - [ ] Decide whether starting fleets and ship designs should be created
- - [ ] Add focused assertions covering every expected initial field
+		 - [ ] Implement the documented Abundant secondary starting planet
+	 - [ ] Implement scenario-specific starting fleets
+	 - [ ] Define any remaining first-turn starting allocations and ship-design availability
+	 - [ ] Add focused assertions covering every expected initial field
 - **Priority:** High
 
 #### Turn Ready Tracking

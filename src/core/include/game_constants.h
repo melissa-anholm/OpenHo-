@@ -177,9 +177,9 @@ namespace GameConstants
 		25000,       // START_BARREN
 		25000,       // START_BACKWARD
 		25000,       // START_NORMAL
-		25000,       // START_ADVANCED
-		25000,       // START_THRIVING
-		25000        // START_ABUNDANT
+		50000,       // START_ADVANCED
+		100000,      // START_THRIVING
+		250000       // START_ABUNDANT
 	};
 
 	constexpr int64_t Starting_Player_Metal_Reserve[] = {
@@ -187,14 +187,13 @@ namespace GameConstants
 		5000,        // START_BARREN
 		5000,        // START_BACKWARD
 		5000,        // START_NORMAL
-		5000,        // START_ADVANCED
-		5000,        // START_THRIVING
-		5000         // START_ABUNDANT
+		12000,       // START_ADVANCED
+		20000,       // START_THRIVING
+		30000        // START_ABUNDANT
 	};
 
-	/// TODO: These values for money and metal availability will need to be 
-	/// adjusted during game balance testing.  Current values are placeholders 
-	/// with reasonable progression.
+	/// The Outpost, Barren, and Backward entries remain provisional and will
+	/// need to be adjusted during future game-balance and scenario testing.
 	constexpr int32_t Starting_Colony_Population[] = {
 		250000,      // START_OUTPOST
 		375000,      // START_BARREN
@@ -202,7 +201,7 @@ namespace GameConstants
 		500000,      // START_NORMAL
 		625000,      // START_ADVANCED
 		750000,      // START_THRIVING
-		1000000      // START_ABUNDANT
+		750000       // START_ABUNDANT
 	};
 	
 	constexpr int32_t Starting_Colony_Metal[] = {
@@ -210,9 +209,9 @@ namespace GameConstants
 		5000,        // START_BARREN
 		7500,        // START_BACKWARD
 		10000,       // START_NORMAL
-		12500,       // START_ADVANCED
-		15000,       // START_THRIVING
-		20000        // START_ABUNDANT
+		10000,       // START_ADVANCED
+		10000,       // START_THRIVING
+		10000        // START_ABUNDANT
 	};
 	
 	constexpr int32_t Starting_Colony_Income[] = {
@@ -220,9 +219,9 @@ namespace GameConstants
 		20000,       // START_BARREN
 		25000,       // START_BACKWARD
 		30000,       // START_NORMAL
-		37500,       // START_ADVANCED
-		45000,       // START_THRIVING
-		60000        // START_ABUNDANT
+		41000,       // START_ADVANCED
+		51000,       // START_THRIVING
+		58500        // START_ABUNDANT
 	};
 	
 	// ========================================================================

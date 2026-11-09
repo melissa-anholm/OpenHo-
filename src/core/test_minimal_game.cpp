@@ -81,7 +81,44 @@ void test_planet_name_reuse_rules()
 			name.rfind("Vegaix ", 0) == 0 || name.rfind("VegaVIX ", 0) == 0)
 			has_suffix = true;
 	}
-    assert(has_suffix);
+	assert(has_suffix);
+}
+
+void test_verified_higher_quality_starting_values()
+{
+	struct ExpectedValues
+	{
+		StartingColonyQuality quality;
+		int64_t savings;
+		int64_t metal_reserve;
+		int32_t population;
+		int32_t unmined_metal;
+		int32_t income;
+	};
+	const ExpectedValues expected[] = {
+		{START_ADVANCED, 50000, 12000, 625000, 10000, 41000},
+		{START_THRIVING, 100000, 20000, 750000, 10000, 51000},
+		{START_ABUNDANT, 250000, 30000, 750000, 10000, 58500}
+	};
+
+	for (const ExpectedValues& values : expected)
+	{
+		std::vector<PlayerSetup> player_setups = {
+			{"Starting Values", GENDER_F, PLAYER_HUMAN, 100, values.quality}
+		};
+		GalaxyGenerationParams galaxy_params(10, 1, 0.5, GALAXY_RANDOM,
+			static_cast<uint32_t>(values.quality) + 500);
+		GameSetup setup(galaxy_params, player_setups);
+		GameState game(setup);
+		const Player& player = *game.get_player(1);
+		assert(player.get_money() == values.savings);
+		assert(player.get_metal() == values.metal_reserve);
+		assert(player.get_colonized_planets().size() == 1);
+		const ColonizedPlanet& colony = player.get_colonized_planets().front();
+		assert(colony.get_population() == values.population);
+		assert(colony.get_metal() == values.unmined_metal);
+		assert(colony.get_income() == values.income);
+	}
 }
 
 void test_game_initialization_and_readiness()
@@ -1249,6 +1286,7 @@ void test_game_session_lifecycle()
 int main()
 {
     test_planet_name_reuse_rules();
+    test_verified_higher_quality_starting_values();
     test_game_initialization_and_readiness();
 	 test_dip_and_turn_processing();
 	 test_ship_construction();

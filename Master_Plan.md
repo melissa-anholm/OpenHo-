@@ -70,7 +70,7 @@ The staged galaxy flow and six implemented coordinate generators—RANDOM, GRID,
 
 **Status:** Minimal playable game initialization substantially complete.
 
-Players receive homeworlds, quality-based starting population/income/metal, quality-indexed player savings and metal reserves, ideal conditions, colonized-planet state, and per-player knowledge initialization. The authoritative starting-value tables and Normal first/second-turn projections are maintained in the [Missing Implementations List](Missing_Implementation_List.md#player-initial-setup); only the Normal row is finalized. Empty fleets and ship-design lists are deliberate defaults for the minimal playable game; whether the original game should provide starting fleets or designs remains undecided. Focused assertions for every initial field are still needed.
+Players receive homeworlds, quality-based starting population/income/metal, quality-indexed player savings and metal reserves, ideal conditions, colonized-planet state, and per-player knowledge initialization. The authoritative starting-value tables and Normal zeroth-/first-turn projections are maintained in the [Missing Implementations List](Missing_Implementation_List.md#player-initial-setup); the Normal, Advanced, Thriving, and Abundant rows are finalized, while the three lower-quality rows remain provisional. The current minimal game still creates empty fleets and a single starting colony, but the documented final scenario rules include an Abundant secondary planet and scenario-specific starting fleets that remain unimplemented. Focused assertions for every initial field are still needed.
 
 #### Phase 2e: Player Perception Formulas
 
