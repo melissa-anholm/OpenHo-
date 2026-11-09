@@ -200,18 +200,31 @@ echo "Clean complete"
 
 ## Testing Strategy
 
-### Phase 2: C++ Unit Tests
-```bash
-# Add to src/core/CMakeLists.txt
-enable_testing()
-add_executable(CoreTests tests/rng_test.cpp tests/game_test.cpp)
-target_link_libraries(CoreTests OpenHoCore)
-add_test(NAME CoreTests COMMAND CoreTests)
+### Phase 2: C++ Core and CLI Tests
+The core regression executables and CLI smoke tests are registered with CTest. Core tests use the `core` label and CLI tests use the `cli` label.
 
-# Run tests
-cd src/core/build
-ctest
+```bash
+# Build the configured tree
+cmake --build build -j2
+
+# Run only core regressions
+ctest --test-dir build -L core --output-on-failure
+
+# Run only CLI smoke tests
+ctest --test-dir build -L cli --output-on-failure
+
+# Run the complete suite
+ctest --test-dir build --output-on-failure
 ```
+
+Current registered tests:
+
+- `openho_minimal_game_test` — gameplay, economics, fleets, persistence, colonization, adapters, and session regressions.
+- `openho_ship_cost_test` — ship-cost formulas and ship-design validation.
+- `openho_cli_economic_smoke` — portable CLI economic workflow.
+- `openho_cli_multiplayer_smoke` — portable CLI multiplayer workflow.
+
+During development, run the narrowest relevant label first: `core` for core gameplay changes, `cli` for CLI-only changes, and the complete suite after shared-core, CMake, persistence, or release-build changes.
 
 ### Phase 3b: Native UI Tests
 ```bash
@@ -256,8 +269,8 @@ ln -s $(pwd)/src/macos/build/OpenHo.app /Applications/OpenHo
 ## Development Workflow
 
 1. **Edit code** in any editor (VS Code, Vim, etc.)
-2. **Build** with `./build.sh` or individual phase builds
-3. **Test** with `./test.sh`
+2. **Build** with `./build.sh` or the affected target
+3. **Test** with the narrowest relevant CTest label first, then use the complete suite for integration changes
 4. **Run** with `./src/macos/build/OpenHo.app/Contents/MacOS/OpenHo`
 5. **Debug** with `lldb` command-line debugger
 

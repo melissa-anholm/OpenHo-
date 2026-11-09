@@ -61,6 +61,16 @@ target_link_libraries(openho_minimal_game_test PRIVATE OpenHoCore)
 add_executable(openho_ship_cost_test test_ship_costs.cpp)
 target_link_libraries(openho_ship_cost_test PRIVATE OpenHoCore)
 
+add_test(NAME openho_minimal_game_test COMMAND openho_minimal_game_test)
+add_test(NAME openho_ship_cost_test COMMAND openho_ship_cost_test)
+set_tests_properties(
+	openho_minimal_game_test
+	openho_ship_cost_test
+	PROPERTIES
+	LABELS "core"
+	WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+)
+
 # Set compiler flags for better warnings
 if(MSVC)
 	target_compile_options(OpenHoCore PRIVATE /W4)
