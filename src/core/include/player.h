@@ -2,6 +2,7 @@
 #define OPENHO_PLAYER_H
 
 #include "planet.h"
+#include "game_constants.h"
 #include "colonized_planet.h"
 #include "planet_view.h"
 #include "knowledge_galaxy.h"
@@ -77,8 +78,8 @@ public:
 		  iq(0),
 		  eliminated(false),
 		  game_state(game_state_ref),
-		  money_savings(0),
-		  metal_reserve(0),
+			  money_savings(0),
+			  metal_reserve(0),
 		  ideal_temperature(0.0),
 		  ideal_gravity(0.0),
 		  savings_rate_modifier(1.0),

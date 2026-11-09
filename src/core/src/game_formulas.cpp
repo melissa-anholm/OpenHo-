@@ -412,10 +412,10 @@ namespace GameFormulas
 	{
 		// Placeholder: simple population growth
 		// TODO: Real formula will depend on planet conditions, player ideals, infrastructure, etc.
-		// For now: 10% population growth per turn, up to max of 1,000,000
+		// For now: 10% population growth per turn, up to the centralized cap.
 		// Note: Parameters (planet_temperature, planet_gravity, ideal_temperature, ideal_gravity) are unused
 		
-		const int64_t MAX_POPULATION = 1000000;
+		const int64_t MAX_POPULATION = GameConstants::Maximum_Population;
 		
 		// If already at max, no growth
 		if (current_population >= MAX_POPULATION)

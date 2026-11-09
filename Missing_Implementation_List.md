@@ -136,7 +136,7 @@
 #### Population Growth
 - **Status:** Integrated into the Phase 1 economic order, but formula remains a placeholder
 - **Location:** `src/core/src/game_formulas.cpp`
-- **Current Implementation:**  Returns 10% growth regardless of gravity/temperature mismatch.  Accepts parameters but doesn't use them.
+- **Current Implementation:**  Returns 10% growth regardless of gravity/temperature mismatch, capped at the centralized `GameConstants::Maximum_Population` of 2,000,000. Accepts environmental parameters but doesn't use them.
 - **Priority:** Medium-high
 
 #### Research Conversion
@@ -639,17 +639,35 @@ Final model questions:
 #### Player Initial Setup
 - **Status:** Mostly implemented for the minimal game; starting fleets/designs and explicit initialization tests remain
 - **Location:** `src/core/src/game.cpp`, `src/core/src/game_setup.cpp`, and `src/core/src/game_constants.h`
+- **Starting-quality values:** Only the **Normal** row is currently finalized and considered accurate. The values for all other starting qualities are provisional and will need to be updated during balance and scenario-definition work.
+
+| Starting quality | Population | Metal reserve | Savings | Unmined metal | Starting colony income |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Outpost | 250,000 | 5,000 | 25,000 | 2,500 | 10,000 |
+| Barren | 375,000 | 5,000 | 25,000 | 5,000 | 20,000 |
+| Backward | 437,500 | 5,000 | 25,000 | 7,500 | 25,000 |
+| **Normal** | **500,000** | **5,000** | **25,000** | **10,000** | **30,000** |
+| Advanced | 625,000 | 5,000 | 25,000 | 12,500 | 37,500 |
+| Thriving | 750,000 | 5,000 | 25,000 | 15,000 | 45,000 |
+| Abundant | 1,000,000 | 5,000 | 25,000 | 20,000 | 60,000 |
+
+For the finalized Normal scenario, the current placeholder population-growth and planetary-income formulas produce the following values after economic processing:
+
+| Starting quality | Zeroth-turn population | Zeroth-turn planetary income | First-turn population | First-turn planetary income |
+| --- | ---: | ---: | ---: | ---: |
+| **Normal** | **500,000** | **30,000** | **550,000** | **5,500,000** |
+
 - **Completed:**
  - [x] Player object creation
  - [x] Basic property initialization
  - [x] Initialize the homeworld and `colonized_planets`
  - [x] Initialize `KnowledgeGalaxy`
- - [x] Assign starting population, income, and metal based on colony quality
- - [x] Initialize the default technology, research, and allocation state
+	 - [x] Assign starting population, income, and metal based on colony quality using the current centralized Normal-scenario values and quality tables
+	 - [x] Initialize player savings and metal reserve from quality-indexed starting tables; all current quality entries are 25,000 savings and 5,000 metal
+	 - [x] Initialize the default technology, research, and allocation state
  - [x] Initialize empty fleet and ship-design lists
 - **Missing or requiring a decision:**
- - [ ] Define all first-turn starting values, including initial savings, metal reserve, population, income, technology, allocations, fleets, and ship designs
- - [ ] Confirm and document intended initial savings and reserve values
+	 - [ ] Define the remaining first-turn starting values, including allocations, fleets, and ship designs
  - [ ] Decide whether starting fleets and ship designs should be created
  - [ ] Add focused assertions covering every expected initial field
 - **Priority:** High

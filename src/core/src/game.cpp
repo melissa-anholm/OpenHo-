@@ -2281,6 +2281,10 @@ void GameState::setup_home_planet(
 	}
 
 	player.ideal_gravity = ideal_gravity;
+	player.money_savings =
+		GameConstants::Starting_Player_Savings[setup.starting_colony_quality];
+	player.metal_reserve =
+		GameConstants::Starting_Player_Metal_Reserve[setup.starting_colony_quality];
 	planet.true_temperature = player.ideal_temperature;
 	planet.population = GameConstants::Starting_Colony_Population[setup.starting_colony_quality];
 	planet.metal = GameConstants::Starting_Colony_Metal[setup.starting_colony_quality];

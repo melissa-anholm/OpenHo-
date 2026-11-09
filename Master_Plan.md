@@ -70,7 +70,7 @@ The staged galaxy flow and six implemented coordinate generators—RANDOM, GRID,
 
 **Status:** Minimal playable game initialization substantially complete.
 
-Players receive homeworlds, quality-based starting population/income/metal, ideal conditions, colonized-planet state, and per-player knowledge initialization. Empty fleets and ship-design lists are deliberate defaults for the minimal playable game; whether the original game should provide starting fleets or designs remains undecided. Focused assertions for every initial field are still needed.
+Players receive homeworlds, quality-based starting population/income/metal, quality-indexed player savings and metal reserves, ideal conditions, colonized-planet state, and per-player knowledge initialization. The authoritative starting-value tables and Normal first/second-turn projections are maintained in the [Missing Implementations List](Missing_Implementation_List.md#player-initial-setup); only the Normal row is finalized. Empty fleets and ship-design lists are deliberate defaults for the minimal playable game; whether the original game should provide starting fleets or designs remains undecided. Focused assertions for every initial field are still needed.
 
 #### Phase 2e: Player Perception Formulas
 
@@ -208,6 +208,7 @@ GitHub-hosted macOS runners may later provide an additional modern-macOS compile
 - Interest applied to income, not savings directly
 - Income allocated by fractions before spending
 - Turn order must be corrected so planetary income is refreshed and interest is calculated before allocation
+- The Normal scenario's zeroth-to-first-turn projection (500,000 to 550,000 population and 30,000 to 5,500,000 planetary income) clearly demonstrates that the current population-growth and planetary-income calculations need to be fixed.
 - Negative effective income is charged directly against savings; no research, planetary development, or savings allocation is funded while income is negative. The bankruptcy limit remains data-driven and must be implemented.
 - Refunds for insufficient resources (metal, temperature overshoot)
 - Square root formulas for diminishing returns on mining/terraforming

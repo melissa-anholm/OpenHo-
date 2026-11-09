@@ -171,28 +171,47 @@ namespace GameConstants
 	// ========================================================================
 	// Starting Planet Constants
 	// ========================================================================
+	constexpr int64_t Starting_Player_Savings[] = {
+		25000,       // START_OUTPOST
+		25000,       // START_BARREN
+		25000,       // START_BACKWARD
+		25000,       // START_NORMAL
+		25000,       // START_ADVANCED
+		25000,       // START_THRIVING
+		25000        // START_ABUNDANT
+	};
+
+	constexpr int64_t Starting_Player_Metal_Reserve[] = {
+		5000,        // START_OUTPOST
+		5000,        // START_BARREN
+		5000,        // START_BACKWARD
+		5000,        // START_NORMAL
+		5000,        // START_ADVANCED
+		5000,        // START_THRIVING
+		5000         // START_ABUNDANT
+	};
 
 	/// TODO: These values for money and metal availability will need to be 
 	/// adjusted during game balance testing.  Current values are placeholders 
 	/// with reasonable progression.
 	constexpr int32_t Starting_Colony_Population[] = {
-		500000,      // START_OUTPOST
-		750000,      // START_BARREN
-		875000,      // START_BACKWARD
-		1000000,     // START_NORMAL
-		1250000,     // START_ADVANCED
-		1500000,     // START_THRIVING
-		2000000      // START_ABUNDANT
+		250000,      // START_OUTPOST
+		375000,      // START_BARREN
+		437500,      // START_BACKWARD
+		500000,      // START_NORMAL
+		625000,      // START_ADVANCED
+		750000,      // START_THRIVING
+		1000000      // START_ABUNDANT
 	};
 	
 	constexpr int32_t Starting_Colony_Metal[] = {
-		5000,        // START_OUTPOST
-		10000,       // START_BARREN
-		12500,       // START_BACKWARD
-		15000,       // START_NORMAL
-		18750,       // START_ADVANCED
-		22500,       // START_THRIVING
-		30000        // START_ABUNDANT
+		2500,        // START_OUTPOST
+		5000,        // START_BARREN
+		7500,        // START_BACKWARD
+		10000,       // START_NORMAL
+		12500,       // START_ADVANCED
+		15000,       // START_THRIVING
+		20000        // START_ABUNDANT
 	};
 	
 	constexpr int32_t Starting_Colony_Income[] = {
@@ -208,6 +227,7 @@ namespace GameConstants
 	// ========================================================================
 	// Future Balance Parameters
 	// ========================================================================
+	constexpr int32_t Maximum_Population = 2000000;
 	constexpr int32_t Colonization_Initial_Population = 10;
 	// Add new constants here as needed for game balance tuning.
 	

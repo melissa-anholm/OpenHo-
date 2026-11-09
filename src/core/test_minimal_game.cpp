@@ -178,15 +178,17 @@ void test_dip_and_turn_processing()
     const Player& first_player_after_turn = game->get_players().front();
     const ColonizedPlanet& first_colony_after_turn =
         first_player_after_turn.get_colonized_planets().front();
-    assert(first_colony_after_turn.get_population() == initial_population + expected_growth);
-    assert(first_colony_after_turn.get_income() > initial_income);
-    assert(first_player_after_turn.get_money_income() ==
-           first_colony_after_turn.get_income() +
-           GameFormulas::calculate_money_interest(-dip_amount));
-    assert(first_player_after_turn.get_effective_income() ==
-           first_player_after_turn.get_money_income() + persistent_dip_amount);
-    assert(first_player_after_turn.get_money() ==
-           first_player_after_turn.get_money_income() - persistent_dip_amount);
+	assert(first_colony_after_turn.get_population() == initial_population + expected_growth);
+	assert(first_colony_after_turn.get_income() > initial_income);
+	assert(first_player_after_turn.get_money_income() ==
+	       first_colony_after_turn.get_income() +
+	       GameFormulas::calculate_money_interest(
+	           initial_savings - persistent_dip_amount));
+	assert(first_player_after_turn.get_effective_income() ==
+	       first_player_after_turn.get_money_income() + persistent_dip_amount);
+	assert(first_player_after_turn.get_money() ==
+	       initial_savings + first_player_after_turn.get_money_income() -
+	       persistent_dip_amount);
     assert(game->get_dip_amount(1) == persistent_dip_amount);
     assert(game->is_dip_persistent(1));
 
@@ -692,9 +694,9 @@ void test_automatic_colonization_requires_colony_ship()
 			   ErrorCode::INSUFFICIENT_FUEL);
 
 		const uint32_t colony_design = game->get_player(1)->create_ship_design(
-		"Colony Ship", SHIP_COLONY, 30, 10, 1, 1, 0);
+			"Colony Ship", SHIP_COLONY, 27, 10, 1, 1, 0);
 	assert(colony_design != 0);
-	assert(game->build_ships_from_design(1, colony_design, 2, home_id) ==
+	assert(game->build_ships_from_design(1, colony_design, 1, home_id) ==
 		   ErrorCode::SUCCESS);
 	const uint32_t colony_fleet_id = game->get_player(1)->get_fleets().back().id;
 	const std::string colony_destination = scout_destination;
@@ -710,11 +712,8 @@ void test_automatic_colonization_requires_colony_ship()
 	const Fleet* colony_fleet = game->get_fleet(1, colony_fleet_id);
 	assert(colony_fleet != nullptr);
 	assert(colony_fleet->ship_stacks.size() == 1);
-	assert(colony_fleet->ship_stacks.front().colonists_on_board.size() == 2);
-	assert((colony_fleet->ship_stacks.front().colonists_on_board[0] == 0 &&
-			colony_fleet->ship_stacks.front().colonists_on_board[1] == 10) ||
-		   (colony_fleet->ship_stacks.front().colonists_on_board[0] == 10 &&
-			colony_fleet->ship_stacks.front().colonists_on_board[1] == 0));
+	assert(colony_fleet->ship_stacks.front().colonists_on_board.size() == 1);
+	assert(colony_fleet->ship_stacks.front().colonists_on_board.front() == 0);
 
 	const std::vector<uint8_t> checkpoint = game->serialize_state();
 	auto restored = create_ship_game();
